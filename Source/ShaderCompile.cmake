@@ -25,13 +25,19 @@ FetchContent_MakeAvailable(glslcc)
 
 
 FUNCTION(TARGET_PRECOMPILE_SHADERS)
-	set(oneValueArgs TARGET API)
+	set(oneValueArgs TARGET API SHADERS_DIRECTORY)
 	set(multiValueArgs SHADERS)
 	cmake_parse_arguments(PARSED_ARG "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
 	message(STATUS "Compile shaders for ${PARSED_ARG_TARGET} using ${PARSED_ARG_API} backend")
 	string(TOLOWER ${PARSED_ARG_API} API_FOLDER)
-	set(RESULT_FOLDER ${APP_DIR}/.${API_FOLDER}/Shaders)
+	set(RESULT_FOLDER ${APP_DIR}/.${API_FOLDER})
+	if (DEFINED PARSED_ARG_SHADERS_DIRECTORY)
+		set(RESULT_FOLDER ${RESULT_FOLDER}/${PARSED_ARG_SHADERS_DIRECTORY})
+		target_compile_definitions(${PARSED_ARG_TARGET} PRIVATE SHADERS_FOLDER="${PARSED_ARG_SHADERS_DIRECTORY}")
+	else()
+		target_compile_definitions(${PARSED_ARG_TARGET} PRIVATE SHADERS_FOLDER)
+	endif()
 
 	file(MAKE_DIRECTORY ${RESULT_FOLDER})
 

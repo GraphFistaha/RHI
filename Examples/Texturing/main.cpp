@@ -37,13 +37,20 @@ void OnResizeWindow(GLFWwindow * window, int width, int height)
   ShouldInvalidateScene = true;
 }
 
+struct VertexData
+{
+  float ndc_x;
+  float ndc_y;
+  float uv_x;
+  float uv_y;
+};
+
 static constexpr uint32_t VerticesCount = 4;
-static constexpr float Vertices[] = {
-  // pos + colors(rgb)
-  0.5f,  0.5f,  0.227f, 0.117f, 0.729f, /*first vertex*/
-  -0.5f, 0.5f,  0.729f, 0.117f, 0.227f, /*second vertex*/
-  -0.5f, -0.5f, 0.619f, 0.729f, 0.117f, /*third vertex*/
-  0.5f,  -0.5f, 0.117f, 0.729f, 0.533f  /*fourth vertex*/
+static constexpr VertexData Vertices[] = {
+  VertexData{0.5f, 0.5f, 0.0f, 0.0f},   /*first vertex*/
+  VertexData{-0.5f, 0.5f, 1.0f, 0.0f},  /*second vertex*/
+  VertexData{-0.5f, -0.5f, 1.0f, 1.0f}, /*third vertex*/
+  VertexData{0.5f, -0.5f, 0.0f, 1.0f}   /*fourth vertex*/
 };
 
 static constexpr uint32_t IndicesCount = 6;
@@ -55,7 +62,7 @@ int main()
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
   // Create GLFW window
-  GLFWwindow * window = glfwCreateWindow(800, 600, "Uniforms_RHI", NULL, NULL);
+  GLFWwindow * window = glfwCreateWindow(800, 600, "Texturing_RHI", NULL, NULL);
   if (window == NULL)
   {
     std::printf("Failed to create GLFW window\n");
@@ -84,49 +91,40 @@ int main()
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
-  // set shaders
   trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
-                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
+                                 std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
   trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
-                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.frag");
-  // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
+                                 std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
+  trianglePipeline->AddInputBinding(0, sizeof(VertexData), RHI::InputBindingType::VertexData);
+  trianglePipeline->AddInputAttribute(0, 0, offsetof(VertexData, ndc_x), 2,
+                                      RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline->AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
                                       RHI::InputAttributeElementType::FLOAT);
 
   auto && tbuf =
     trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
                                      sizeof(float));
 
-  auto && transformBuf =
-    trianglePipeline->DeclareUniform("tb", 1, RHI::ShaderType::Vertex, 2 * sizeof(float));
   // don't forget to call Invalidate to apply all changed settings
   trianglePipeline->Invalidate();
 
   // create vertex buffer
   auto && vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  // fill buffer with Mapping into CPU memory
+    ctx->AllocBuffer(VerticesCount * sizeof(VertexData), RHI::BufferGPUUsage::VertexBuffer);
   if (auto scoped_map = vertexBuffer->Map())
   {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * 5 * sizeof(float));
-    // in the end of scope mapping will be destroyed
+    std::memcpy(scoped_map.get(), Vertices, VerticesCount * sizeof(VertexData));
   }
-  // to make sure that buffer is sent on GPU
   vertexBuffer->Flush();
 
 
   // create index buffer
   auto indexBuffer =
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  // fill buffer with Mapping into CPU memory
   if (auto scoped_map = indexBuffer->Map())
   {
     std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
-    // in the end of scope mapping will be destroyed
   }
-  // to make sure that buffer is sent on GPU
   indexBuffer->Flush();
 
 
@@ -172,15 +170,7 @@ int main()
       std::memcpy(map.get(), &t_val, sizeof(float));
     }
 
-    if (auto map = transformBuf->Map())
-    {
-      float cos_val = std::cosf(x);
-      float sin_val = std::sinf(x);
-      std::memcpy(map.get(), &sin_val, sizeof(float));
-      std::memcpy(reinterpret_cast<char *>(map.get()) + sizeof(float), &cos_val, sizeof(float));
-    }
-
-    x += 0.0001;
+    x += 0.0001f;
 
     // swapchain used as generic interface for drawing on window
     auto && swapchain = ctx->GetSwapchain();

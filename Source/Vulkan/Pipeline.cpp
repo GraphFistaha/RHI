@@ -24,7 +24,7 @@ Pipeline::~Pipeline()
     vkDestroyPipelineLayout(m_owner.GetDevice(), m_layout, nullptr);
 }
 
-void Pipeline::AttachShader(ShaderType type, const wchar_t * path)
+void Pipeline::AttachShader(ShaderType type, const std::filesystem::path& path)
 {
   m_pipelineBuilder->AttachShader(type, path);
   m_invalidPipeline = true;

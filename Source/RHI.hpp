@@ -178,7 +178,7 @@ struct IPipeline
   virtual ~IPipeline() = default;
   // General static settings
   /// @brief attach shader to pipeline
-  virtual void AttachShader(ShaderType type, const wchar_t * path) = 0;
+  virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;

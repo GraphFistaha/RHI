@@ -17,7 +17,7 @@ struct Pipeline final : public IPipeline
   explicit Pipeline(const Context & ctx, const IFramebuffer & framebuffer, uint32_t subpassIndex);
   virtual ~Pipeline() override;
 
-  virtual void AttachShader(ShaderType type, const wchar_t * path) override;
+  virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;

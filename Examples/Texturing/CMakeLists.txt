@@ -1,4 +1,4 @@
-project(Uniforms)
+project(Texturing)
 
 add_executable(${PROJECT_NAME} 
 	"main.cpp"
@@ -12,7 +12,7 @@ PRIVATE
 
 TARGET_PRECOMPILE_SHADERS(TARGET ${PROJECT_NAME} API Vulkan
 SHADERS
-	"uniform.frag"
-	"uniform.vert"
+	"textures.frag"
+	"textures.vert"
 SHADERS_DIRECTORY ${PROJECT_NAME}
 )
