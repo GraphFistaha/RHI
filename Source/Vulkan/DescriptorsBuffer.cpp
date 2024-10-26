@@ -12,8 +12,8 @@ namespace RHI::vulkan
 namespace details
 {
 
-vk::DescriptorPool CreateDescriptorPool(const Context & ctx,
-                                        const DescriptorBuffer::CapacityDistribution & distribution)
+vk::DescriptorPool CreateDescriptorPool(
+  const Context & ctx, const std::unordered_map<VkDescriptorType, uint32_t> & distribution)
 {
   std::vector<VkDescriptorPoolSize> poolSizes;
   for (auto [type, count] : distribution)
@@ -76,6 +76,31 @@ void LinkBufferToDescriptor(const Context & ctx, VkDescriptorSet set, VkDescript
   vkUpdateDescriptorSets(ctx.GetDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
+void LinkImageToDescriptor(const Context & ctx, VkDescriptorSet set, VkDescriptorType type,
+                           uint32_t binding, const IImageGPU_Sampler & sampler)
+{
+  VkDescriptorImageInfo imageInfo{};
+  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  imageInfo.imageView = reinterpret_cast<VkImageView>(sampler.GetImageView().GetHandle());
+  imageInfo.sampler = reinterpret_cast<VkSampler>(sampler.GetHandle());
+
+  assert(type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+         type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || type == VK_DESCRIPTOR_TYPE_SAMPLER);
+
+  VkWriteDescriptorSet descriptorWrite{};
+  descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  descriptorWrite.dstSet = set;
+  descriptorWrite.dstBinding = binding;
+  descriptorWrite.dstArrayElement = 0;
+  descriptorWrite.descriptorType = type;
+  descriptorWrite.descriptorCount = 1;
+  descriptorWrite.pBufferInfo = nullptr;
+  descriptorWrite.pImageInfo = &imageInfo;    // Optional
+  descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+  vkUpdateDescriptorSets(ctx.GetDevice(), 1, &descriptorWrite, 0, nullptr);
+}
+
 RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 {
   switch (type)
@@ -109,39 +134,51 @@ DescriptorBuffer::~DescriptorBuffer()
 
 void DescriptorBuffer::Invalidate()
 {
-  if (!m_buffers.empty())
+  if (m_invalidLayout || !m_layout)
   {
-    if (m_invalidLayout || !m_layout)
+    auto new_layout = m_layoutBuilder->Make(m_owner.GetDevice());
+    if (!!m_layout)
+      vkDestroyDescriptorSetLayout(m_owner.GetDevice(), m_layout, nullptr);
+    m_layout = new_layout;
+    m_invalidLayout = false;
+    m_invalidSet = true;
+  }
+
+  if (m_invalidPool || !m_pool)
+  {
+    auto new_pool = details::CreateDescriptorPool(m_owner, m_capacity);
+    if (m_pool != VK_NULL_HANDLE)
     {
-      auto new_layout = m_layoutBuilder->Make(m_owner.GetDevice());
-      if (!!m_layout)
-        vkDestroyDescriptorSetLayout(m_owner.GetDevice(), m_layout, nullptr);
-      m_layout = new_layout;
-      m_invalidLayout = false;
-      m_invalidSet = true;
+      vkDestroyDescriptorPool(m_owner.GetDevice(), m_pool, nullptr);
+      m_set = VK_NULL_HANDLE;
+    }
+    m_pool = new_pool;
+    m_invalidPool = false;
+    m_invalidSet = true;
+  }
+
+  if (m_invalidSet || !m_set)
+  {
+    auto new_set = details::CreateDescriptorSet(m_owner, m_pool, m_layout);
+    for (auto && [type, bufs] : m_bufferDescriptors)
+    {
+      for (auto && [binding, bufPtr] : bufs)
+        details::LinkBufferToDescriptor(m_owner, new_set, type, binding, *bufPtr);
     }
 
-    if (m_invalidPool || !m_pool)
+    if (m_set)
     {
-      auto new_pool = details::CreateDescriptorPool(m_owner, m_capacity);
-      if (m_pool != VK_NULL_HANDLE)
-        vkDestroyDescriptorPool(m_owner.GetDevice(), m_pool, nullptr);
-      m_pool = new_pool;
-      m_invalidPool = false;
-      m_invalidSet = true;
+      VkDescriptorSet deleting_set = m_set;
+      vkFreeDescriptorSets(m_owner.GetDevice(), m_pool, 1, &deleting_set);
     }
+    m_set = new_set;
+    m_invalidSet = false;
+  }
 
-    if (m_invalidSet || !m_set)
-    {
-      auto new_set = details::CreateDescriptorSet(m_owner, m_pool, m_layout);
-      m_set = new_set;
-      for (uint32_t slot = 0; slot < m_buffers.size(); ++slot)
-      {
-        auto && [type, bufPtr] = m_buffers[slot];
-        details::LinkBufferToDescriptor(m_owner, m_set, type, slot, *bufPtr);
-      }
-      m_invalidSet = false;
-    }
+  for (auto && [type, bufs] : m_imageDescriptors)
+  {
+    for (auto && [binding, samplerPtr] : bufs)
+      details::LinkImageToDescriptor(m_owner, m_set, type, binding, *samplerPtr.get());
   }
 }
 
@@ -149,19 +186,33 @@ IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shade
                                               uint32_t size)
 {
   const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  m_layoutBuilder->DeclareUniform(binding, shaderStage);
+  assert(binding == m_bufferDescriptors[type].size() && "set binding in sorted order from 0 to N");
+  m_layoutBuilder->DeclareDescriptor(binding, type, shaderStage);
+  m_invalidLayout = true;
+  m_capacity[type]++;
+
+  auto && new_buffer = m_owner.AllocBuffer(size, details::DescriptorType2BufferUsage(type), true);
+  auto && descriptedBuffer = m_bufferDescriptors[type].emplace_back(binding, std::move(new_buffer));
+  return descriptedBuffer.second.get();
+}
+
+IImageGPU_Sampler * DescriptorBuffer::DeclareSampler(uint32_t binding, ShaderType shaderStage)
+{
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  m_layoutBuilder->DeclareDescriptor(binding, type, shaderStage);
   m_invalidLayout = true;
 
   m_capacity[type]++;
-  auto && new_buffer = m_owner.AllocBuffer(size, details::DescriptorType2BufferUsage(type), true);
-  auto && descriptedBuffer = m_buffers.emplace_back(type, std::move(new_buffer));
-  return descriptedBuffer.second.get();
+
+  auto && sampler = std::make_unique<ImageGPU_Sampler>(m_owner);
+  auto && descriptedImage = m_imageDescriptors[type].emplace_back(binding, std::move(sampler));
+  return descriptedImage.second.get();
 }
 
 void DescriptorBuffer::Bind(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
                             VkPipelineBindPoint bindPoint)
 {
-  if (!m_buffers.empty())
+  if (m_set)
   {
     const VkDescriptorSet set = m_set;
     vkCmdBindDescriptorSets(buffer, bindPoint, pipelineLayout, 0, 1, &set, 0, nullptr);

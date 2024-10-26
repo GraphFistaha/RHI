@@ -61,7 +61,8 @@ struct DescriptorSetLayoutBuilder final
 {
   vk::DescriptorSetLayout Make(const vk::Device & device) const;
   void Reset();
-  void DeclareUniform(uint32_t binding, ShaderType shaderStage);
+  void DeclareDescriptor(uint32_t binding, VkDescriptorType type,
+                                       ShaderType shaderStage);
 
 private:
   std::vector<VkDescriptorSetLayoutBinding> m_uniformDescriptions;

@@ -9,6 +9,8 @@ PRIVATE
 	"CommandBuffer.cpp" 
 	"BufferGPU.cpp"
 	"DescriptorsBuffer.cpp"
+	 "ImageGPU.cpp"
+	 
 PRIVATE
 	"VulkanContext.hpp"
 	"Swapchain.hpp"
@@ -18,6 +20,7 @@ PRIVATE
 	"CommandBuffer.hpp"
 	"BufferGPU.hpp"
 	"DescriptorsBuffer.hpp"
+	"ImageGPU.hpp"
 )
 
 #---------------- Link third-party libraries ---------------
@@ -27,7 +30,7 @@ message(STATUS "Fetch vkBootstrap")
 FetchContent_Declare(
     vk_bootstrap
     GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        main #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
+    GIT_TAG        c710f245ffd55a49ac698f3dbf41aababfd51f12 # 16.09.2024 update
 )
 FetchContent_MakeAvailable(vk_bootstrap)
 
@@ -35,7 +38,7 @@ message(STATUS "Fetch VulkanMemoryAllocator")
 FetchContent_Declare(
     VulkanMemoryAllocator
     GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-    GIT_TAG        master #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
+    GIT_TAG        1c35ba99ce775f8342d87a83a3f0f696f99c2a39 # 01.10.2024
 	GIT_PROGRESS   TRUE
 )
 FetchContent_MakeAvailable(VulkanMemoryAllocator)

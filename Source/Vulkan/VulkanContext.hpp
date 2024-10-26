@@ -47,6 +47,7 @@ struct Context final : public IContext
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
   virtual void WaitForIdle() const override;
 
   const vk::Instance GetInstance() const;

@@ -4,6 +4,7 @@
 #include <VkBootstrap.h>
 
 #include "BufferGPU.hpp"
+#include "ImageGPU.hpp"
 #include "CommandBuffer.hpp"
 #include "Framebuffer.hpp"
 #include "Pipeline.hpp"
@@ -191,6 +192,11 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
                                                  bool mapped /* = false*/) const
 {
   return std::make_unique<BufferGPU>(size, usage, *m_allocator, mapped);
+}
+
+std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args) const
+{
+  return std::make_unique<ImageGPU>(*this, *m_allocator, args);
 }
 
 void Context::WaitForIdle() const

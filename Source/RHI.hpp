@@ -166,8 +166,40 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
+enum class ImageType : uint8_t
+{
+  Image1D,
+  Image2D,
+  Image3D
+};
+
+enum class ImageGPUUsage : uint8_t
+{
+  Sample,
+  Storage,
+  FramebufferColorAttachment,
+  FramebufferDepthStencilAttachment,
+  FramebufferInputAttachment
+};
+
+enum class SamplesCount : uint8_t
+{
+  One = 1,
+  Two = 2,
+  Four = 4,
+  Eight = 8,
+};
+
+enum class ImageFormat : uint8_t
+{
+  RGB8,
+  RGBA8,
+};
+
 struct ICommandBuffer;
 struct IBufferGPU;
+struct IImageGPU;
+struct IImageGPU_Sampler;
 
 /// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
@@ -185,6 +217,9 @@ struct IPipeline
 
   virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
                                       uint32_t size) = 0;
+
+  virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
+                                             ShaderType shaderStage) = 0;
 
   /// @brief Rebuild object after settings were changed
   virtual void Invalidate() = 0;
@@ -264,8 +299,8 @@ struct ICommandBuffer
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
 struct IBufferGPU
 {
-  using UnmapFunc = std::function<void(void *)>;
-  using ScopedPointer = std::unique_ptr<void, UnmapFunc>;
+  using UnmapFunc = std::function<void(char *)>;
+  using ScopedPointer = std::unique_ptr<char, UnmapFunc>;
 
   virtual ~IBufferGPU() = default;
   /// @brief Map buffer into CPU memory.  It will be unmapped in end of scope
@@ -280,6 +315,44 @@ struct IBufferGPU
   virtual InternalObjectHandle GetHandle() const noexcept = 0;
 };
 
+struct ImageCreateArguments final
+{
+  ImageType type;
+  uint32_t width;
+  uint32_t height;
+  uint32_t depth;
+  uint32_t mipLevels;
+  ImageFormat format;
+  ImageGPUUsage usage;
+  SamplesCount samples;
+  bool shared;
+};
+
+struct IImageGPU : public IBufferGPU
+{
+  virtual ~IImageGPU() = default;
+  virtual void Invalidate() noexcept = 0;
+  virtual ImageType GetImageType() const noexcept = 0;
+  virtual ImageFormat GetImageFormat() const noexcept = 0;
+  //virtual void SetSwizzle() = 0;
+};
+
+struct IImageGPU_View
+{
+  virtual ~IImageGPU_View() = default;
+  virtual void AssignImage(const IImageGPU & image) = 0;
+  virtual bool IsImageAssigned() const noexcept = 0;
+  virtual InternalObjectHandle GetHandle() const noexcept = 0;
+};
+
+struct IImageGPU_Sampler
+{
+  virtual ~IImageGPU_Sampler() = default;
+  virtual void Invalidate() = 0;
+  virtual InternalObjectHandle GetHandle() const noexcept = 0;
+  virtual IImageGPU_View & GetImageView() & noexcept = 0;
+  virtual const IImageGPU_View & GetImageView() const & noexcept = 0;
+};
 
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext
@@ -299,6 +372,8 @@ struct IContext
   /// @brief creates BufferGPU
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;
+
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const = 0;
 };
 
 /// @brief Factory-function to create context

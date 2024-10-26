@@ -49,6 +49,12 @@ IBufferGPU * Pipeline::DeclareUniform(const char * name, uint32_t binding, Shade
   return m_descriptors->DeclareUniform(binding, shaderStage, size);
 }
 
+IImageGPU_Sampler * Pipeline::DeclareSampler(const char * name, uint32_t binding,
+                                         ShaderType shaderStage)
+{
+  return m_descriptors->DeclareSampler(binding, shaderStage);
+}
+
 void Pipeline::Invalidate()
 {
   m_descriptors->Invalidate();

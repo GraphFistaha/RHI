@@ -85,6 +85,24 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
+  RHI::ImageCreateArguments imageArgs;
+  imageArgs.width = 32;
+  imageArgs.height = 32;
+  imageArgs.depth = 1;
+  imageArgs.type = RHI::ImageType::Image2D;
+  imageArgs.shared = false;
+  imageArgs.format = RHI::ImageFormat::RGBA8;
+  imageArgs.mipLevels = 1;
+  imageArgs.samples = RHI::SamplesCount::One;
+  imageArgs.usage = RHI::ImageGPUUsage::Sample;
+  auto texture = ctx->AllocImage(imageArgs);
+  if (auto mapped = texture->Map())
+  {
+    int v[100] = {-1};
+    std::memcpy(mapped.get(), v, 100 * sizeof(int));
+  }
+  texture->Flush();
+
   // pipeline must be associated with some framebuffer.
   // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
   auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
@@ -104,6 +122,10 @@ int main()
   auto && tbuf =
     trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
                                      sizeof(float));
+
+  auto && texSampler = trianglePipeline->DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
+  texSampler->GetImageView().AssignImage(*texture);
+  texSampler->Invalidate();
 
   // don't forget to call Invalidate to apply all changed settings
   trianglePipeline->Invalidate();
@@ -126,7 +148,6 @@ int main()
     std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
   }
   indexBuffer->Flush();
-
 
   // command buffer for drawing triangle
   auto && trianglePipelineCommands = ctx->GetSwapchain().CreateCommandBuffer();

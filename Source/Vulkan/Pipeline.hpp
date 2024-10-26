@@ -23,6 +23,8 @@ struct Pipeline final : public IPipeline
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
   virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
                                       uint32_t size) override;
+  virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
+                                     ShaderType shaderStage) override;
 
   virtual void Invalidate() override;
   virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }

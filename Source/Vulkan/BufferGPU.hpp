@@ -14,8 +14,27 @@ private:
   details::InternalHandle m_allocator;
 };
 
+struct BufferBase
+{
+  using AllocInfoRawMemory = std::array<uint32_t, 14>;
+  BuffersAllocator & m_allocator;
+  AllocInfoRawMemory m_allocInfo;
+  details::InternalHandle m_memBlock = nullptr;
+  uint32_t m_flags = 0;
+  size_t m_size = 0;
 
-struct BufferGPU : public IBufferGPU
+  IBufferGPU::ScopedPointer Map();
+  void Flush() const noexcept;
+  bool IsMapped() const noexcept;
+  size_t Size() const noexcept { return m_size; }
+
+protected:
+  explicit BufferBase(BuffersAllocator & allocator);
+  virtual ~BufferBase() = default;
+};
+
+struct BufferGPU : public IBufferGPU,
+                   private BufferBase
 {
   using IBufferGPU::ScopedPointer;
 
@@ -23,23 +42,13 @@ struct BufferGPU : public IBufferGPU
                      bool mapped = false);
   virtual ~BufferGPU() override;
 
-  virtual ScopedPointer Map() override;
-  virtual void Flush() const noexcept override;
-  virtual bool IsMapped() const noexcept override;
+  virtual ScopedPointer Map() override { return BufferBase::Map(); }
+  virtual void Flush() const noexcept override { BufferBase::Flush(); }
+  virtual bool IsMapped() const noexcept override { return BufferBase::IsMapped(); }
   virtual InternalObjectHandle GetHandle() const noexcept override;
-  virtual size_t Size() const noexcept override { return m_size; }
+  virtual size_t Size() const noexcept override { return BufferBase::Size(); }
 
 private:
-  using AllocInfoRawMemory = std::array<uint32_t, 14>;
-
-  BuffersAllocator & m_allocator;
-
-  AllocInfoRawMemory m_allocInfo;
   vk::Buffer m_buffer = nullptr;
-  details::InternalHandle m_memBlock = nullptr;
-  size_t m_size = 0;
-  uint32_t m_flags = 0;
 };
-
-
 } // namespace RHI::vulkan

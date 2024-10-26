@@ -35,11 +35,12 @@ void DescriptorSetLayoutBuilder::Reset()
   m_uniformDescriptions.clear();
 }
 
-void DescriptorSetLayoutBuilder::DeclareUniform(uint32_t binding, ShaderType shaderStagesMask)
+void DescriptorSetLayoutBuilder::DeclareDescriptor(uint32_t binding, VkDescriptorType type,
+                                                ShaderType shaderStagesMask)
 {
   auto && uniformBinding = m_uniformDescriptions.emplace_back();
   uniformBinding.binding = binding;
-  uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  uniformBinding.descriptorType = type;
   uniformBinding.descriptorCount = 1;
   uniformBinding.stageFlags = ShaderType2VulkanEnum(shaderStagesMask);
   uniformBinding.pImmutableSamplers = nullptr; // Optional
