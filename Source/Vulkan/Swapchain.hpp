@@ -24,17 +24,12 @@ struct Swapchain final : public ISwapchain
 
   /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
   virtual void Invalidate() override;
-  virtual ICommandBuffer * BeginFrame(std::array<float, 4> clearColorValue = {0.0f, 0.0f, 0.0f,
-                                                                              0.0f}) override;
-  virtual void EndFrame() override;
   virtual const IFramebuffer & GetDefaultFramebuffer() const & noexcept override;
   virtual std::pair<uint32_t, uint32_t> GetExtent() const override;
 
-  virtual std::unique_ptr<ICommandBuffer> CreateCommandBuffer() const override;
-
   VkFormat GetImageFormat() const noexcept;
   vk::ImageView GetImageView(size_t idx) const noexcept;
-  size_t GetBuffersCount() const noexcept;
+  size_t GetImagesCount() const noexcept;
   vk::SwapchainKHR GetHandle() const noexcept;
 
 private:

@@ -249,30 +249,46 @@ struct ISwapchain
   /// @brief Rebuild object after settings were changed
   virtual void Invalidate() = 0;
   /// @brief begin frame rendering. Returns buffer for drawing commands
-  virtual ICommandBuffer * BeginFrame(std::array<float, 4> clearColorValue = {0.0f, 0.0f, 0.0f,
-                                                                              0.0f}) = 0;
+  //virtual ICommandBuffer * BeginFrame(std::array<float, 4> clearColorValue = {0.0f, 0.0f, 0.0f,
+  //                                                                            0.0f}) = 0;
   /// @brief End frame rendering. Uploads commands on GPU
-  virtual void EndFrame() = 0;
+  //virtual void EndFrame() = 0;
   /// @brief Get current extent (screen size)
   virtual std::pair<uint32_t, uint32_t> GetExtent() const = 0;
   /// @brief Get Default framebuffer
   virtual const IFramebuffer & GetDefaultFramebuffer() const & noexcept = 0;
-  /// @brief Create thread local command buffer
-  virtual std::unique_ptr<ICommandBuffer> CreateCommandBuffer() const = 0;
 };
 
-/// @brief buffer for GPU commands (like bindVertexBuffer or draw something)
-struct ICommandBuffer
-{
-  virtual ~ICommandBuffer() = default;
+// ----------------- Commands ----------------------
 
+/// @brief buffer for GPU commands (like bindVertexBuffer or draw something)
+struct ICommandsExecutor
+{
+  virtual ~ICommandsExecutor() = default;
+  /// @brief Enable writing mode (only for thread local buffers). Also binds framebuffer and pipeline
+  virtual void BeginExecute(const IFramebuffer & framebuffer) = 0;
+  /// @brief disables writing mode
+  virtual void EndExecute() = 0;
+  /// @brief Cancel executing
+  virtual void CancelExecute() = 0;
+  /// @brief Creates sub executor which can be executed in separate thread
+  virtual ICommandsExecutor & CreateThreadLocalExecutor() & = 0;
+};
+
+struct IGraphicsCommandsExecutor : public ICommandsExecutor
+{
+  virtual ~IGraphicsCommandsExecutor() = default;
+  /// @brief Creates sub executor which can be executed in separate thread
+  virtual IGraphicsCommandsExecutor & CreateThreadLocalExecutor() & = 0;
+
+  virtual void UsePipeline(const IPipeline & pipeline) = 0;
   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
-                            uint32_t firstInstance = 0) const = 0;
+                            uint32_t firstInstance = 0) = 0;
   /// @brief draw vertices with indieces (analog glDrawElements)
   virtual void DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
                                    uint32_t firstIndex = 0, int32_t vertexOffset = 0,
-                                   uint32_t firstInstance = 0) const = 0;
+                                   uint32_t firstInstance = 0) = 0;
   /// @brief Set viewport command
   virtual void SetViewport(float width, float height) = 0;
   /// @brief Set scissor command
@@ -282,18 +298,16 @@ struct ICommandBuffer
                                 uint32_t offset = 0) = 0;
   /// @brief binds buffer as index buffer
   virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
-
-  /// @brief Clears all commands from buffer
-  virtual void Reset() const = 0;
-  /// @brief Enable writing mode (only for thread local buffers). Also binds framebuffer and pipeline
-  virtual void BeginWriting(const IFramebuffer & framebuffer, const IPipeline & pipeline) = 0;
-  /// @brief disables writing mode
-  virtual void EndWriting() = 0;
-  /// @brief take commands from another buffer
-  virtual void AddCommands(const ICommandBuffer & buffer) const = 0;
-  /// @brief get type of buffer
-  virtual CommandBufferType GetType() const noexcept = 0;
 };
+
+struct ITransferCommandsExecutor : public ICommandsExecutor
+{
+  virtual ~ITransferCommandsExecutor() = default;
+  /// @brief Creates sub executor which can be executed in separate thread
+  virtual ITransferCommandsExecutor & CreateThreadLocalExecutor() & = 0;
+};
+
+// ------------------- Data ------------------
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
@@ -303,6 +317,8 @@ struct IBufferGPU
   using ScopedPointer = std::unique_ptr<char, UnmapFunc>;
 
   virtual ~IBufferGPU() = default;
+  /// @brief uploads data
+  virtual void Upload(const void * data, size_t size, size_t offset = 0) = 0;
   /// @brief Map buffer into CPU memory.  It will be unmapped in end of scope
   virtual ScopedPointer Map() = 0;
   /// @brief Sends changed buffer after Map to GPU
@@ -354,21 +370,22 @@ struct IImageGPU_Sampler
   virtual const IImageGPU_View & GetImageView() const & noexcept = 0;
 };
 
+
+
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext
 {
   virtual ~IContext() = default;
-  virtual ISwapchain & GetSwapchain() & noexcept = 0;
-  virtual const ISwapchain & GetSwapchain() const & noexcept = 0;
-  /// @brief wait for GPU is idle
-  virtual void WaitForIdle() const = 0;
+
+  virtual IGraphicsCommandsExecutor * GetGraphicsExecutor() const noexcept = 0;
+  virtual ITransferCommandsExecutor * GetTransferExecutor() const noexcept = 0;
+  virtual void InvalidateSwapchain() = 0;
 
   /// @brief create offscreen framebuffer
-  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const = 0;
+  //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const = 0;
   /// @brief create new pipeline
   virtual std::unique_ptr<IPipeline> CreatePipeline(const IFramebuffer & framebuffer,
                                                     uint32_t subpassIndex) const = 0;
-
   /// @brief creates BufferGPU
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;
@@ -379,7 +396,6 @@ struct IContext
 /// @brief Factory-function to create context
 std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
                                         LoggingFunc loggingFunc = nullptr);
-
 
 namespace details
 {

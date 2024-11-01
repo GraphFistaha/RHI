@@ -23,6 +23,7 @@ struct BufferBase
   uint32_t m_flags = 0;
   size_t m_size = 0;
 
+  void Upload(const void * data, size_t size, size_t offset = 0);
   IBufferGPU::ScopedPointer Map();
   void Flush() const noexcept;
   bool IsMapped() const noexcept;
@@ -42,6 +43,10 @@ struct BufferGPU : public IBufferGPU,
                      bool mapped = false);
   virtual ~BufferGPU() override;
 
+  virtual void Upload(const void * data, size_t size, size_t offset = 0) override
+  {
+    return BufferBase::Upload(data, size, offset);
+  }
   virtual ScopedPointer Map() override { return BufferBase::Map(); }
   virtual void Flush() const noexcept override { BufferBase::Flush(); }
   virtual bool IsMapped() const noexcept override { return BufferBase::IsMapped(); }

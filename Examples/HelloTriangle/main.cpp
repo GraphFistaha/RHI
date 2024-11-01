@@ -33,7 +33,7 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSwapchain().Invalidate();
+  ctx->InvalidateSwapchain();
   ShouldInvalidateScene = true;
 }
 
@@ -77,7 +77,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  // pipeline must be associated with some framebuffer.
+  // pipeline must be associated with framebuffer.
   // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
   auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
 
@@ -123,7 +123,7 @@ int main()
 
 
   // command buffer for drawing triangle
-  auto && trianglePipelineCommands = ctx->GetSwapchain().CreateCommandBuffer();
+  auto && trianglePipelineExecutor = ctx->GetGraphicsExecutor()->CreateThreadLocalExecutor();
   ShouldInvalidateScene = true;
 
   while (!glfwWindowShouldClose(window))
@@ -136,42 +136,25 @@ int main()
       // get size of window
       int width, height;
       glfwGetFramebufferSize(window, &width, &height);
-      // clear commands buffer
-      trianglePipelineCommands->Reset();
-      // enter in editing mode.
-      trianglePipelineCommands->BeginWriting(defaultFramebuffer, *trianglePipeline);
-      // here we can push all commands you want
-
+      trianglePipelineExecutor.BeginExecute(defaultFramebuffer);
+      trianglePipelineExecutor.UsePipeline(*trianglePipeline);
       // set viewport
-      trianglePipelineCommands->SetViewport(static_cast<float>(width), static_cast<float>(height));
+      trianglePipelineExecutor.SetViewport(static_cast<float>(width),
+                                                static_cast<float>(height));
       // set scissor
-      trianglePipelineCommands->SetScissor(0, 0, static_cast<uint32_t>(width),
+      trianglePipelineExecutor.SetScissor(0, 0, static_cast<uint32_t>(width),
                                            static_cast<uint32_t>(height));
       // draw triangle
-      trianglePipelineCommands->BindVertexBuffer(0, *vertexBuffer, 0);
-      trianglePipelineCommands->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      trianglePipelineCommands->DrawIndexedVertices(IndicesCount, 1);
+      trianglePipelineExecutor.BindVertexBuffer(0, *vertexBuffer, 0);
+      trianglePipelineExecutor.BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+      trianglePipelineExecutor.DrawIndexedVertices(IndicesCount, 1);
 
       // finish editing mode
-      trianglePipelineCommands->EndWriting();
-
+      trianglePipelineExecutor.EndExecute();
       ShouldInvalidateScene = false;
     }
-
-    // swapchain used as generic interface for drawing on window
-    auto && swapchain = ctx->GetSwapchain();
-    // begin frame returns Command buffer you should fill.
-    // It's empty on this step.
-    // Written commands will be upload to GPU and executed
-    auto && commands = swapchain.BeginFrame({0.3f, 0.3f, 0.5f, 1.0f});
-    // push trianglePipelineCommands to CommandBuffer for drawing
-    commands->AddCommands(*trianglePipelineCommands);
-    // finish frame and output image on window
-    swapchain.EndFrame();
   }
 
-  // wait while gpu is idle to destroy context and its objects correctly
-  ctx->WaitForIdle();
   glfwTerminate();
   return 0;
 }

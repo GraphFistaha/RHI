@@ -174,12 +174,12 @@ Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
 
 Context::~Context()
 {
-  vkDeviceWaitIdle(m_impl->GetDevice());
+  WaitForIdle();
 }
 
-std::unique_ptr<IFramebuffer> Context::CreateFramebuffer() const
+void Context::InvalidateSwapchain()
 {
-  return nullptr; //std::make_unique<Framebuffer>(*this, GetSwapchain().GetBuffersCount());
+  m_swapchain->Invalidate();
 }
 
 std::unique_ptr<IPipeline> Context::CreatePipeline(const IFramebuffer & framebuffer,

@@ -30,6 +30,13 @@ BuffersAllocator::~BuffersAllocator()
   vmaDestroyAllocator(reinterpret_cast<VmaAllocator>(m_allocator));
 }
 
+void BufferBase::Upload(const void * data, size_t size, size_t offset)
+{
+  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
+  auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
+  vmaCopyMemoryToAllocation(allocator, data, allocation, offset, size);
+}
+
 IBufferGPU::ScopedPointer BufferBase::Map()
 {
   void * mapped_memory = nullptr;

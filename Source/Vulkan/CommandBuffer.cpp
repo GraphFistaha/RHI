@@ -2,42 +2,7 @@
 
 #include "Pipeline.hpp"
 
-namespace
-{
-VkIndexType IndexType2VulkanEnum(RHI::IndexType type)
-{
-  using namespace RHI;
-  switch (type)
-  {
-    case IndexType::UINT8:
-      return VkIndexType::VK_INDEX_TYPE_UINT8_EXT;
-    case IndexType::UINT16:
-      return VkIndexType::VK_INDEX_TYPE_UINT16;
-    case IndexType::UINT32:
-      return VkIndexType::VK_INDEX_TYPE_UINT32;
-    default:
-      throw std::runtime_error("Failed to cast IndexType to vulkan enum");
-  }
-}
 
-
-vk::CommandBuffer CreateCommandBuffer(vk::Device device, vk::CommandPool pool,
-                                      RHI::CommandBufferType type)
-{
-  VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-  VkCommandBufferAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = pool;
-  allocInfo.level = type == RHI::CommandBufferType::Executable ? VK_COMMAND_BUFFER_LEVEL_PRIMARY
-                                                               : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-  allocInfo.commandBufferCount = 1;
-
-  if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
-    throw std::runtime_error("failed to allocate command buffers!");
-
-  return vk::CommandBuffer{commandBuffer};
-}
-} // namespace
 
 namespace RHI::vulkan
 {

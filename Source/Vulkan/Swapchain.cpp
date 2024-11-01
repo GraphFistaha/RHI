@@ -269,7 +269,7 @@ vk::ImageView Swapchain::GetImageView(size_t idx) const noexcept
   return m_swapchainImageViews[idx];
 }
 
-size_t Swapchain::GetBuffersCount() const noexcept
+size_t Swapchain::GetImagesCount() const noexcept
 {
   return m_swapchain->image_count;
 }

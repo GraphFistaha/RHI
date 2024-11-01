@@ -11,6 +11,10 @@ struct ImageGPU : public IImageGPU,
                     const ImageCreateArguments & args);
   virtual ~ImageGPU() override;
 
+  virtual void Upload(const void * data, size_t size, size_t offset = 0) override
+  {
+    return BufferBase::Upload(data, size, offset);
+  }
   virtual ScopedPointer Map() override { return BufferBase::Map(); }
   virtual void Flush() const noexcept override { BufferBase::Flush(); }
   virtual bool IsMapped() const noexcept override { return BufferBase::IsMapped(); }

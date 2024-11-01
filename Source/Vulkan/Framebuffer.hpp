@@ -31,9 +31,9 @@ struct DefaultFramebuffer : public IFramebuffer
   virtual void SetExtent(uint32_t width, uint32_t height) override;
   //virtual void AddColorAttachment(/*ImageFormat*/) override;
 
-  void BeginRenderPass(uint32_t activeFrame, const CommandBuffer & buffer,
+  void BeginRenderPass(uint32_t activeFrame, const vk::CommandBuffer & buffer,
                        const std::array<float, 4> & clearColorValue);
-  void EndRenderPass(const CommandBuffer & buffer);
+  void EndRenderPass(const vk::CommandBuffer & buffer);
 
   virtual InternalObjectHandle GetRenderPass() const noexcept override;
   virtual InternalObjectHandle GetHandle() const noexcept override;

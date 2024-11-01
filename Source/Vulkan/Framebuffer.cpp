@@ -64,8 +64,8 @@ DefaultFramebuffer::DefaultFramebuffer(const Context & ctx, Swapchain & swapchai
   , m_swapchain(swapchain)
   , m_renderPassBuilder(new details::RenderPassBuilder())
 {
-  m_frames.reserve(m_swapchain.GetBuffersCount());
-  for (size_t i = 0; i < m_swapchain.GetBuffersCount(); ++i)
+  m_frames.reserve(m_swapchain.GetImagesCount());
+  for (size_t i = 0; i < m_swapchain.GetImagesCount(); ++i)
     m_frames.emplace_back(std::make_unique<Framebuffer>(ctx));
 
   VkAttachmentDescription swapchainAttachment{};
@@ -133,7 +133,7 @@ void DefaultFramebuffer::InvalidateFramebuffers()
   }
 }
 
-void DefaultFramebuffer::BeginRenderPass(uint32_t activeFrame, const CommandBuffer & buffer,
+void DefaultFramebuffer::BeginRenderPass(uint32_t activeFrame, const vk::CommandBuffer & buffer,
                                          const std::array<float, 4> & clearColorValue)
 {
   m_frameIndex = activeFrame;
@@ -149,13 +149,13 @@ void DefaultFramebuffer::BeginRenderPass(uint32_t activeFrame, const CommandBuff
   renderPassInfo.clearValueCount = 1;
   renderPassInfo.pClearValues = reinterpret_cast<const VkClearValue *>(&clearValue);
 
-  vkCmdBeginRenderPass(buffer.GetHandle(), &renderPassInfo,
+  vkCmdBeginRenderPass(buffer, &renderPassInfo,
                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 }
 
-void DefaultFramebuffer::EndRenderPass(const CommandBuffer & buffer)
+void DefaultFramebuffer::EndRenderPass(const vk::CommandBuffer & buffer)
 {
-  vkCmdEndRenderPass(buffer.GetHandle());
+  vkCmdEndRenderPass(buffer);
 }
 
 InternalObjectHandle DefaultFramebuffer::GetRenderPass() const noexcept

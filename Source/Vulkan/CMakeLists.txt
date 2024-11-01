@@ -21,7 +21,9 @@ PRIVATE
 	"BufferGPU.hpp"
 	"DescriptorsBuffer.hpp"
 	"ImageGPU.hpp"
-)
+
+	"GraphicsExecutor.hpp"
+ "GraphicsExecutor.cpp")
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)

@@ -14,11 +14,6 @@ namespace RHI::vulkan
 constexpr const char * apiFolder = ".vulkan";
 constexpr const char * shaderExtension = ".spv";
 
-namespace details
-{
-using InternalHandle = void *;
-}
-
 enum class QueueType
 {
   Present,
@@ -39,22 +34,23 @@ struct Context final : public IContext
   ~Context() override;
 
   //-------------- IContext Inteface --------------
-  virtual ISwapchain & GetSwapchain() & noexcept override { return *m_swapchain; };
-  virtual const ISwapchain & GetSwapchain() const & noexcept override { return *m_swapchain; };
-  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const override;
+  //virtual ISwapchain & GetSwapchain() & noexcept override { return *m_swapchain; };
+  //virtual const ISwapchain & GetSwapchain() const & noexcept override { return *m_swapchain; };
+  virtual void InvalidateSwapchain() override;
+  //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const override;
   virtual std::unique_ptr<IPipeline> CreatePipeline(const IFramebuffer & framebuffer,
                                                     uint32_t subpassIndex) const override;
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
-  virtual void WaitForIdle() const override;
 
   const vk::Instance GetInstance() const;
   const vk::Device GetDevice() const;
   const vk::PhysicalDevice GetGPU() const;
   std::pair<uint32_t, VkQueue> GetQueue(QueueType type) const;
   uint32_t GetVulkanVersion() const;
+  void WaitForIdle() const;
 
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
 

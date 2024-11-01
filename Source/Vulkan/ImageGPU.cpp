@@ -85,6 +85,7 @@ std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
   VmaAllocationCreateInfo allocCreateInfo = {};
   allocCreateInfo.usage = memory_usage;
   allocCreateInfo.flags = flags;
+  allocCreateInfo.priority = 1.0f;
   VkImage image;
   VmaAllocation allocation;
   VmaAllocationInfo allocInfo;
@@ -153,7 +154,7 @@ ImageGPU::ImageGPU(const Context & ctx, BuffersAllocator & allocator,
   , m_owner(ctx)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
-  allocation_flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+  allocation_flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
   auto allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
   auto [image, allocation, alloc_info] =

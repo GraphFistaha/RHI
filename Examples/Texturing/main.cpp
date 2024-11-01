@@ -96,12 +96,6 @@ int main()
   imageArgs.samples = RHI::SamplesCount::One;
   imageArgs.usage = RHI::ImageGPUUsage::Sample;
   auto texture = ctx->AllocImage(imageArgs);
-  if (auto mapped = texture->Map())
-  {
-    int v[100] = {-1};
-    std::memcpy(mapped.get(), v, 100 * sizeof(int));
-  }
-  texture->Flush();
 
   // pipeline must be associated with some framebuffer.
   // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
@@ -109,26 +103,29 @@ int main()
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
-  trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
-                                 std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
-  trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
-                                 std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
-  trianglePipeline->AddInputBinding(0, sizeof(VertexData), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, offsetof(VertexData, ndc_x), 2,
-                                      RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
-                                      RHI::InputAttributeElementType::FLOAT);
+  {
+    trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
+                                   std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
+    trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
+                                   std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
+    trianglePipeline->AddInputBinding(0, sizeof(VertexData), RHI::InputBindingType::VertexData);
+    trianglePipeline->AddInputAttribute(0, 0, offsetof(VertexData, ndc_x), 2,
+                                        RHI::InputAttributeElementType::FLOAT);
+    trianglePipeline->AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
+                                        RHI::InputAttributeElementType::FLOAT);
 
-  auto && tbuf =
-    trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                     sizeof(float));
+    auto && tbuf =
+      trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
+                                       sizeof(float));
 
-  auto && texSampler = trianglePipeline->DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
-  texSampler->GetImageView().AssignImage(*texture);
-  texSampler->Invalidate();
+    auto && texSampler =
+      trianglePipeline->DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
+    texSampler->GetImageView().AssignImage(*texture);
+    texSampler->Invalidate();
 
-  // don't forget to call Invalidate to apply all changed settings
-  trianglePipeline->Invalidate();
+    // don't forget to call Invalidate to apply all changed settings
+    trianglePipeline->Invalidate();
+  }
 
   // create vertex buffer
   auto && vertexBuffer =
