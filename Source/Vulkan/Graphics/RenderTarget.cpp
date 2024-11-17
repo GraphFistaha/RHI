@@ -36,8 +36,7 @@ void RenderTarget::Invalidate()
   assert(m_boundRenderPass);
   if (m_invalidFramebuffer || !m_framebuffer)
   {
-    auto new_framebuffer =
-      m_builder->Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
+    auto new_framebuffer = m_builder->Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkFramebuffer");
     if (!!m_framebuffer)
       vkDestroyFramebuffer(m_context.GetDevice(), m_framebuffer, nullptr);
@@ -55,9 +54,9 @@ void RenderTarget::BindRenderPass(const vk::RenderPass & renderPass) noexcept
   }
 }
 
-VkSemaphore RenderTarget::GetImageAvailableSemaphore() const noexcept
+const std::vector<FramebufferAttachment> & RenderTarget::GetAttachments() const & noexcept
 {
-  return m_imageAvailableSemaphore;
+  return m_attachments;
 }
 
 void RenderTarget::AddAttachment(const FramebufferAttachment & attachment)

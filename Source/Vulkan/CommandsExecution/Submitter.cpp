@@ -31,6 +31,11 @@ void Submitter::EndWrite()
   m_buffer.EndWriting();
 }
 
+void Submitter::Clear()
+{
+  m_buffer.Reset();
+}
+
 VkSemaphore Submitter::Submit(const std::vector<SemaphoreHandle> & waitSemaphores)
 {
   const VkSemaphore signalSem = m_commandsCompletedSemaphore;

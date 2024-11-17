@@ -19,20 +19,31 @@ Subpass::~Subpass() = default;
 
 void Subpass::BeginPass()
 {
-  LockWriting(true);
+  m_pipeline->Invalidate();
+  m_write_lock.lock();
   m_buffer->BeginWriting(m_ownerPass.GetHandle(), m_pipeline->GetSubpass());
   m_pipeline->Bind(m_buffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 void Subpass::EndPass()
 {
-  LockWriting(false);
+  m_write_lock.unlock();
   m_buffer->EndWriting();
 }
 
 IPipeline & Subpass::GetConfiguration() & noexcept
 {
   return *m_pipeline;
+}
+
+void Subpass::SetEnabled(bool enabled) noexcept
+{
+  m_enabled.store(enabled);
+}
+
+bool Subpass::IsEnabled() const noexcept
+{
+  return m_enabled;
 }
 
 void Subpass::Invalidate()

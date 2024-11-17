@@ -33,18 +33,13 @@ public:
   vk::Framebuffer GetHandle() const noexcept;
   VkClearValue GetClearValue() const noexcept { return m_clearValue; }
   VkExtent2D GetVkExtent() const noexcept { return m_extent; }
-  VkSemaphore GetImageAvailableSemaphore() const noexcept;
 
-  const std::vector<FramebufferAttachment> & GetAttachments() const & noexcept
-  {
-    return m_attachments;
-  }
+  const std::vector<FramebufferAttachment> & GetAttachments() const & noexcept;
   void AddAttachment(const FramebufferAttachment & attachment);
 
 protected:
   const Context & m_context;
   vk::RenderPass m_boundRenderPass = nullptr;
-  vk::Semaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
   std::vector<FramebufferAttachment> m_attachments;
 
 protected: // framebuffer params

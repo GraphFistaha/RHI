@@ -13,6 +13,7 @@ struct Submitter
 
   void BeginWrite();
   void EndWrite();
+  void Clear();
   VkSemaphore Submit(const std::vector<SemaphoreHandle> & waitSemaphores);
   void WaitForSubmitCompleted();
 

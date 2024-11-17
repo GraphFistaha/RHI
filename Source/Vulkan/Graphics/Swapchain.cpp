@@ -104,20 +104,17 @@ IRenderTarget * Swapchain::AcquireFrame()
 
   m_activeImage = imageIndex;
   auto && activeTarget = m_targets[m_activeImage];
-  
+
   m_renderPass->BindRenderTarget(&activeTarget);
   m_renderPass->Invalidate();
   activeTarget.BindRenderPass(m_renderPass->GetHandle());
   activeTarget.Invalidate();
-
-  m_renderPass->BeginRender();
   return &activeTarget;
 }
 
 void Swapchain::FlushFrame()
 {
-  VkSemaphore passSemaphore =
-    m_renderPass->EndRender(m_imageAvailabilitySemaphores[m_activeSemaphore]);
+  VkSemaphore passSemaphore = m_renderPass->Draw(m_imageAvailabilitySemaphores[m_activeSemaphore]);
 
   const VkSwapchainKHR swapchains[] = {GetHandle()};
   VkPresentInfoKHR presentInfo{};
@@ -140,6 +137,11 @@ void Swapchain::FlushFrame()
                   std::format("Failed to queue image in present - {}", static_cast<uint32_t>(res)));
   }
   m_activeSemaphore = (m_activeSemaphore + 1) % m_imageAvailabilitySemaphores.size();
+}
+
+ISubpass * Swapchain::CreateSubpass()
+{
+  return m_renderPass->CreateSubpass();
 }
 
 vk::SwapchainKHR Swapchain::GetHandle() const noexcept

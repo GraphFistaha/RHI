@@ -67,7 +67,8 @@ void CommandBuffer::BeginWriting() const
     throw std::runtime_error("failed to begin recording command buffer!");
 }
 
-void CommandBuffer::BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex, VkFramebuffer framebuffer /*= VK_NULL_HANDLE*/) const
+void CommandBuffer::BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
+                                 VkFramebuffer framebuffer /*= VK_NULL_HANDLE*/) const
 {
   if (m_level != VK_COMMAND_BUFFER_LEVEL_SECONDARY)
     throw std::invalid_argument("Called writing in primary CommandBuffer, but buffer is secondary");
@@ -81,10 +82,11 @@ void CommandBuffer::BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
 
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = m_level == VK_COMMAND_BUFFER_LEVEL_SECONDARY
-                    ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT |
-                        VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
-                    : 0; // Optional
+  beginInfo.flags =
+    m_level == VK_COMMAND_BUFFER_LEVEL_SECONDARY
+      ? /*VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | probably we need that only in Windows*/
+      VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+      : 0; // Optional
   beginInfo.pInheritanceInfo = &inheritanceInfo;
 
   if (vkBeginCommandBuffer(m_buffer, &beginInfo) != VK_SUCCESS)

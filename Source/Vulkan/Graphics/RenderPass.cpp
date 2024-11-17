@@ -27,7 +27,7 @@ ISubpass * RenderPass::CreateSubpass()
   return &m_subpasses.emplace_back(m_context, *this, m_subpasses.size(), m_graphicsQueueFamily);
 }
 
-void RenderPass::BeginRender()
+VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_boundRenderTarget != nullptr);
   m_submitter->BeginWrite();
@@ -47,15 +47,26 @@ void RenderPass::BeginRender()
 
   vkCmdBeginRenderPass(m_submitter->GetCommandBuffer(), &renderPassInfo,
                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-}
 
-void RenderPass::PushRenderCommands(VkCommandBuffer commandBuffer)
-{
-  vkCmdExecuteCommands(m_submitter->GetCommandBuffer(), 1, &commandBuffer);
-}
+  // execute commands for subpasses
+  {
+    std::vector<VkCommandBuffer> subpassBuffers;
+    for (auto && subpass : m_subpasses)
+    {
+      subpass.LockWriting(true);
+      if (!subpass.HasNoCommands() && subpass.IsEnabled())
+        subpassBuffers.push_back(subpass.GetCommandBuffer().GetHandle());
+    }
+    if (!subpassBuffers.empty())
+      vkCmdExecuteCommands(m_submitter->GetCommandBuffer(), subpassBuffers.size(),
+                           subpassBuffers.data());
+    for (auto && subpass : m_subpasses)
+    {
+      subpass.LockWriting(false);
+    }
+  }
 
-VkSemaphore RenderPass::EndRender(VkSemaphore imageAvailiableSemaphore)
-{
+
   vkCmdEndRenderPass(m_submitter->GetCommandBuffer());
   m_submitter->EndWrite();
   return m_submitter->Submit({imageAvailiableSemaphore});
@@ -70,7 +81,7 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
     m_invalidRenderPass = true;
     return;
   }
-  
+
   VkFramebuffer fbHandle = m_boundRenderTarget->GetHandle();
   if (m_cachedAttachments != m_boundRenderTarget->GetAttachments())
   {

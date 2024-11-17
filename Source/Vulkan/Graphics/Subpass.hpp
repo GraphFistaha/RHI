@@ -24,19 +24,22 @@ public: // ISubpass Interface
   virtual void BeginPass() override;
   virtual void EndPass() override;
   virtual IPipeline & GetConfiguration() & noexcept override;
+  virtual void SetEnabled(bool enabled) noexcept override;
+  virtual bool IsEnabled() const noexcept override;
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
 
 public:
   const details::CommandBuffer & GetCommandBuffer() const & noexcept { return *m_buffer; }
-  void LockWriting(bool lock = true) const noexcept;
+  void LockWriting(bool lock) const noexcept;
 
 private:
   const RenderPass & m_ownerPass;
   std::unique_ptr<details::CommandBuffer> m_buffer;
   std::unique_ptr<Pipeline> m_pipeline;
   mutable std::mutex m_write_lock;
+  std::atomic_bool m_enabled = true;
 };
 
 } // namespace RHI::vulkan

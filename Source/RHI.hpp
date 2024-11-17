@@ -281,7 +281,8 @@ struct ISubpass : virtual GraphicsCommandsContainer,
   virtual void BeginPass() = 0;
   virtual void EndPass() = 0;
   virtual IPipeline & GetConfiguration() & noexcept = 0;
-  //virtual void Draw(IRenderTarget * renderTarget) = 0;
+  virtual void SetEnabled(bool enabled) noexcept = 0;
+  virtual bool IsEnabled() const noexcept = 0;
 };
 
 // IFramebuffer
@@ -294,7 +295,7 @@ struct ISwapchain : public IInvalidable
   virtual IRenderTarget * AcquireFrame() = 0;
   virtual void FlushFrame() = 0;
 
-  //virtual ISubpass * CreateSubpass() = 0;
+  virtual ISubpass * CreateSubpass() = 0;
 };
 
 struct ITransferPass : TransferCommandsContainer,

@@ -26,6 +26,9 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
     case RHI::LogMessageStatus::LOG_ERROR:
       std::printf("ERROR: - %s\n", message.c_str());
       break;
+    case RHI::LogMessageStatus::LOG_DEBUG:
+      std::printf("DEBUG: - %s\n", message.c_str());
+      break;
   }
 }
 
@@ -36,7 +39,7 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSwapchain()->Invalidate();
+  ctx->GetSurfaceSwapchain()->Invalidate();
   ShouldInvalidateScene = true;
 }
 
@@ -80,10 +83,10 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ISwapchain * swapchain = ctx->GetSwapchain();
+  RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto subpass = defaultRenderPass->CreateSubpass();
+  auto subpass = swapchain->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
@@ -95,8 +98,6 @@ int main()
   trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
   trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
                                      RHI::InputAttributeElementType::FLOAT);
-  // don't forget to call Invalidate to apply all changed settings
-  //trianglePipeline.Invalidate();
 
   // create vertex buffer
   auto && vertexBuffer =
@@ -123,41 +124,39 @@ int main()
   // to make sure that buffer is sent on GPU
   indexBuffer->Flush();
 
-  ShouldInvalidateScene = false;
+  ShouldInvalidateScene = true;
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    // fill trianglePipelineCommands
-    if (ShouldInvalidateScene)
+    if (auto * renderTarget = swapchain->AcquireFrame())
     {
-      // get size of window
-      int width, height;
-      glfwGetFramebufferSize(window, &width, &height);
-      subpass->BeginPass();
-      // set viewport
-      subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      // set scissor
-      subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-      // draw triangle
-      subpass->BindVertexBuffer(0, *vertexBuffer, 0);
-      subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      subpass->DrawIndexedVertices(IndicesCount, 1);
+      renderTarget->SetClearColor(0.1, std::abs(std::sin(t)), 0.4, 1.0);
+      // fill trianglePipelineCommands
+      if (ShouldInvalidateScene)
+      {
+        // get size of window
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        subpass->BeginPass();
+        // set viewport
+        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        // set scissor
+        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        // draw triangle
+        subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+        subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+        subpass->DrawIndexedVertices(IndicesCount, 1);
 
-      // finish editing mode
-      subpass->EndPass();
-      ShouldInvalidateScene = false;
+        // finish editing mode
+        subpass->EndPass();
+        ShouldInvalidateScene = false;
+      }
+      swapchain->FlushFrame();
     }
-
-    if (auto fbo = swapchain->AcquireFrame())
-    {
-      defaultRenderPass->SetClearColor(0.1, std::abs(std::sin(t)), 0.4, 1.0);
-      auto pass1 = defaultRenderPass->Draw(fbo, {});
-      swapchain->FlushFrame({pass1});
-      t += 0.001;
-    }
+    t += 0.001;
   }
 
   glfwTerminate();

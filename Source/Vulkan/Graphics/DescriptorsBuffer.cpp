@@ -15,6 +15,7 @@ namespace details
 vk::DescriptorPool CreateDescriptorPool(
   const Context & ctx, const std::unordered_map<VkDescriptorType, uint32_t> & distribution)
 {
+  assert(!distribution.empty());
   std::vector<VkDescriptorPoolSize> poolSizes;
   for (auto [type, count] : distribution)
   {
@@ -31,6 +32,7 @@ vk::DescriptorPool CreateDescriptorPool(
   poolInfo.maxSets = std::accumulate(poolSizes.begin(), poolSizes.end(), 0u,
                                      [](uint32_t acc, const VkDescriptorPoolSize & pool_size)
                                      { return acc + pool_size.descriptorCount; });
+  assert(poolInfo.maxSets != 0);
 
   VkDescriptorPool c_pool;
   if (vkCreateDescriptorPool(ctx.GetDevice(), &poolInfo, nullptr, &c_pool) != VK_SUCCESS)
@@ -134,6 +136,9 @@ DescriptorBuffer::~DescriptorBuffer()
 
 void DescriptorBuffer::Invalidate()
 {
+  if (m_capacity.empty())
+    return;
+
   if (m_invalidLayout || !m_layout)
   {
     auto new_layout = m_layoutBuilder->Make(m_owner.GetDevice());

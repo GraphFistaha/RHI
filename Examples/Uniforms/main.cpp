@@ -1,8 +1,9 @@
+#include <cmath>
 #include <cstdio>
-
-#include <RHI.hpp>
+#include <cstring>
 
 #include <GLFW/glfw3.h>
+#include <RHI.hpp>
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -24,6 +25,9 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
     case RHI::LogMessageStatus::LOG_ERROR:
       std::printf("ERROR: - %s\n", message.c_str());
       break;
+    case RHI::LogMessageStatus::LOG_DEBUG:
+      std::printf("DEBUG: - %s\n", message.c_str());
+      break;
   }
 }
 
@@ -34,7 +38,7 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSwapchain().Invalidate();
+  ctx->GetSurfaceSwapchain()->Invalidate();
   ShouldInvalidateScene = true;
 }
 
@@ -79,31 +83,27 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  // pipeline must be associated with some framebuffer.
-  // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
-  auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
-
+  auto * swapchain = ctx->GetSurfaceSwapchain();
+  auto * subpass = swapchain->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
+  auto && trianglePipeline = subpass->GetConfiguration();
   // set shaders
-  trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
-                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
-  trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
-                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
+                                std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
+                                std::filesystem::path(SHADERS_FOLDER) / "uniform.frag");
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
-                                      RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
+  trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
+                                     RHI::InputAttributeElementType::FLOAT);
 
   auto && tbuf =
-    trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                     sizeof(float));
+    trianglePipeline.DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
+                                    sizeof(float));
 
   auto && transformBuf =
-    trianglePipeline->DeclareUniform("tb", 1, RHI::ShaderType::Vertex, 2 * sizeof(float));
-  // don't forget to call Invalidate to apply all changed settings
-  trianglePipeline->Invalidate();
+    trianglePipeline.DeclareUniform("tb", 1, RHI::ShaderType::Vertex, 2 * sizeof(float));
 
   // create vertex buffer
   auto && vertexBuffer =
@@ -131,72 +131,54 @@ int main()
   indexBuffer->Flush();
 
 
-  // command buffer for drawing triangle
-  auto && trianglePipelineCommands = ctx->GetSwapchain().CreateCommandBuffer();
   ShouldInvalidateScene = true;
   float x = 0.0f;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    // fill trianglePipelineCommands
-    if (ShouldInvalidateScene)
-    {
-      // get size of window
-      int width, height;
-      glfwGetFramebufferSize(window, &width, &height);
-      // clear commands buffer
-      trianglePipelineCommands->Reset();
-      // enter in editing mode.
-      trianglePipelineCommands->BeginWriting(defaultFramebuffer, *trianglePipeline);
-      // here we can push all commands you want
-
-      // set viewport
-      trianglePipelineCommands->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      // set scissor
-      trianglePipelineCommands->SetScissor(0, 0, static_cast<uint32_t>(width),
-                                           static_cast<uint32_t>(height));
-      // draw triangle
-      trianglePipelineCommands->BindVertexBuffer(0, *vertexBuffer, 0);
-      trianglePipelineCommands->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      trianglePipelineCommands->DrawIndexedVertices(IndicesCount, 1);
-
-      // finish editing mode
-      trianglePipelineCommands->EndWriting();
-
-      ShouldInvalidateScene = false;
-    }
-
     if (auto map = tbuf->Map())
     {
-      float t_val = std::abs(std::sinf(x));
+      float t_val = std::abs(std::sin(x));
       std::memcpy(map.get(), &t_val, sizeof(float));
     }
 
     if (auto map = transformBuf->Map())
     {
-      float cos_val = std::cosf(x);
-      float sin_val = std::sinf(x);
+      float cos_val = std::cos(x);
+      float sin_val = std::sin(x);
       std::memcpy(map.get(), &sin_val, sizeof(float));
       std::memcpy(reinterpret_cast<char *>(map.get()) + sizeof(float), &cos_val, sizeof(float));
     }
 
     x += 0.0001;
 
-    // swapchain used as generic interface for drawing on window
-    auto && swapchain = ctx->GetSwapchain();
-    // begin frame returns Command buffer you should fill.
-    // It's empty on this step.
-    // Written commands will be upload to GPU and executed
-    auto && commands = swapchain.BeginFrame({0.3f, 0.3f, 0.5f, 1.0f});
-    // push trianglePipelineCommands to CommandBuffer for drawing
-    commands->AddCommands(*trianglePipelineCommands);
-    // finish frame and output image on window
-    swapchain.EndFrame();
+    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    {
+      renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
+      if (ShouldInvalidateScene)
+      {
+        // get size of window
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        subpass->BeginPass();
+        // set viewport
+        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        // set scissor
+        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        // draw triangle
+        subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+        subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+        subpass->DrawIndexedVertices(IndicesCount, 1);
+        subpass->EndPass();
+
+        ShouldInvalidateScene = false;
+      }
+
+      swapchain->FlushFrame();
+    }
   }
 
-  // wait while gpu is idle to destroy context and its objects correctly
-  ctx->WaitForIdle();
   glfwTerminate();
   return 0;
 }

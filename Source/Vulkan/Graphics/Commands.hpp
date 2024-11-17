@@ -49,7 +49,7 @@ public: // GraphicsCommandsContainer - interface
   /// @brief Set viewport command
   void SetViewport(float width, float height) override
   {
-    VkViewport vp{0.0f, 0.0f, width, height, -1.0f, 1.0f};
+    VkViewport vp{0.0f, 0.0f, width, height, 0.0f, 1.0f};
     vkCmdSetViewport(m_buffer, 0, 1, &vp);
     m_commandsCount++;
   }

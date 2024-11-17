@@ -73,6 +73,7 @@ void Pipeline::Invalidate()
   {
     auto new_pipeline = m_pipelineBuilder->Make(m_owner.GetDevice(), m_renderPass.GetHandle(),
                                                 m_subpassIndex, m_layout);
+    m_owner.Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
     if (!!m_pipeline)
       vkDestroyPipeline(m_owner.GetDevice(), m_pipeline, nullptr);
     m_pipeline = new_pipeline;
@@ -82,6 +83,7 @@ void Pipeline::Invalidate()
 
 void Pipeline::Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint) const
 {
+  assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
   m_descriptors->Bind(buffer, m_layout, bindPoint);
 }

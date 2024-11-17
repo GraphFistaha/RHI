@@ -25,6 +25,8 @@ public: // ISwapchain interface
   virtual IRenderTarget * AcquireFrame() override;
   virtual void FlushFrame() override;
 
+  virtual ISubpass * CreateSubpass() override;
+
 public: // IInvalidable interface
   /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
   virtual void Invalidate() override;

@@ -22,9 +22,7 @@ struct RenderPass : public IInvalidable
 
 public: // IRenderPass Interface
   ISubpass * CreateSubpass();
-  void BeginRender();
-  void PushRenderCommands(VkCommandBuffer commandBuffer);
-  VkSemaphore EndRender(VkSemaphore imageAvailiableSemaphore);
+  VkSemaphore Draw(VkSemaphore imageAvailiableSemaphore);
   void BindRenderTarget(const RenderTarget * renderTarget) noexcept;
 
 public: // IInvalidable Interface
