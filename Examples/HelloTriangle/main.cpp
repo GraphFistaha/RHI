@@ -1,13 +1,16 @@
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <GLFW/glfw3.h>
+#include <RHI.hpp>
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include <GLFW/glfw3native.h>
-#include <RHI.hpp>
 
 // Custom log function used by RHI::Context
 void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
@@ -33,7 +36,7 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->InvalidateSwapchain();
+  ctx->GetSwapchain()->Invalidate();
   ShouldInvalidateScene = true;
 }
 
@@ -77,24 +80,23 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  // pipeline must be associated with framebuffer.
-  // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
-  auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
+  RHI::ISwapchain * swapchain = ctx->GetSwapchain();
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
+  auto subpass = defaultRenderPass->CreateSubpass();
+  auto && trianglePipeline = subpass->GetConfiguration();
   // set shaders
-  trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
-                                 std::filesystem::path(SHADERS_FOLDER) / "triangle.vert");
-  trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
-                                 std::filesystem::path(SHADERS_FOLDER) / "triangle.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
+                                std::filesystem::path(SHADERS_FOLDER) / "triangle.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
+                                std::filesystem::path(SHADERS_FOLDER) / "triangle.frag");
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
-                                      RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
+  trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
+                                     RHI::InputAttributeElementType::FLOAT);
   // don't forget to call Invalidate to apply all changed settings
-  trianglePipeline->Invalidate();
+  //trianglePipeline.Invalidate();
 
   // create vertex buffer
   auto && vertexBuffer =
@@ -121,11 +123,9 @@ int main()
   // to make sure that buffer is sent on GPU
   indexBuffer->Flush();
 
+  ShouldInvalidateScene = false;
 
-  // command buffer for drawing triangle
-  auto && trianglePipelineExecutor = ctx->GetGraphicsExecutor()->CreateThreadLocalExecutor();
-  ShouldInvalidateScene = true;
-
+  float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
@@ -136,22 +136,27 @@ int main()
       // get size of window
       int width, height;
       glfwGetFramebufferSize(window, &width, &height);
-      trianglePipelineExecutor.BeginExecute(defaultFramebuffer);
-      trianglePipelineExecutor.UsePipeline(*trianglePipeline);
+      subpass->BeginPass();
       // set viewport
-      trianglePipelineExecutor.SetViewport(static_cast<float>(width),
-                                                static_cast<float>(height));
+      subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
       // set scissor
-      trianglePipelineExecutor.SetScissor(0, 0, static_cast<uint32_t>(width),
-                                           static_cast<uint32_t>(height));
+      subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
       // draw triangle
-      trianglePipelineExecutor.BindVertexBuffer(0, *vertexBuffer, 0);
-      trianglePipelineExecutor.BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      trianglePipelineExecutor.DrawIndexedVertices(IndicesCount, 1);
+      subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+      subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+      subpass->DrawIndexedVertices(IndicesCount, 1);
 
       // finish editing mode
-      trianglePipelineExecutor.EndExecute();
+      subpass->EndPass();
       ShouldInvalidateScene = false;
+    }
+
+    if (auto fbo = swapchain->AcquireFrame())
+    {
+      defaultRenderPass->SetClearColor(0.1, std::abs(std::sin(t)), 0.4, 1.0);
+      auto pass1 = defaultRenderPass->Draw(fbo, {});
+      swapchain->FlushFrame({pass1});
+      t += 0.001;
     }
   }
 

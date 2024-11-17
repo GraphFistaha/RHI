@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -20,6 +21,7 @@ enum class LogMessageStatus : uint8_t
   LOG_INFO,
   LOG_WARNING,
   LOG_ERROR,
+  LOG_DEBUG
 };
 
 typedef void (*LoggingFunc)(LogMessageStatus, const std::string &);
@@ -200,12 +202,23 @@ struct ICommandBuffer;
 struct IBufferGPU;
 struct IImageGPU;
 struct IImageGPU_Sampler;
+using SemaphoreHandle = InternalObjectHandle;
+
+struct IInvalidable
+{
+  virtual ~IInvalidable() = default;
+  virtual void Invalidate() = 0;
+};
+
+struct GraphicsCommandsContainer;
+struct TransferCommandsContainer;
+//struct ComputeCommandsContainer;
 
 /// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
 /// After invalidate you can bind it to CommandBuffer and draw.
-struct IPipeline
+struct IPipeline : public IInvalidable
 {
   virtual ~IPipeline() = default;
   // General static settings
@@ -221,67 +234,23 @@ struct IPipeline
   virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
                                              ShaderType shaderStage) = 0;
 
-  /// @brief Rebuild object after settings were changed
-  virtual void Invalidate() = 0;
   /// @brief Get subpass index
   virtual uint32_t GetSubpass() const = 0;
 };
 
+// IRenderTarget
 /// @brief Framebuffer is a set of images to render
-struct IFramebuffer
+struct IRenderTarget : public IInvalidable
 {
-  virtual ~IFramebuffer() = default;
-  /// @brief Swapchain calls that on resize
-  virtual void SetExtent(uint32_t width, uint32_t height) = 0;
-
-  /// @brief Rebuild object after settings were changed
-  virtual void Invalidate() = 0;
-  virtual InternalObjectHandle GetRenderPass() const = 0;
-  virtual InternalObjectHandle GetHandle() const = 0;
+  virtual ~IRenderTarget() = default;
+  virtual std::pair<uint32_t, uint32_t> GetExtent() const noexcept = 0;
+  virtual void SetClearColor(float r, float g, float b, float a) noexcept = 0;
 };
 
-/// @brief Swapchain is object for rendering frames and present them onto surface (OS window)
-/// Swapchain contains final command buffer which will be submitted to GPU for drawing.
-/// You can fill it with another command buffers (which can be filled in parallel)
-struct ISwapchain
+struct GraphicsCommandsContainer
 {
-  virtual ~ISwapchain() = default;
-  /// @brief Rebuild object after settings were changed
-  virtual void Invalidate() = 0;
-  /// @brief begin frame rendering. Returns buffer for drawing commands
-  //virtual ICommandBuffer * BeginFrame(std::array<float, 4> clearColorValue = {0.0f, 0.0f, 0.0f,
-  //                                                                            0.0f}) = 0;
-  /// @brief End frame rendering. Uploads commands on GPU
-  //virtual void EndFrame() = 0;
-  /// @brief Get current extent (screen size)
-  virtual std::pair<uint32_t, uint32_t> GetExtent() const = 0;
-  /// @brief Get Default framebuffer
-  virtual const IFramebuffer & GetDefaultFramebuffer() const & noexcept = 0;
-};
+  virtual ~GraphicsCommandsContainer() = default;
 
-// ----------------- Commands ----------------------
-
-/// @brief buffer for GPU commands (like bindVertexBuffer or draw something)
-struct ICommandsExecutor
-{
-  virtual ~ICommandsExecutor() = default;
-  /// @brief Enable writing mode (only for thread local buffers). Also binds framebuffer and pipeline
-  virtual void BeginExecute(const IFramebuffer & framebuffer) = 0;
-  /// @brief disables writing mode
-  virtual void EndExecute() = 0;
-  /// @brief Cancel executing
-  virtual void CancelExecute() = 0;
-  /// @brief Creates sub executor which can be executed in separate thread
-  virtual ICommandsExecutor & CreateThreadLocalExecutor() & = 0;
-};
-
-struct IGraphicsCommandsExecutor : public ICommandsExecutor
-{
-  virtual ~IGraphicsCommandsExecutor() = default;
-  /// @brief Creates sub executor which can be executed in separate thread
-  virtual IGraphicsCommandsExecutor & CreateThreadLocalExecutor() & = 0;
-
-  virtual void UsePipeline(const IPipeline & pipeline) = 0;
   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
                             uint32_t firstInstance = 0) = 0;
@@ -300,11 +269,39 @@ struct IGraphicsCommandsExecutor : public ICommandsExecutor
   virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
 };
 
-struct ITransferCommandsExecutor : public ICommandsExecutor
+struct TransferCommandsContainer
 {
-  virtual ~ITransferCommandsExecutor() = default;
-  /// @brief Creates sub executor which can be executed in separate thread
-  virtual ITransferCommandsExecutor & CreateThreadLocalExecutor() & = 0;
+  virtual ~TransferCommandsContainer() = default;
+};
+
+struct ISubpass : virtual GraphicsCommandsContainer,
+                  IInvalidable
+{
+  virtual ~ISubpass() = default;
+  virtual void BeginPass() = 0;
+  virtual void EndPass() = 0;
+  virtual IPipeline & GetConfiguration() & noexcept = 0;
+  //virtual void Draw(IRenderTarget * renderTarget) = 0;
+};
+
+// IFramebuffer
+/// @brief Swapchain is a queue of renderTargets. Each renderTarget is a union of renderPass and internalFramebuffer.
+struct ISwapchain : public IInvalidable
+{
+  virtual ~ISwapchain() = default;
+  /// @brief Get current extent (screen size)
+  virtual std::pair<uint32_t, uint32_t> GetExtent() const = 0;
+  virtual IRenderTarget * AcquireFrame() = 0;
+  virtual void FlushFrame() = 0;
+
+  //virtual ISubpass * CreateSubpass() = 0;
+};
+
+struct ITransferPass : TransferCommandsContainer,
+                       IInvalidable
+{
+  virtual ~ITransferPass() = default;
+  virtual SemaphoreHandle Transfer(std::vector<SemaphoreHandle> && tasksToWait) = 0;
 };
 
 // ------------------- Data ------------------
@@ -371,21 +368,17 @@ struct IImageGPU_Sampler
 };
 
 
-
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext
 {
   virtual ~IContext() = default;
 
-  virtual IGraphicsCommandsExecutor * GetGraphicsExecutor() const noexcept = 0;
-  virtual ITransferCommandsExecutor * GetTransferExecutor() const noexcept = 0;
-  virtual void InvalidateSwapchain() = 0;
+  virtual ISwapchain * GetSurfaceSwapchain() = 0;
+  virtual std::unique_ptr<ITransferPass> CreateTransferPass() = 0;
+
 
   /// @brief create offscreen framebuffer
   //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const = 0;
-  /// @brief create new pipeline
-  virtual std::unique_ptr<IPipeline> CreatePipeline(const IFramebuffer & framebuffer,
-                                                    uint32_t subpassIndex) const = 0;
   /// @brief creates BufferGPU
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;

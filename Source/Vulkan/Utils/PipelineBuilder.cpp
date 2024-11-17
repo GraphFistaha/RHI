@@ -1,5 +1,3 @@
-#include <vulkan/vulkan.hpp>
-
 #include "Builders.hpp"
 #include "ShaderCompiler.hpp"
 
@@ -36,7 +34,7 @@ void DescriptorSetLayoutBuilder::Reset()
 }
 
 void DescriptorSetLayoutBuilder::DeclareDescriptor(uint32_t binding, VkDescriptorType type,
-                                                ShaderType shaderStagesMask)
+                                                   ShaderType shaderStagesMask)
 {
   auto && uniformBinding = m_uniformDescriptions.emplace_back();
   uniformBinding.binding = binding;

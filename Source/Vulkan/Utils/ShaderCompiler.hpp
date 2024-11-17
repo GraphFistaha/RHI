@@ -16,7 +16,7 @@ namespace RHI::vulkan::details
 std::vector<uint32_t> ReadSPIRV(const std::filesystem::path & path)
 {
   std::vector<uint32_t> words;
-  FILE * f = _wfopen(path.c_str(), L"rb");
+  FILE * f = fopen(path.c_str(), "rb");
   if (f)
   {
     fseek(f, 0, SEEK_END);

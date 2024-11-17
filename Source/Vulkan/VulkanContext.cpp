@@ -1,14 +1,17 @@
 #include "VulkanContext.hpp"
 
+#include <format>
+
 #include <RHI.hpp>
 #include <VkBootstrap.h>
 
-#include "BufferGPU.hpp"
-#include "ImageGPU.hpp"
-#include "CommandBuffer.hpp"
-#include "Framebuffer.hpp"
-#include "Pipeline.hpp"
-#include "Swapchain.hpp"
+#include "CommandsExecution/CommandBuffer.hpp"
+#include "Graphics/Pipeline.hpp"
+#include "Graphics/RenderPass.hpp"
+#include "Graphics/RenderTarget.hpp"
+#include "Graphics/Swapchain.hpp"
+#include "Resources/BufferGPU.hpp"
+#include "Resources/ImageGPU.hpp"
 
 // --------------------- Static functions ------------------------------
 
@@ -51,7 +54,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, RHI::Log
                     .request_validation_layers()
 #endif
                     .set_debug_callback(VulkanDebugCallback)
-                    .set_debug_callback_user_data_pointer(logFunc)
+                    .set_debug_callback_user_data_pointer(reinterpret_cast<void *>(logFunc))
                     .set_minimum_instance_version(apiVersion)
                     .build();
   if (!inst_ret || !inst_ret.has_value())
@@ -118,12 +121,11 @@ constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 struct Context::Impl final
 {
-  Impl(const char * appName, const SurfaceConfig & config, vk::SurfaceKHR & surface,
-       LoggingFunc logFunc)
+  explicit Impl(const char * appName, const SurfaceConfig & config, LoggingFunc logFunc)
   {
     m_instance = CreateInstance("AppName", VulkanAPIVersion, logFunc);
-    surface = CreateSurface(m_instance, config);
-    m_gpu = SelectPhysicalDevice(m_instance, surface, VulkanAPIVersionPair);
+    m_surface = CreateSurface(m_instance, config);
+    m_gpu = SelectPhysicalDevice(m_instance, m_surface, VulkanAPIVersionPair);
     vkb::DeviceBuilder device_builder{m_gpu};
     auto dev_ret = device_builder.build();
     if (!dev_ret)
@@ -138,13 +140,15 @@ struct Context::Impl final
 
   ~Impl()
   {
+    vkb::destroy_surface(m_instance, m_surface);
     vkb::destroy_device(m_device);
     vkb::destroy_instance(m_instance);
   }
 
-  VkDevice GetDevice() const { return m_device; }
-  VkInstance GetInstance() const { return m_instance; }
-  VkPhysicalDevice GetGPU() const { return m_gpu; }
+  VkDevice GetDevice() const noexcept { return m_device; }
+  VkInstance GetInstance() const noexcept { return m_instance; }
+  VkPhysicalDevice GetGPU() const noexcept { return m_gpu; }
+  VkSurfaceKHR GetSurface() const noexcept { return m_surface; }
 
   std::pair<uint32_t, VkQueue> GetQueue(vkb::QueueType type) const
   {
@@ -160,16 +164,16 @@ private:
   vkb::PhysicalDevice m_gpu;
   vkb::Device m_device;
   vkb::DispatchTable m_dispatchTable;
+  vk::SurfaceKHR m_surface;
 };
 
 
 Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
-  vk::SurfaceKHR surface;
-  m_impl = std::make_unique<Impl>("appName", config, surface, m_logFunc);
-  m_swapchain = std::make_unique<Swapchain>(*this, surface);
+  m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
   m_allocator = std::make_unique<BuffersAllocator>(*this);
+  m_surfaceSwapchain = std::make_unique<Swapchain>(*this, m_impl->GetSurface());
 }
 
 Context::~Context()
@@ -177,15 +181,14 @@ Context::~Context()
   WaitForIdle();
 }
 
-void Context::InvalidateSwapchain()
+ISwapchain * Context::GetSurfaceSwapchain()
 {
-  m_swapchain->Invalidate();
+  return m_surfaceSwapchain.get();
 }
 
-std::unique_ptr<IPipeline> Context::CreatePipeline(const IFramebuffer & framebuffer,
-                                                   uint32_t subpassIndex) const
+std::unique_ptr<ITransferPass> Context::CreateTransferPass()
 {
-  return std::make_unique<Pipeline>(*this, framebuffer, subpassIndex);
+  return nullptr;
 }
 
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
@@ -231,8 +234,13 @@ uint32_t Context::GetVulkanVersion() const
 
 void Context::Log(LogMessageStatus status, const std::string & message) const noexcept
 {
+#ifdef NDEBUG
+  if (m_logFunc && status != LogMessageStatus::LOG_DEBUG)
+    m_logFunc(status, message);
+#else
   if (m_logFunc)
     m_logFunc(status, message);
+#endif
 }
 
 } // namespace RHI::vulkan
@@ -272,18 +280,5 @@ vk::Fence CreateFence(vk::Device device, bool locked)
   if (vkCreateFence(device, &info, nullptr, &result) != VK_SUCCESS)
     throw std::runtime_error("failed to create fence");
   return vk::Fence(result);
-}
-
-vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queue_family_index)
-{
-  VkCommandPool commandPool = VK_NULL_HANDLE;
-
-  VkCommandPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = queue_family_index;
-  if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-    throw std::runtime_error("failed to create command pool!");
-  return vk::CommandPool{commandPool};
 }
 } // namespace RHI::vulkan::utils

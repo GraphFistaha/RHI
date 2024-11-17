@@ -14,7 +14,7 @@ namespace RHI::vulkan
 constexpr const char * apiFolder = ".vulkan";
 constexpr const char * shaderExtension = ".spv";
 
-enum class QueueType
+enum class QueueType : uint8_t
 {
   Present,
   Graphics,
@@ -23,6 +23,7 @@ enum class QueueType
 };
 
 struct BuffersAllocator;
+struct Swapchain;
 
 /// @brief context is object contains vulkan logical device. Also it provides access to vulkan functions
 ///			If rendering system uses several GPUs, you should create one context for each physical device
@@ -31,34 +32,30 @@ struct Context final : public IContext
   /// @brief constructor
   explicit Context(const SurfaceConfig & config, LoggingFunc log);
   /// @brief destructor
-  ~Context() override;
+  virtual ~Context() override;
 
-  //-------------- IContext Inteface --------------
-  //virtual ISwapchain & GetSwapchain() & noexcept override { return *m_swapchain; };
-  //virtual const ISwapchain & GetSwapchain() const & noexcept override { return *m_swapchain; };
-  virtual void InvalidateSwapchain() override;
-  //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const override;
-  virtual std::unique_ptr<IPipeline> CreatePipeline(const IFramebuffer & framebuffer,
-                                                    uint32_t subpassIndex) const override;
+public: // IContext interface
+  virtual ISwapchain * GetSurfaceSwapchain() override;
+  virtual std::unique_ptr<ITransferPass> CreateTransferPass() override;
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
 
+public: // RHI-only API
   const vk::Instance GetInstance() const;
   const vk::Device GetDevice() const;
   const vk::PhysicalDevice GetGPU() const;
   std::pair<uint32_t, VkQueue> GetQueue(QueueType type) const;
   uint32_t GetVulkanVersion() const;
   void WaitForIdle() const;
-
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
 
 private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
-  std::unique_ptr<ISwapchain> m_swapchain;
   std::unique_ptr<BuffersAllocator> m_allocator;
+  std::unique_ptr<Swapchain> m_surfaceSwapchain;
   LoggingFunc m_logFunc;
 
 private:
@@ -75,7 +72,5 @@ namespace RHI::vulkan::utils
 vk::Semaphore CreateVkSemaphore(vk::Device device);
 /// @brief creates fence, doesn't own it
 vk::Fence CreateFence(vk::Device device, bool locked = false);
-/// @brief creates command pool for thread, doesn't own it
-vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queue_family_index);
 
 } // namespace RHI::vulkan::utils

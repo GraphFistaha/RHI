@@ -1,29 +1,36 @@
 target_sources (${PROJECT_NAME}
 PRIVATE
-	"VulkanContext.cpp"
-	"Swapchain.cpp"
-	"Framebuffer.cpp" 
-	"Pipeline.cpp" 
-	"Utils/PipelineBuilder.cpp" 
-	"Utils/FramebufferBuilder.cpp"
-	"CommandBuffer.cpp" 
-	"BufferGPU.cpp"
-	"DescriptorsBuffer.cpp"
-	 "ImageGPU.cpp"
-	 
-PRIVATE
-	"VulkanContext.hpp"
-	"Swapchain.hpp"
-	"Framebuffer.hpp"
-	"Pipeline.hpp"
-	"Utils/Builders.hpp"
-	"CommandBuffer.hpp"
-	"BufferGPU.hpp"
-	"DescriptorsBuffer.hpp"
-	"ImageGPU.hpp"
+	VulkanContext.cpp
+	VulkanContext.hpp
+	
+	Graphics/Commands.hpp
+	Graphics/Swapchain.cpp
+	Graphics/Swapchain.hpp
+	Graphics/DescriptorsBuffer.cpp
+	Graphics/DescriptorsBuffer.hpp
+	Graphics/Subpass.cpp
+	Graphics/Subpass.hpp
+	Graphics/RenderPass.cpp
+	Graphics/RenderPass.hpp
+	Graphics/RenderTarget.cpp 
+	Graphics/RenderTarget.hpp
+	Graphics/Pipeline.cpp 
+	Graphics/Pipeline.hpp
 
-	"GraphicsExecutor.hpp"
- "GraphicsExecutor.cpp")
+	Utils/PipelineBuilder.cpp 
+	Utils/FramebufferBuilder.cpp
+	Utils/Builders.hpp
+
+	Resources/BufferGPU.cpp
+	Resources/BufferGPU.hpp
+	Resources/ImageGPU.cpp
+	Resources/ImageGPU.hpp
+
+	CommandsExecution/CommandBuffer.cpp 
+	CommandsExecution/CommandBuffer.hpp 
+	CommandsExecution/Submitter.cpp
+	CommandsExecution/Submitter.hpp
+	)
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)

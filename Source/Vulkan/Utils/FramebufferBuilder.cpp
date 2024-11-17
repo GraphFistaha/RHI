@@ -1,5 +1,3 @@
-#include <vulkan/vulkan.hpp>
-
 #include "Builders.hpp"
 
 namespace RHI::vulkan::details //-------- RenderPass Builder -------------
@@ -167,7 +165,7 @@ vk::ImageView & FramebufferBuilder::SetAttachment(size_t idx) & noexcept
 
 vk::Framebuffer FramebufferBuilder::Make(const vk::Device & device,
                                          const vk::RenderPass & renderPass,
-                                         const VkExtent2D & extent) const
+                                         const vk::Extent2D & extent) const
 {
   VkFramebufferCreateInfo framebufferInfo{};
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -176,7 +174,7 @@ vk::Framebuffer FramebufferBuilder::Make(const vk::Device & device,
   framebufferInfo.pAttachments = reinterpret_cast<const VkImageView *>(m_images.data());
   framebufferInfo.width = extent.width;
   framebufferInfo.height = extent.height;
-  framebufferInfo.layers = 1; // кол-во изображений
+  framebufferInfo.layers = 1; // пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
   VkFramebuffer framebuffer;
   if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS)
     throw std::runtime_error("failed to create framebuffer!");

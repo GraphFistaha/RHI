@@ -1,5 +1,6 @@
 
 message(STATUS "Fetch GLFW3")
+set(GLFW_BUILD_WAYLAND OFF)
 FetchContent_Declare(
     glfw3
     GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -11,6 +12,7 @@ FetchContent_MakeAvailable(glfw3)
 
 add_custom_target("ExampleShaders" )
 
-add_subdirectory(HelloTriangle)
-add_subdirectory(Uniforms)
-add_subdirectory(Texturing)
+add_subdirectory(HelloWindow)
+#add_subdirectory(HelloTriangle)
+#add_subdirectory(Uniforms)
+#add_subdirectory(Texturing)

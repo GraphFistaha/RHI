@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace vk
 {
@@ -45,7 +46,7 @@ struct FramebufferBuilder final
   void AddAttachment(const vk::ImageView & image);
   vk::ImageView & SetAttachment(size_t idx) & noexcept;
   vk::Framebuffer Make(const vk::Device & device, const vk::RenderPass & renderPass,
-                       const VkExtent2D & extent) const;
+                       const vk::Extent2D & extent) const;
   void Reset();
 
 private:
@@ -61,8 +62,7 @@ struct DescriptorSetLayoutBuilder final
 {
   vk::DescriptorSetLayout Make(const vk::Device & device) const;
   void Reset();
-  void DeclareDescriptor(uint32_t binding, VkDescriptorType type,
-                                       ShaderType shaderStage);
+  void DeclareDescriptor(uint32_t binding, VkDescriptorType type, ShaderType shaderStage);
 
 private:
   std::vector<VkDescriptorSetLayoutBinding> m_uniformDescriptions;
