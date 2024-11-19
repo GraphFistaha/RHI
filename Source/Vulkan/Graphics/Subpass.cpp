@@ -10,13 +10,18 @@ Subpass::Subpass(const Context & ctx, const RenderPass & ownerPass, uint32_t sub
                  uint32_t familyIndex)
   : m_context(ctx)
   , m_ownerPass(ownerPass)
-  , m_buffer(new details::CommandBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY))
+  , m_executableBuffer(
+      new details::CommandBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY))
+  , m_writingBuffer(new details::CommandBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY))
   , m_pipeline(new Pipeline(ctx, ownerPass, subpassIndex))
 {
-  GraphicsCommands::BindCommandBuffer(m_buffer->GetHandle());
 }
 
-Subpass::~Subpass() = default;
+Subpass::~Subpass()
+{
+  std::lock_guard lk{m_write_lock};
+  m_executableBuffer.reset();
+}
 
 void Subpass::BeginPass()
 {
@@ -24,16 +29,20 @@ void Subpass::BeginPass()
   assert(m_ownerPass.GetHandle());
   m_cachedRenderPass = m_ownerPass.GetHandle();
   m_pipeline->Invalidate();
-  m_write_lock.lock();
-  m_buffer->BeginWriting(m_cachedRenderPass, m_pipeline->GetSubpass());
-  m_pipeline->Bind(m_buffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
+  GraphicsCommands::BindCommandBuffer(m_writingBuffer->GetHandle());
+  m_writingBuffer->Reset();
+  m_writingBuffer->BeginWriting(m_cachedRenderPass, m_pipeline->GetSubpass());
+  m_pipeline->Bind(m_writingBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 void Subpass::EndPass()
 {
-  m_write_lock.unlock();
-  m_buffer->EndWriting();
+  m_writingBuffer->EndWriting();
   m_cachedRenderPass = VK_NULL_HANDLE;
+  {
+    std::lock_guard lk{m_write_lock};
+    std::swap(m_executableBuffer, m_writingBuffer);
+  }
 }
 
 IPipeline & Subpass::GetConfiguration() & noexcept

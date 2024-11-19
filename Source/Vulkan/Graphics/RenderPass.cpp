@@ -78,20 +78,18 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 
 void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
 {
-  m_boundRenderTarget = renderTarget;
-  UpdateRenderingReadyFlag();
-  if (!m_boundRenderTarget)
+  if (!renderTarget)
   {
     m_cachedAttachments.clear();
     m_invalidRenderPass = true;
     return;
   }
 
-  VkFramebuffer fbHandle = m_boundRenderTarget->GetHandle();
-  if (m_cachedAttachments != m_boundRenderTarget->GetAttachments())
+  VkFramebuffer fbHandle = renderTarget->GetHandle();
+  if (m_cachedAttachments != renderTarget->GetAttachments())
   {
     m_builder->Reset();
-    auto && fboAttachments = m_boundRenderTarget->GetAttachments();
+    auto && fboAttachments = renderTarget->GetAttachments();
     uint32_t attachmentIndex = 0;
     for (auto && attachment : fboAttachments)
     {
@@ -111,9 +109,11 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
       m_builder->AddSubpass(
         {{ShaderImageSlot::Color /*TODO: it depends on attachment*/, attachmentIndex++}});
     }
-    m_cachedAttachments = m_boundRenderTarget->GetAttachments();
+    m_cachedAttachments = renderTarget->GetAttachments();
     m_invalidRenderPass = true;
   }
+  m_boundRenderTarget = renderTarget;
+  UpdateRenderingReadyFlag();
 }
 
 void RenderPass::Invalidate()
@@ -125,9 +125,10 @@ void RenderPass::Invalidate()
     m_context.WaitForIdle();
     if (!!m_renderPass)
       vkDestroyRenderPass(m_context.GetDevice(), m_renderPass, nullptr);
+    else
+      UpdateRenderingReadyFlag();
     m_renderPass = new_renderpass;
     m_invalidRenderPass = false;
-    UpdateRenderingReadyFlag();
   }
 }
 
@@ -139,6 +140,7 @@ void RenderPass::WaitForReadyToRendering() const noexcept
 void RenderPass::UpdateRenderingReadyFlag() noexcept
 {
   m_isReadyForRendering = m_renderPass && m_boundRenderTarget;
+  std::atomic_notify_all(&m_isReadyForRendering);
 }
 
 } // namespace RHI::vulkan

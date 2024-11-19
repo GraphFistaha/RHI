@@ -48,6 +48,7 @@ private:
   bool m_invalidRenderPass : 1 = false;
   std::unique_ptr<details::RenderPassBuilder> m_builder;
 
+  /// Flag to notify that subpasses can begin pass
   std::atomic_bool m_isReadyForRendering = false;
 
   std::unique_ptr<details::Submitter> m_submitter;
