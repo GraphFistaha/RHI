@@ -29,6 +29,7 @@ ISubpass * RenderPass::CreateSubpass()
 
 VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 {
+  assert(m_renderPass);
   assert(m_boundRenderTarget != nullptr);
   m_submitter->BeginWrite();
 
@@ -69,12 +70,16 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 
   vkCmdEndRenderPass(m_submitter->GetCommandBuffer());
   m_submitter->EndWrite();
-  return m_submitter->Submit({imageAvailiableSemaphore});
+  auto res = m_submitter->Submit({imageAvailiableSemaphore});
+  m_boundRenderTarget = nullptr;
+  UpdateRenderingReadyFlag();
+  return res;
 }
 
 void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
 {
   m_boundRenderTarget = renderTarget;
+  UpdateRenderingReadyFlag();
   if (!m_boundRenderTarget)
   {
     m_cachedAttachments.clear();
@@ -111,7 +116,6 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
   }
 }
 
-
 void RenderPass::Invalidate()
 {
   if (m_invalidRenderPass || !m_renderPass)
@@ -123,7 +127,18 @@ void RenderPass::Invalidate()
       vkDestroyRenderPass(m_context.GetDevice(), m_renderPass, nullptr);
     m_renderPass = new_renderpass;
     m_invalidRenderPass = false;
+    UpdateRenderingReadyFlag();
   }
+}
+
+void RenderPass::WaitForReadyToRendering() const noexcept
+{
+  std::atomic_wait(&m_isReadyForRendering, false);
+}
+
+void RenderPass::UpdateRenderingReadyFlag() noexcept
+{
+  m_isReadyForRendering = m_renderPass && m_boundRenderTarget;
 }
 
 } // namespace RHI::vulkan

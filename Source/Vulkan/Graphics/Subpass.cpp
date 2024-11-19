@@ -8,7 +8,8 @@ namespace RHI::vulkan
 {
 Subpass::Subpass(const Context & ctx, const RenderPass & ownerPass, uint32_t subpassIndex,
                  uint32_t familyIndex)
-  : m_ownerPass(ownerPass)
+  : m_context(ctx)
+  , m_ownerPass(ownerPass)
   , m_buffer(new details::CommandBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY))
   , m_pipeline(new Pipeline(ctx, ownerPass, subpassIndex))
 {
@@ -19,9 +20,12 @@ Subpass::~Subpass() = default;
 
 void Subpass::BeginPass()
 {
+  m_ownerPass.WaitForReadyToRendering();
+  assert(m_ownerPass.GetHandle());
+  m_cachedRenderPass = m_ownerPass.GetHandle();
   m_pipeline->Invalidate();
   m_write_lock.lock();
-  m_buffer->BeginWriting(m_ownerPass.GetHandle(), m_pipeline->GetSubpass());
+  m_buffer->BeginWriting(m_cachedRenderPass, m_pipeline->GetSubpass());
   m_pipeline->Bind(m_buffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
@@ -29,6 +33,7 @@ void Subpass::EndPass()
 {
   m_write_lock.unlock();
   m_buffer->EndWriting();
+  m_cachedRenderPass = VK_NULL_HANDLE;
 }
 
 IPipeline & Subpass::GetConfiguration() & noexcept

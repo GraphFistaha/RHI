@@ -1,6 +1,8 @@
 #pragma once
 
+#include <condition_variable>
 #include <list>
+#include <shared_mutex>
 
 #include "../VulkanContext.hpp"
 #include "FramebufferAttachment.hpp"
@@ -30,6 +32,8 @@ public: // IInvalidable Interface
 
 public:
   vk::RenderPass GetHandle() const noexcept { return m_renderPass; }
+  void WaitForReadyToRendering() const noexcept;
+  void UpdateRenderingReadyFlag() noexcept;
 
 private:
   const Context & m_context;
@@ -39,9 +43,12 @@ private:
   vk::Queue m_graphicsQueue;
   std::vector<FramebufferAttachment> m_cachedAttachments;
 
+  /// There is a lot of thread-readers, so it's must be synchronized access
   vk::RenderPass m_renderPass = VK_NULL_HANDLE;
   bool m_invalidRenderPass : 1 = false;
   std::unique_ptr<details::RenderPassBuilder> m_builder;
+
+  std::atomic_bool m_isReadyForRendering = false;
 
   std::unique_ptr<details::Submitter> m_submitter;
   std::list<Subpass> m_subpasses;
