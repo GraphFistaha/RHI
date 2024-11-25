@@ -17,6 +17,9 @@ PRIVATE
 	Graphics/Pipeline.cpp 
 	Graphics/Pipeline.hpp
 
+	Resources/Transferer.hpp
+	Resources/Transferer.cpp
+
 	Utils/PipelineBuilder.cpp 
 	Utils/FramebufferBuilder.cpp
 	Utils/Builders.hpp

@@ -2,6 +2,8 @@
 
 #include <vk_mem_alloc.h>
 
+#include "Transferer.hpp"
+
 namespace RHI::vulkan
 {
 namespace details
@@ -98,11 +100,11 @@ std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
   return {image, allocation, allocInfo};
 }
 
-vk::ImageView CreateImageView(const vk::Device & device, const IImageGPU & image)
+vk::ImageView CreateImageView(const vk::Device & device, const ImageGPU & image)
 {
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  viewInfo.image = reinterpret_cast<VkImage>(image.GetHandle());
+  viewInfo.image = image.GetHandle();
   viewInfo.viewType = ImageType2VulkanImageViewType(image.GetImageType());
   viewInfo.format = ImageFormat2VulkanEnum(image.GetImageFormat());
   viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -148,9 +150,9 @@ vk::Sampler CreateSampler(const vk::Device & device)
 
 } // namespace details
 
-ImageGPU::ImageGPU(const Context & ctx, BuffersAllocator & allocator,
+ImageGPU::ImageGPU(const Context & ctx, BuffersAllocator & allocator, Transferer & transferer,
                    const ImageCreateArguments & args)
-  : BufferBase(allocator)
+  : BufferBase(allocator, transferer)
   , m_owner(ctx)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
@@ -173,7 +175,19 @@ ImageGPU::~ImageGPU()
     vmaDestroyImage(allocatorHandle, m_image, reinterpret_cast<VmaAllocation>(m_memBlock));
 }
 
-InternalObjectHandle ImageGPU::GetHandle() const noexcept
+void ImageGPU::UploadSync(const void * data, size_t size, size_t offset)
+{
+  throw std::runtime_error("Can't upload images synchronously. Use UploadAsync");
+}
+
+void ImageGPU::UploadAsync(const void * data, size_t size, size_t offset)
+{
+  BufferGPU stagingBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator, m_transferer);
+  stagingBuffer.UploadSync(data, size, offset);
+  m_transferer.UploadImage(m_image, std::move(stagingBuffer));
+}
+
+VkImage ImageGPU::GetHandle() const noexcept
 {
   return static_cast<VkImage>(m_image);
 }
@@ -224,7 +238,8 @@ ImageGPU_View & ImageGPU_View::operator=(ImageGPU_View && rhs) noexcept
 
 void ImageGPU_View::AssignImage(const IImageGPU & image)
 {
-  auto new_view = details::CreateImageView(m_context.GetDevice(), image);
+  auto new_view =
+    details::CreateImageView(m_context.GetDevice(), dynamic_cast<const ImageGPU &>(image));
   if (m_view)
     vkDestroyImageView(m_context.GetDevice(), m_view, nullptr);
   m_view = new_view;

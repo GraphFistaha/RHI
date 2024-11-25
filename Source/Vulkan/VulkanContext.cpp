@@ -10,6 +10,7 @@
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/Swapchain.hpp"
+#include "Resources/Transferer.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/ImageGPU.hpp"
 
@@ -186,9 +187,9 @@ ISwapchain * Context::GetSurfaceSwapchain()
   return m_surfaceSwapchain.get();
 }
 
-std::unique_ptr<ITransferPass> Context::CreateTransferPass()
+ITransferer * Context::GetTransferer()
 {
-  return nullptr;
+  return m_transferer.get();
 }
 
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,

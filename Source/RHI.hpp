@@ -198,7 +198,6 @@ enum class ImageFormat : uint8_t
   RGBA8,
 };
 
-struct ICommandBuffer;
 struct IBufferGPU;
 struct IImageGPU;
 struct IImageGPU_Sampler;
@@ -211,8 +210,6 @@ struct IInvalidable
 };
 
 struct GraphicsCommandsContainer;
-struct TransferCommandsContainer;
-//struct ComputeCommandsContainer;
 
 /// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
@@ -269,11 +266,6 @@ struct GraphicsCommandsContainer
   virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
 };
 
-struct TransferCommandsContainer
-{
-  virtual ~TransferCommandsContainer() = default;
-};
-
 struct ISubpass : virtual GraphicsCommandsContainer,
                   IInvalidable
 {
@@ -298,11 +290,10 @@ struct ISwapchain : public IInvalidable
   virtual ISubpass * CreateSubpass() = 0;
 };
 
-struct ITransferPass : TransferCommandsContainer,
-                       IInvalidable
+struct ITransferer : IInvalidable
 {
-  virtual ~ITransferPass() = default;
-  virtual SemaphoreHandle Transfer(std::vector<SemaphoreHandle> && tasksToWait) = 0;
+  virtual ~ITransferer() = default;
+  virtual SemaphoreHandle Flush() const = 0;
 };
 
 // ------------------- Data ------------------
@@ -316,7 +307,8 @@ struct IBufferGPU
 
   virtual ~IBufferGPU() = default;
   /// @brief uploads data
-  virtual void Upload(const void * data, size_t size, size_t offset = 0) = 0;
+  virtual void UploadSync(const void * data, size_t size, size_t offset = 0) = 0;
+  virtual void UploadAsync(const void * data, size_t size, size_t offset = 0) = 0;
   /// @brief Map buffer into CPU memory.  It will be unmapped in end of scope
   virtual ScopedPointer Map() = 0;
   /// @brief Sends changed buffer after Map to GPU
@@ -325,8 +317,6 @@ struct IBufferGPU
   virtual bool IsMapped() const noexcept = 0;
   /// @brief Get size of buffer in bytes
   virtual size_t Size() const noexcept = 0;
-  /// @brief internal handle (for internal usage)
-  virtual InternalObjectHandle GetHandle() const noexcept = 0;
 };
 
 struct ImageCreateArguments final
@@ -375,7 +365,7 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
-  virtual std::unique_ptr<ITransferPass> CreateTransferPass() = 0;
+  virtual ITransferer* GetTransferer() = 0;
 
 
   /// @brief create offscreen framebuffer

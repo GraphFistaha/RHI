@@ -24,6 +24,7 @@ enum class QueueType : uint8_t
 
 struct BuffersAllocator;
 struct Swapchain;
+struct Transferer;
 
 /// @brief context is object contains vulkan logical device. Also it provides access to vulkan functions
 ///			If rendering system uses several GPUs, you should create one context for each physical device
@@ -36,7 +37,7 @@ struct Context final : public IContext
 
 public: // IContext interface
   virtual ISwapchain * GetSurfaceSwapchain() override;
-  virtual std::unique_ptr<ITransferPass> CreateTransferPass() override;
+  virtual ITransferer * GetTransferer() override;
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
@@ -56,6 +57,7 @@ private:
   std::unique_ptr<Impl> m_impl;
   std::unique_ptr<BuffersAllocator> m_allocator;
   std::unique_ptr<Swapchain> m_surfaceSwapchain;
+  std::unique_ptr<Transferer> m_transferer;
   LoggingFunc m_logFunc;
 
 private:

@@ -4,27 +4,29 @@
 namespace RHI::vulkan
 {
 
+struct Transferer;
+
 struct ImageGPU : public IImageGPU,
                   private BufferBase
 {
-  explicit ImageGPU(const Context & ctx, BuffersAllocator & allocator,
+  explicit ImageGPU(const Context & ctx, BuffersAllocator & allocator, Transferer & transferer,
                     const ImageCreateArguments & args);
   virtual ~ImageGPU() override;
 
-  virtual void Upload(const void * data, size_t size, size_t offset = 0) override
-  {
-    return BufferBase::Upload(data, size, offset);
-  }
+  virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
+  virtual void UploadAsync(const void * data, size_t size, size_t offset = 0) override;
   virtual ScopedPointer Map() override { return BufferBase::Map(); }
   virtual void Flush() const noexcept override { BufferBase::Flush(); }
   virtual bool IsMapped() const noexcept override { return BufferBase::IsMapped(); }
-  virtual InternalObjectHandle GetHandle() const noexcept override;
   virtual size_t Size() const noexcept override { return BufferBase::Size(); }
 
   virtual ImageType GetImageType() const noexcept override;
   virtual ImageFormat GetImageFormat() const noexcept override;
 
   virtual void Invalidate() noexcept override;
+
+public:
+  VkImage GetHandle() const noexcept;
 
 private:
   const Context & m_owner;

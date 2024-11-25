@@ -3,6 +3,8 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+#include "Transferer.hpp"
+
 namespace RHI::vulkan
 {
 BuffersAllocator::BuffersAllocator(const Context & ctx)
@@ -30,7 +32,7 @@ BuffersAllocator::~BuffersAllocator()
   vmaDestroyAllocator(reinterpret_cast<VmaAllocator>(m_allocator));
 }
 
-void BufferBase::Upload(const void * data, size_t size, size_t offset)
+void BufferBase::UploadSync(const void * data, size_t size, size_t offset)
 {
   auto allocator = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
   auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
@@ -73,8 +75,9 @@ bool BufferBase::IsMapped() const noexcept
 {
   return (m_flags & VMA_ALLOCATION_CREATE_MAPPED_BIT) != 0;
 }
-BufferBase::BufferBase(BuffersAllocator & allocator)
+BufferBase::BufferBase(BuffersAllocator & allocator, Transferer & transferer)
   : m_allocator(allocator)
+  , m_transferer(transferer)
 {
   static_assert(
     sizeof(VmaAllocationInfo) <= sizeof(AllocInfoRawMemory),
@@ -132,9 +135,9 @@ std::tuple<VkBuffer, VmaAllocation, VmaAllocationInfo> CreateVMABuffer(
 }
 } // namespace details
 
-BufferGPU::BufferGPU(size_t size, BufferGPUUsage usage, BuffersAllocator & allocator,
+BufferGPU::BufferGPU(size_t size, VkBufferUsageFlags usage, BuffersAllocator & allocator, Transferer & transferer,
                      bool mapped /* = false*/)
-  : BufferBase(allocator)
+  : BufferBase(allocator, transferer)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   if (mapped)
@@ -149,8 +152,7 @@ BufferGPU::BufferGPU(size_t size, BufferGPUUsage usage, BuffersAllocator & alloc
 
   auto allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
   auto [buffer, allocation, alloc_info] =
-    details::CreateVMABuffer(allocatorHandle, size, details::UsageToVulkanEnum(usage),
-                             allocation_flags);
+    details::CreateVMABuffer(allocatorHandle, size, usage, allocation_flags);
   m_buffer = buffer;
   m_memBlock = allocation;
   m_allocInfo = reinterpret_cast<BufferGPU::AllocInfoRawMemory &>(alloc_info);
@@ -165,7 +167,14 @@ BufferGPU::~BufferGPU()
     vmaDestroyBuffer(allocatorHandle, m_buffer, reinterpret_cast<VmaAllocation>(m_memBlock));
 }
 
-InternalObjectHandle BufferGPU::GetHandle() const noexcept
+void BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
+{
+  BufferGPU stagingBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator, m_transferer);
+  stagingBuffer.UploadSync(data, size, offset);
+  m_transferer.UploadBuffer(m_buffer, std::move(stagingBuffer));
+}
+
+VkBuffer BufferGPU::GetHandle() const noexcept
 {
   return static_cast<VkBuffer>(m_buffer);
 }
