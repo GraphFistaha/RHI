@@ -2,8 +2,8 @@ target_sources (${PROJECT_NAME}
 PRIVATE
 	VulkanContext.cpp
 	VulkanContext.hpp
+	EnumCasts.cpp
 	
-	Graphics/Commands.hpp
 	Graphics/Swapchain.cpp
 	Graphics/Swapchain.hpp
 	Graphics/DescriptorsBuffer.cpp
@@ -28,15 +28,24 @@ PRIVATE
 	Resources/BufferGPU.hpp
 	Resources/ImageGPU.cpp
 	Resources/ImageGPU.hpp
+	Resources/BuffersAllocator.hpp
+	Resources/BuffersAllocator.cpp
+	Resources/BufferBase.hpp
+	Resources/BufferBase.cpp
 
 	CommandsExecution/CommandBuffer.cpp 
 	CommandsExecution/CommandBuffer.hpp 
 	CommandsExecution/Submitter.cpp
 	CommandsExecution/Submitter.hpp
-	)
+)
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)
+
+target_compile_definitions(${PROJECT_NAME} 
+PRIVATE
+	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
+)
 
 message(STATUS "Fetch vkBootstrap")
 FetchContent_Declare(

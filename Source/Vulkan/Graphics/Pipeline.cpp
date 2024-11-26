@@ -44,7 +44,7 @@ void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t o
 }
 
 IBufferGPU * Pipeline::DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
-                                      uint32_t size)
+                                      size_t size)
 {
   return m_descriptors->DeclareUniform(binding, shaderStage, size);
 }

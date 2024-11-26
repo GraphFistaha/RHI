@@ -10,9 +10,9 @@
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/Swapchain.hpp"
-#include "Resources/Transferer.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/ImageGPU.hpp"
+#include "Resources/Transferer.hpp"
 
 // --------------------- Static functions ------------------------------
 
@@ -173,8 +173,11 @@ Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
-  m_allocator = std::make_unique<BuffersAllocator>(*this);
+  m_allocator = std::make_unique<details::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
+                                                            m_impl->GetDevice(),
+                                                            GetVulkanVersion());
   m_surfaceSwapchain = std::make_unique<Swapchain>(*this, m_impl->GetSurface());
+  m_transferer = std::make_unique<Transferer>(*this);
 }
 
 Context::~Context()
@@ -195,12 +198,13 @@ ITransferer * Context::GetTransferer()
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
                                                  bool mapped /* = false*/) const
 {
-  return std::make_unique<BufferGPU>(size, usage, *m_allocator, mapped);
+  auto vkUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(usage);
+  return std::make_unique<BufferGPU>(size, vkUsage, *m_allocator, m_transferer.get(), mapped);
 }
 
 std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args) const
 {
-  return std::make_unique<ImageGPU>(*this, *m_allocator, args);
+  return std::make_unique<ImageGPU>(*this, *m_allocator, *m_transferer, args);
 }
 
 void Context::WaitForIdle() const
@@ -242,6 +246,11 @@ void Context::Log(LogMessageStatus status, const std::string & message) const no
   if (m_logFunc)
     m_logFunc(status, message);
 #endif
+}
+
+const details::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept
+{
+  return *m_allocator;
 }
 
 } // namespace RHI::vulkan

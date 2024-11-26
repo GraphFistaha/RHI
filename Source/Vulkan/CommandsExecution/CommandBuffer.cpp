@@ -1,4 +1,5 @@
 #include "CommandBuffer.hpp"
+#include "../VulkanContext.hpp"
 
 namespace
 {
@@ -176,7 +177,7 @@ void CommandBuffer::Reset()
 void CommandBuffer::AddCommands(const std::vector<VkCommandBuffer> & buffers)
 {
   assert(m_level == VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-  vkCmdExecuteCommands(m_buffer, buffers.size(), buffers.data());
+  vkCmdExecuteCommands(m_buffer, static_cast<uint32_t>(buffers.size()), buffers.data());
 }
 
 } // namespace RHI::vulkan::details

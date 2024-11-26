@@ -3,13 +3,12 @@
 
 namespace RHI::vulkan
 {
-
-struct Transferer;
+struct Context;
 
 struct ImageGPU : public IImageGPU,
-                  private BufferBase
+                  private details::BufferBase
 {
-  explicit ImageGPU(const Context & ctx, BuffersAllocator & allocator, Transferer & transferer,
+  explicit ImageGPU(const Context & ctx, const details::BuffersAllocator & allocator, Transferer & transferer,
                     const ImageCreateArguments & args);
   virtual ~ImageGPU() override;
 
@@ -29,7 +28,7 @@ public:
   VkImage GetHandle() const noexcept;
 
 private:
-  const Context & m_owner;
+  const Context & m_context;
   vk::Image m_image;
   ImageCreateArguments m_args;
 };

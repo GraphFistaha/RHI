@@ -209,8 +209,6 @@ struct IInvalidable
   virtual void Invalidate() = 0;
 };
 
-struct GraphicsCommandsContainer;
-
 /// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
@@ -226,7 +224,7 @@ struct IPipeline : public IInvalidable
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
 
   virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
-                                      uint32_t size) = 0;
+                                      size_t size) = 0;
 
   virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
                                              ShaderType shaderStage) = 0;
@@ -244,11 +242,16 @@ struct IRenderTarget : public IInvalidable
   virtual void SetClearColor(float r, float g, float b, float a) noexcept = 0;
 };
 
-struct GraphicsCommandsContainer
+struct ISubpass : IInvalidable
 {
-  virtual ~GraphicsCommandsContainer() = default;
+  virtual ~ISubpass() = default;
+  virtual void BeginPass() = 0;
+  virtual void EndPass() = 0;
+  virtual IPipeline & GetConfiguration() & noexcept = 0;
+  virtual void SetEnabled(bool enabled) noexcept = 0;
+  virtual bool IsEnabled() const noexcept = 0;
 
-  /// @brief draw vertices command (analog glDrawArrays)
+   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
                             uint32_t firstInstance = 0) = 0;
   /// @brief draw vertices with indieces (analog glDrawElements)
@@ -266,17 +269,6 @@ struct GraphicsCommandsContainer
   virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
 };
 
-struct ISubpass : virtual GraphicsCommandsContainer,
-                  IInvalidable
-{
-  virtual ~ISubpass() = default;
-  virtual void BeginPass() = 0;
-  virtual void EndPass() = 0;
-  virtual IPipeline & GetConfiguration() & noexcept = 0;
-  virtual void SetEnabled(bool enabled) noexcept = 0;
-  virtual bool IsEnabled() const noexcept = 0;
-};
-
 // IFramebuffer
 /// @brief Swapchain is a queue of renderTargets. Each renderTarget is a union of renderPass and internalFramebuffer.
 struct ISwapchain : public IInvalidable
@@ -290,10 +282,10 @@ struct ISwapchain : public IInvalidable
   virtual ISubpass * CreateSubpass() = 0;
 };
 
-struct ITransferer : IInvalidable
+struct ITransferer
 {
   virtual ~ITransferer() = default;
-  virtual SemaphoreHandle Flush() const = 0;
+  virtual SemaphoreHandle Flush() = 0;
 };
 
 // ------------------- Data ------------------

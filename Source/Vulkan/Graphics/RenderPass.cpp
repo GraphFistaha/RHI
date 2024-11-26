@@ -24,14 +24,15 @@ RenderPass::~RenderPass()
 
 ISubpass * RenderPass::CreateSubpass()
 {
-  return &m_subpasses.emplace_back(m_context, *this, m_subpasses.size(), m_graphicsQueueFamily);
+  return &m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()), m_graphicsQueueFamily);
 }
 
 VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
   assert(m_boundRenderTarget != nullptr);
-  m_submitter->BeginWrite();
+  m_submitter->WaitForSubmitCompleted();
+  m_submitter->BeginWriting();
 
   VkFramebuffer buf = m_boundRenderTarget ? m_boundRenderTarget->GetHandle() : VK_NULL_HANDLE;
   VkExtent2D extent = m_boundRenderTarget->GetVkExtent();
@@ -46,8 +47,8 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   renderPassInfo.clearValueCount = 1;
   renderPassInfo.pClearValues = &clearValue;
 
-  vkCmdBeginRenderPass(m_submitter->GetCommandBuffer(), &renderPassInfo,
-                       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+  m_submitter->PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
+                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   // execute commands for subpasses
   {
@@ -55,12 +56,12 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
     for (auto && subpass : m_subpasses)
     {
       subpass.LockWriting(true);
-      if (!subpass.HasNoCommands() && subpass.IsEnabled())
+      if (subpass.IsEnabled())
         subpassBuffers.push_back(subpass.GetCommandBuffer().GetHandle());
     }
     if (!subpassBuffers.empty())
-      vkCmdExecuteCommands(m_submitter->GetCommandBuffer(), subpassBuffers.size(),
-                           subpassBuffers.data());
+      m_submitter->AddCommands(subpassBuffers);
+
     for (auto && subpass : m_subpasses)
     {
       subpass.LockWriting(false);
@@ -68,8 +69,8 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   }
 
 
-  vkCmdEndRenderPass(m_submitter->GetCommandBuffer());
-  m_submitter->EndWrite();
+  m_submitter->PushCommand(vkCmdEndRenderPass);
+  m_submitter->EndWriting();
   auto res = m_submitter->Submit({imageAvailiableSemaphore});
   m_boundRenderTarget = nullptr;
   UpdateRenderingReadyFlag();
@@ -125,9 +126,8 @@ void RenderPass::Invalidate()
     m_context.WaitForIdle();
     if (!!m_renderPass)
       vkDestroyRenderPass(m_context.GetDevice(), m_renderPass, nullptr);
-    else
-      UpdateRenderingReadyFlag();
     m_renderPass = new_renderpass;
+    UpdateRenderingReadyFlag();
     m_invalidRenderPass = false;
   }
 }

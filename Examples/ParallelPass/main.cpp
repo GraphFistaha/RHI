@@ -54,7 +54,12 @@ struct Renderer
   void AsyncDrawScene()
   {
     if (m_drawTask.valid())
-      m_drawTask.get(); // wait for previous task
+    {
+      // wait for previous task
+      auto result = m_drawTask.wait_for(std::chrono::milliseconds(10));
+      if (result == std::future_status::timeout)
+        return;
+    }
     auto && future = std::async(&Renderer::DrawSceneImpl, this);
     m_drawTask = std::move(future);
   }
@@ -121,6 +126,7 @@ int main()
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
+    auto sem = ctx->GetTransferer()->Flush();
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearColor(0.1, 1.0, 0.4, 1.0);
@@ -153,21 +159,13 @@ Renderer::Renderer(const RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWw
   // create vertex buffer
   m_vertexBuffer =
     ctx.AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  if (auto scoped_map = m_vertexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * 5 * sizeof(float));
-  }
-  m_vertexBuffer->Flush();
+  m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
 
   // create index buffer
   m_indexBuffer =
     ctx.AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  if (auto scoped_map = m_indexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
-  }
-  m_indexBuffer->Flush();
+  m_indexBuffer->UploadSync(Indices, IndicesCount * sizeof(uint32_t));
 }
 
 bool Renderer::DrawSceneImpl()

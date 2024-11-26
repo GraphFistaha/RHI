@@ -17,7 +17,7 @@ struct DescriptorBuffer final
 
   void Invalidate();
 
-  IBufferGPU * DeclareUniform(uint32_t binding, ShaderType shaderStage, uint32_t size);
+  IBufferGPU * DeclareUniform(uint32_t binding, ShaderType shaderStage, size_t size);
   IImageGPU_Sampler * DeclareSampler(uint32_t binding, ShaderType shaderStage);
 
   void Bind(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
@@ -26,7 +26,7 @@ struct DescriptorBuffer final
   vk::DescriptorSet GetHandle() const noexcept;
 
 private:
-  using BufferDescriptor = std::pair<uint32_t /*binding*/, std::unique_ptr<IBufferGPU>>;
+  using BufferDescriptor = std::pair<uint32_t /*binding*/, std::unique_ptr<BufferGPU>>;
   using BufferDescriptors = std::vector<BufferDescriptor>;
 
   using ImageDescriptor = std::pair<uint32_t /*binding*/, std::unique_ptr<IImageGPU_Sampler>>;

@@ -4,7 +4,6 @@
 #else //TODO UNIX
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
-#define ENABLE_VALIDATION_LAYERS
 
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
@@ -22,9 +21,15 @@ enum class QueueType : uint8_t
   Transfer
 };
 
+namespace details
+{
 struct BuffersAllocator;
+}
 struct Swapchain;
 struct Transferer;
+
+struct BufferGPU;
+struct ImageGPU;
 
 /// @brief context is object contains vulkan logical device. Also it provides access to vulkan functions
 ///			If rendering system uses several GPUs, you should create one context for each physical device
@@ -52,10 +57,12 @@ public: // RHI-only API
   void WaitForIdle() const;
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
 
+  const details::BuffersAllocator & GetBuffersAllocator() const & noexcept;
+
 private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
-  std::unique_ptr<BuffersAllocator> m_allocator;
+  std::unique_ptr<details::BuffersAllocator> m_allocator;
   std::unique_ptr<Swapchain> m_surfaceSwapchain;
   std::unique_ptr<Transferer> m_transferer;
   LoggingFunc m_logFunc;
@@ -74,5 +81,14 @@ namespace RHI::vulkan::utils
 vk::Semaphore CreateVkSemaphore(vk::Device device);
 /// @brief creates fence, doesn't own it
 vk::Fence CreateFence(vk::Device device, bool locked = false);
+
+template<typename InternalClassT, typename InterfaceClassT>
+decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
+{
+  return dynamic_cast<const InternalClassT &>(std::forward<InterfaceClassT>(obj));
+}
+
+template<typename VulkanEnumT, typename InterfaceEnumT>
+VulkanEnumT CastInterfaceEnum2Vulkan(InterfaceEnumT value);
 
 } // namespace RHI::vulkan::utils

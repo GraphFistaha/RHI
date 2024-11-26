@@ -22,7 +22,7 @@ struct Pipeline final : public IPipeline
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
   virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
-                                      uint32_t size) override;
+                                      size_t size) override;
   virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
                                      ShaderType shaderStage) override;
 

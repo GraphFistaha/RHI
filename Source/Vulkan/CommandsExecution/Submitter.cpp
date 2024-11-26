@@ -1,12 +1,13 @@
 #include "Submitter.hpp"
 
+#include "../VulkanContext.hpp"
+
 namespace RHI::vulkan::details
 {
 Submitter::Submitter(const Context & ctx, vk::Queue queue, uint32_t queueFamily)
-  : m_context(ctx)
+  : CommandBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_PRIMARY)
   , m_queueFamily(queueFamily)
   , m_queue(queue)
-  , m_buffer(ctx, m_queueFamily, VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 {
   m_commandsCompletedFence = utils::CreateFence(ctx.GetDevice(), true);
   m_commandsCompletedSemaphore = utils::CreateVkSemaphore(ctx.GetDevice());
@@ -20,32 +21,16 @@ Submitter::~Submitter()
     vkDestroyFence(m_context.GetDevice(), m_commandsCompletedFence, nullptr);
 }
 
-void Submitter::BeginWrite()
-{
-  WaitForSubmitCompleted();
-  m_buffer.BeginWriting();
-}
-
-void Submitter::EndWrite()
-{
-  m_buffer.EndWriting();
-}
-
-void Submitter::Clear()
-{
-  m_buffer.Reset();
-}
-
 VkSemaphore Submitter::Submit(const std::vector<SemaphoreHandle> & waitSemaphores)
 {
   const VkSemaphore signalSem = m_commandsCompletedSemaphore;
-  const VkCommandBuffer buffer = m_buffer.GetHandle();
+  const VkCommandBuffer buffer = GetHandle();
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  submitInfo.waitSemaphoreCount = waitSemaphores.size();
-  submitInfo.pWaitSemaphores = reinterpret_cast<const VkSemaphore*>(waitSemaphores.data());
+  submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+  submitInfo.pWaitSemaphores = reinterpret_cast<const VkSemaphore *>(waitSemaphores.data());
   submitInfo.pWaitDstStageMask = waitStages;
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &buffer;

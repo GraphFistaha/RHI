@@ -1,26 +1,30 @@
 #pragma once
 #include <queue>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+#include "../CommandsExecution/Submitter.hpp"
+#include "BufferGPU.hpp"
 
 namespace RHI::vulkan
 {
-namespace details
-{
-struct Submitter;
+struct Context;
 }
-struct BufferGPU;
+
+namespace RHI::vulkan
+{
 
 struct Transferer : public ITransferer
 {
   explicit Transferer(const Context & ctx);
 
-public:
-  virtual SemaphoreHandle Flush() const override;
+public: // ITransferer interface
+  virtual SemaphoreHandle Flush() override;
 
 public:
   void UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept;
   void UploadImage(VkImage dstImage, BufferGPU && stagingBuffer) noexcept;
+
 private:
   using UploadTask = std::tuple<VkBuffer, VkImage, BufferGPU>;
 

@@ -108,28 +108,12 @@ int main()
   // create vertex buffer
   auto && vertexBuffer =
     ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  // fill buffer with Mapping into CPU memory
-  if (auto scoped_map = vertexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * 5 * sizeof(float));
-    // in the end of scope mapping will be destroyed
-  }
-  // to make sure that buffer is sent on GPU
-  vertexBuffer->Flush();
-
+  vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto indexBuffer =
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  // fill buffer with Mapping into CPU memory
-  if (auto scoped_map = indexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
-    // in the end of scope mapping will be destroyed
-  }
-  // to make sure that buffer is sent on GPU
-  indexBuffer->Flush();
-
+  indexBuffer->UploadSync(Indices, IndicesCount * sizeof(uint32_t));
 
   ShouldInvalidateScene = true;
   float x = 0.0f;
@@ -151,7 +135,7 @@ int main()
       std::memcpy(reinterpret_cast<char *>(map.get()) + sizeof(float), &cos_val, sizeof(float));
     }
 
-    x += 0.0001;
+    x += 0.0001f;
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {

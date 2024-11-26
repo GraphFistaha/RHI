@@ -5,6 +5,7 @@
 #include <numeric>
 
 #include "../Utils/Builders.hpp"
+#include "../Resources/BufferGPU.hpp"
 
 
 namespace RHI::vulkan
@@ -57,10 +58,10 @@ vk::DescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool
 
 
 void LinkBufferToDescriptor(const Context & ctx, VkDescriptorSet set, VkDescriptorType type,
-                            uint32_t binding, const IBufferGPU & buffer)
+                            uint32_t binding, const BufferGPU & buffer)
 {
   VkDescriptorBufferInfo bufferInfo{};
-  bufferInfo.buffer = reinterpret_cast<VkBuffer>(buffer.GetHandle());
+  bufferInfo.buffer = buffer.GetHandle();
   bufferInfo.range = buffer.Size();
   bufferInfo.offset = 0;
 
@@ -187,8 +188,7 @@ void DescriptorBuffer::Invalidate()
   }
 }
 
-IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shaderStage,
-                                              uint32_t size)
+IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shaderStage, size_t size)
 {
   const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   assert(binding == m_bufferDescriptors[type].size() && "set binding in sorted order from 0 to N");
@@ -196,7 +196,10 @@ IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shade
   m_invalidLayout = true;
   m_capacity[type]++;
 
-  auto && new_buffer = m_owner.AllocBuffer(size, details::DescriptorType2BufferUsage(type), true);
+  auto bufferUsage = details::DescriptorType2BufferUsage(type);
+  auto vkBufferUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(bufferUsage);
+  auto && new_buffer = std::make_unique<BufferGPU>(size, vkBufferUsage,
+                       m_owner.GetBuffersAllocator(), nullptr, true);
   auto && descriptedBuffer = m_bufferDescriptors[type].emplace_back(binding, std::move(new_buffer));
   return descriptedBuffer.second.get();
 }

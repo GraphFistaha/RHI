@@ -78,10 +78,10 @@ int main()
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.1, std::abs(std::sin(t)), 0.4, 1.0);
+      renderTarget->SetClearColor(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       swapchain->FlushFrame();
     }
-    t += 0.001;
+    t += 0.001f;
   }
 
   glfwTerminate();

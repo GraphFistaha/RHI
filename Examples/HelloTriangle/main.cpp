@@ -102,15 +102,7 @@ int main()
   // create vertex buffer
   auto && vertexBuffer =
     ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  // fill buffer with Mapping into CPU memory
-  if (auto scoped_map = vertexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * 5 * sizeof(float));
-    // in the end of scope mapping will be destroyed
-  }
-  // to make sure that buffer is sent on GPU
-  vertexBuffer->Flush();
-
+  vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto indexBuffer =
@@ -133,7 +125,7 @@ int main()
 
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.1, std::abs(std::sin(t)), 0.4, 1.0);
+      renderTarget->SetClearColor(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       // fill trianglePipelineCommands
       if (ShouldInvalidateScene)
       {
@@ -156,7 +148,7 @@ int main()
       }
       swapchain->FlushFrame();
     }
-    t += 0.001;
+    t += 0.001f;
   }
 
   glfwTerminate();

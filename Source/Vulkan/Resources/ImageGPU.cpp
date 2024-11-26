@@ -2,6 +2,7 @@
 
 #include <vk_mem_alloc.h>
 
+#include "../VulkanContext.hpp"
 #include "Transferer.hpp"
 
 namespace RHI::vulkan
@@ -150,10 +151,10 @@ vk::Sampler CreateSampler(const vk::Device & device)
 
 } // namespace details
 
-ImageGPU::ImageGPU(const Context & ctx, BuffersAllocator & allocator, Transferer & transferer,
-                   const ImageCreateArguments & args)
-  : BufferBase(allocator, transferer)
-  , m_owner(ctx)
+ImageGPU::ImageGPU(const Context & ctx, const details::BuffersAllocator & allocator,
+                   Transferer & transferer, const ImageCreateArguments & args)
+  : BufferBase(allocator, &transferer)
+  , m_context(ctx)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   allocation_flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
@@ -182,9 +183,12 @@ void ImageGPU::UploadSync(const void * data, size_t size, size_t offset)
 
 void ImageGPU::UploadAsync(const void * data, size_t size, size_t offset)
 {
-  BufferGPU stagingBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator, m_transferer);
+  if (!m_transferer)
+    throw std::runtime_error(
+      "This buffer isn't appropriate for async uploading. Use UploadSync or mapping");
+  BufferGPU stagingBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator);
   stagingBuffer.UploadSync(data, size, offset);
-  m_transferer.UploadImage(m_image, std::move(stagingBuffer));
+  m_transferer->UploadImage(m_image, std::move(stagingBuffer));
 }
 
 VkImage ImageGPU::GetHandle() const noexcept

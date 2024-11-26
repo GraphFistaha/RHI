@@ -1,29 +1,28 @@
 #pragma once
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
 #include "CommandBuffer.hpp"
+
+namespace RHI::vulkan
+{
+struct Context;
+}
 
 namespace RHI::vulkan::details
 {
 /// @brief Submits commands into queue, owns primary command buffer
-struct Submitter
+struct Submitter : public CommandBuffer
 {
   explicit Submitter(const Context & ctx, vk::Queue queue, uint32_t queueFamily);
   virtual ~Submitter();
 
-  void BeginWrite();
-  void EndWrite();
-  void Clear();
   VkSemaphore Submit(const std::vector<SemaphoreHandle> & waitSemaphores);
   void WaitForSubmitCompleted();
 
-  vk::CommandBuffer GetCommandBuffer() const noexcept { return m_buffer.GetHandle(); }
-
 protected:
-  const Context & m_context;
   uint32_t m_queueFamily;
   vk::Queue m_queue;
-  CommandBuffer m_buffer;
   /// semaphore to wait for commands have been completed on gpu
   vk::Semaphore m_commandsCompletedSemaphore;
   vk::Fence m_commandsCompletedFence; ///< fence to wait for commands have been completed on cpu

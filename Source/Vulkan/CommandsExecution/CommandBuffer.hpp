@@ -1,38 +1,58 @@
 #pragma once
 #include <numeric>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+namespace RHI::vulkan
+{
+struct Context;
+}
 
 namespace RHI::vulkan::details
 {
-struct CommandBuffer final
+struct CommandBuffer
 {
   explicit CommandBuffer(const Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
-  ~CommandBuffer();
+  virtual ~CommandBuffer();
 
   void BeginWriting() const;
-  void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex, VkFramebuffer framebuffer = VK_NULL_HANDLE) const;
+  void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
+                    VkFramebuffer framebuffer = VK_NULL_HANDLE) const;
   void EndWriting() const;
   void Reset();
   void AddCommands(const std::vector<VkCommandBuffer> & buffers);
 
+  template<typename VkCmdFunc, typename... Args>
+  void PushCommand(VkCmdFunc && func, Args &&... args) noexcept
+  {
+    func(m_buffer, std::forward<Args>(args)...);
+    m_commandsCount++;
+  }
+
+  bool IsEmpty() const noexcept { return m_commandsCount == 0; }
+
 public:
   vk::CommandBuffer GetHandle() const noexcept { return m_buffer; }
 
-private:
+protected:
   const Context & m_context;
+
+private:
   VkCommandBufferLevel m_level;
   vk::CommandPool m_pool = VK_NULL_HANDLE;
   vk::CommandBuffer m_buffer = VK_NULL_HANDLE;
+  size_t m_commandsCount = 0;
 };
 
 template<typename InIt>
 void AccumulateCommands(CommandBuffer & dst, InIt begin, InIt end)
 {
   std::vector<VkCommandBuffer> buffers;
-  std::transform(begin, end, std::back_inserter(buffers), [](const CommandBuffer & buf)
+  std::transform(begin, end, std::back_inserter(buffers),
+                 [](const CommandBuffer & buf)
                  { return static_cast<VkCommandBuffer>(buf.GetHandle()); });
   dst.AddCommands(buffers);
 }
 
-} // namespace RHI::vulkan
+} // namespace RHI::vulkan::details
