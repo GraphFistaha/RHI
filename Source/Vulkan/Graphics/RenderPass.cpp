@@ -13,7 +13,8 @@ RenderPass::RenderPass(const Context & ctx)
   , m_builder(new details::RenderPassBuilder())
 {
   std::tie(m_graphicsQueueFamily, m_graphicsQueue) = ctx.GetQueue(QueueType::Graphics);
-  m_submitter = std::make_unique<details::Submitter>(ctx, m_graphicsQueue, m_graphicsQueueFamily);
+  m_submitter = std::make_unique<details::Submitter>(ctx, m_graphicsQueue, m_graphicsQueueFamily,
+                                                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 RenderPass::~RenderPass()
@@ -24,7 +25,8 @@ RenderPass::~RenderPass()
 
 ISubpass * RenderPass::CreateSubpass()
 {
-  return &m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()), m_graphicsQueueFamily);
+  return &m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()),
+                                   m_graphicsQueueFamily);
 }
 
 VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
@@ -71,7 +73,7 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 
   m_submitter->PushCommand(vkCmdEndRenderPass);
   m_submitter->EndWriting();
-  auto res = m_submitter->Submit({imageAvailiableSemaphore});
+  auto res = m_submitter->Submit(false /*waitPrevSubmitOnGPU*/, {imageAvailiableSemaphore});
   m_boundRenderTarget = nullptr;
   UpdateRenderingReadyFlag();
   return res;

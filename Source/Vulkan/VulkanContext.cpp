@@ -270,8 +270,8 @@ namespace RHI::vulkan::utils
 
 vk::Semaphore CreateVkSemaphore(vk::Device device)
 {
-  VkSemaphoreCreateInfo info{};
   VkSemaphore result = VK_NULL_HANDLE;
+  VkSemaphoreCreateInfo info{};
   info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   // Don't use createSemaphore in dispatchTable because it's broken
   if (vkCreateSemaphore(device, &info, nullptr, &result) != VK_SUCCESS)

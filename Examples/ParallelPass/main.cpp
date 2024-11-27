@@ -64,6 +64,12 @@ struct Renderer
     m_drawTask = std::move(future);
   }
 
+  void UpdateGeometry()
+  {
+    m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
+    m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
+  }
+
 private:
   /// weak pointer on Window. Just for getting size of it.
   GLFWwindow * m_windowPtr;
@@ -126,6 +132,7 @@ int main()
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
+    TriangleRenderer->UpdateGeometry();
     auto sem = ctx->GetTransferer()->Flush();
     if (auto * renderTarget = swapchain->AcquireFrame())
     {

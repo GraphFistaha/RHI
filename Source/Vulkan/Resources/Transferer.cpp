@@ -1,7 +1,7 @@
 #include "Transferer.hpp"
 
-#include "../VulkanContext.hpp"
 #include "../Resources/BufferGPU.hpp"
+#include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
 {
@@ -10,11 +10,14 @@ Transferer::Transferer(const Context & ctx)
   : m_context(ctx)
 {
   auto [familyIndex, queue] = ctx.GetQueue(QueueType::Transfer);
-  m_submitter = std::make_unique<details::Submitter>(ctx, queue, familyIndex);
+  m_submitter =
+    std::make_unique<details::Submitter>(ctx, queue, familyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT);
 }
 
 SemaphoreHandle Transferer::Flush()
 {
+  if (m_tasks.empty())
+    return VK_NULL_HANDLE;
   m_submitter->WaitForSubmitCompleted();
   m_submitter->Reset();
   m_submitter->BeginWriting();
@@ -41,7 +44,7 @@ SemaphoreHandle Transferer::Flush()
     }
   }
   m_submitter->EndWriting();
-  return m_submitter->Submit({});
+  return m_submitter->Submit(true, {});
 }
 void Transferer::UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept
 {
