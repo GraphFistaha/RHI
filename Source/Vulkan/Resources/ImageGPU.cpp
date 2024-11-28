@@ -9,62 +9,7 @@ namespace RHI::vulkan
 {
 namespace details
 {
-VkImageType ImageType2VulkanEnum(ImageType type)
-{
-  return static_cast<VkImageType>(type);
-}
 
-VkImageViewType ImageType2VulkanImageViewType(ImageType type)
-{
-  switch (type)
-  {
-    case ImageType::Image1D:
-      return VK_IMAGE_VIEW_TYPE_1D;
-    case ImageType::Image2D:
-      return VK_IMAGE_VIEW_TYPE_2D;
-    case ImageType::Image3D:
-      return VK_IMAGE_VIEW_TYPE_3D;
-    default:
-      throw std::range_error("Invalid ImageType");
-  }
-}
-
-VkFormat ImageFormat2VulkanEnum(ImageFormat format)
-{
-  switch (format)
-  {
-    case ImageFormat::RGB8:
-      return VK_FORMAT_R8G8B8_SRGB;
-    case ImageFormat::RGBA8:
-      return VK_FORMAT_R8G8B8A8_SRGB;
-    default:
-      return VK_FORMAT_UNDEFINED;
-  }
-}
-
-VkImageUsageFlagBits ImageUsage2VulkanEnum(ImageGPUUsage usage)
-{
-  switch (usage)
-  {
-    case ImageGPUUsage::Sample:
-      return VK_IMAGE_USAGE_SAMPLED_BIT;
-    case ImageGPUUsage::Storage:
-      return VK_IMAGE_USAGE_STORAGE_BIT;
-    case ImageGPUUsage::FramebufferColorAttachment:
-      return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    case ImageGPUUsage::FramebufferDepthStencilAttachment:
-      return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    case ImageGPUUsage::FramebufferInputAttachment:
-      return VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    default:
-      return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
-  }
-}
-
-VkSampleCountFlagBits SampleCount2VulkanEnum(SamplesCount count)
-{
-  return static_cast<VkSampleCountFlagBits>(count);
-}
 
 std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
   VmaAllocator allocator, VmaAllocationCreateFlags flags, const ImageCreateArguments & args,
@@ -72,17 +17,17 @@ std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
 {
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  imageInfo.imageType = ImageType2VulkanEnum(args.type);
+  imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(args.type);
   imageInfo.extent.width = args.width;
   imageInfo.extent.height = args.height;
   imageInfo.extent.depth = args.depth;
   imageInfo.mipLevels = args.mipLevels;
   imageInfo.arrayLayers = 1;
-  imageInfo.format = ImageFormat2VulkanEnum(args.format);
+  imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(args.format);
   imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
   imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  imageInfo.usage = ImageUsage2VulkanEnum(args.usage);
-  imageInfo.samples = SampleCount2VulkanEnum(args.samples);
+  imageInfo.usage = utils::CastInterfaceEnum2Vulkan<VkImageUsageFlags>(args.usage);
+  imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(args.samples);
   imageInfo.sharingMode = args.shared ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
   VmaAllocationCreateInfo allocCreateInfo = {};
@@ -106,8 +51,8 @@ vk::ImageView CreateImageView(const vk::Device & device, const ImageGPU & image)
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   viewInfo.image = image.GetHandle();
-  viewInfo.viewType = ImageType2VulkanImageViewType(image.GetImageType());
-  viewInfo.format = ImageFormat2VulkanEnum(image.GetImageFormat());
+  viewInfo.viewType = utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetImageType());
+  viewInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(image.GetImageFormat());
   viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   viewInfo.subresourceRange.baseMipLevel = 0;
   viewInfo.subresourceRange.levelCount = 1;
@@ -188,12 +133,33 @@ void ImageGPU::UploadAsync(const void * data, size_t size, size_t offset)
       "This buffer isn't appropriate for async uploading. Use UploadSync or mapping");
   BufferGPU stagingBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator);
   stagingBuffer.UploadSync(data, size, offset);
-  m_transferer->UploadImage(m_image, std::move(stagingBuffer));
+  m_transferer->UploadImage(this, std::move(stagingBuffer));
 }
 
 VkImage ImageGPU::GetHandle() const noexcept
 {
   return static_cast<VkImage>(m_image);
+}
+
+void ImageGPU::SetImageLayout(details::CommandBuffer & commandBuffer,
+                              VkImageLayout newLayout) noexcept
+{
+  VkImageMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.oldLayout = m_layout;
+  barrier.newLayout = newLayout;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = m_image;
+  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = m_args.mipLevels;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+  barrier.srcAccessMask = 0; // TODO
+  barrier.dstAccessMask = 0; // TODO
+  commandBuffer.PushCommand(vkCmdPipelineBarrier, 0, 0, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+  m_layout = newLayout;
 }
 
 ImageType ImageGPU::GetImageType() const noexcept

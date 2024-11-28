@@ -358,6 +358,7 @@ struct IContext
 
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
   virtual ITransferer* GetTransferer() = 0;
+  virtual void WaitForIdle() const noexcept = 0;
 
 
   /// @brief create offscreen framebuffer

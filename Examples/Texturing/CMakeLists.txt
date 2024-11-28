@@ -2,6 +2,7 @@ project(Texturing)
 
 add_executable(${PROJECT_NAME} 
 	"main.cpp"
+	"stb_image.h"
 )
 
 target_link_libraries(${PROJECT_NAME} 
@@ -16,3 +17,4 @@ SHADERS
 	"textures.vert"
 SHADERS_DIRECTORY ${PROJECT_NAME}
 )
+file(COPY texture.png DESTINATION ${APP_DIR})

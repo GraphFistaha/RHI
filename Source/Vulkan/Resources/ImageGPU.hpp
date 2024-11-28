@@ -1,5 +1,6 @@
 #pragma once
 #include "BufferGPU.hpp"
+#include "../CommandsExecution/CommandBuffer.hpp"
 
 namespace RHI::vulkan
 {
@@ -26,10 +27,15 @@ struct ImageGPU : public IImageGPU,
 
 public:
   VkImage GetHandle() const noexcept;
+  void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
+
+  const ImageCreateArguments & GetParameters() const & noexcept { return m_args; }
 
 private:
   const Context & m_context;
   vk::Image m_image;
+  VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+  //VkFormat m_format;
   ImageCreateArguments m_args;
 };
 

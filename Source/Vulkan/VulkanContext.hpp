@@ -48,13 +48,13 @@ public: // IContext interface
                                                   bool mapped = false) const override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
 
+  virtual void WaitForIdle() const noexcept override;
 public: // RHI-only API
   const vk::Instance GetInstance() const;
   const vk::Device GetDevice() const;
   const vk::PhysicalDevice GetGPU() const;
   std::pair<uint32_t, VkQueue> GetQueue(QueueType type) const;
   uint32_t GetVulkanVersion() const;
-  void WaitForIdle() const;
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
 
   const details::BuffersAllocator & GetBuffersAllocator() const & noexcept;

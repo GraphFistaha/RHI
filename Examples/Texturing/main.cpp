@@ -1,8 +1,10 @@
 #include <cstdio>
 
-#include <RHI.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #include <GLFW/glfw3.h>
+#include <RHI.hpp>
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -34,7 +36,7 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSwapchain().Invalidate();
+  ctx->GetSurfaceSwapchain()->Invalidate();
   ShouldInvalidateScene = true;
 }
 
@@ -86,101 +88,90 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ImageCreateArguments imageArgs;
-  imageArgs.width = 32;
-  imageArgs.height = 32;
+  int w = 0, h = 0, channels = 4;
+  uint8_t * pixel_data = stbi_load("texture.png", &w, &h, &channels, STBI_rgb_alpha);
+  if (!pixel_data)
+  {
+    throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
+  }
+
+  RHI::ImageCreateArguments imageArgs{};
+  imageArgs.width = w;
+  imageArgs.height = h;
   imageArgs.depth = 1;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;
-  imageArgs.format = RHI::ImageFormat::RGBA8;
+  imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
   imageArgs.usage = RHI::ImageGPUUsage::Sample;
   auto texture = ctx->AllocImage(imageArgs);
+  texture->UploadAsync(pixel_data, w * h * sizeof(int));
+  stbi_image_free(pixel_data);
 
-  // pipeline must be associated with some framebuffer.
-  // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
-  auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
-
+  auto * swapchain = ctx->GetSurfaceSwapchain();
+  auto * subpass = swapchain->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
-  {
-    trianglePipeline->AttachShader(RHI::ShaderType::Vertex,
-                                   std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
-    trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
-                                   std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
-    trianglePipeline->AddInputBinding(0, sizeof(VertexData), RHI::InputBindingType::VertexData);
-    trianglePipeline->AddInputAttribute(0, 0, offsetof(VertexData, ndc_x), 2,
-                                        RHI::InputAttributeElementType::FLOAT);
-    trianglePipeline->AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
-                                        RHI::InputAttributeElementType::FLOAT);
+  auto && trianglePipeline = subpass->GetConfiguration();
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
+                                std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
+                                std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
+  trianglePipeline.AddInputBinding(0, sizeof(VertexData), RHI::InputBindingType::VertexData);
+  trianglePipeline.AddInputAttribute(0, 0, offsetof(VertexData, ndc_x), 2,
+                                     RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
+                                     RHI::InputAttributeElementType::FLOAT);
 
-    auto && tbuf =
-      trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                       sizeof(float));
+  auto && tbuf =
+    trianglePipeline.DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
+                                    sizeof(float));
 
-    auto && texSampler =
-      trianglePipeline->DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
-    texSampler->GetImageView().AssignImage(*texture);
-    texSampler->Invalidate();
-
-    // don't forget to call Invalidate to apply all changed settings
-    trianglePipeline->Invalidate();
-  }
+  auto && texSampler = trianglePipeline.DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
+  texSampler->GetImageView().AssignImage(*texture);
+  texSampler->Invalidate();
 
   // create vertex buffer
   auto && vertexBuffer =
     ctx->AllocBuffer(VerticesCount * sizeof(VertexData), RHI::BufferGPUUsage::VertexBuffer);
-  if (auto scoped_map = vertexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * sizeof(VertexData));
-  }
-  vertexBuffer->Flush();
-
+  vertexBuffer->UploadAsync(Vertices, VerticesCount * sizeof(VertexData));
 
   // create index buffer
   auto indexBuffer =
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  if (auto scoped_map = indexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
-  }
-  indexBuffer->Flush();
+  indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
-  // command buffer for drawing triangle
-  auto && trianglePipelineCommands = ctx->GetSwapchain().CreateCommandBuffer();
   ShouldInvalidateScene = true;
   float x = 0.0f;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    // fill trianglePipelineCommands
-    if (ShouldInvalidateScene)
+    ctx->GetTransferer()->Flush();
+
+    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
-      // get size of window
-      int width, height;
-      glfwGetFramebufferSize(window, &width, &height);
-      // clear commands buffer
-      trianglePipelineCommands->Reset();
-      // enter in editing mode.
-      trianglePipelineCommands->BeginWriting(defaultFramebuffer, *trianglePipeline);
-      // here we can push all commands you want
+      renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
+      if (ShouldInvalidateScene)
+      {
+        // get size of window
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        subpass->BeginPass();
+        // set viewport
+        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        // set scissor
+        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        // draw triangle
+        subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+        subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+        subpass->DrawIndexedVertices(IndicesCount, 1);
+        subpass->EndPass();
 
-      // set viewport
-      trianglePipelineCommands->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      // set scissor
-      trianglePipelineCommands->SetScissor(0, 0, static_cast<uint32_t>(width),
-                                           static_cast<uint32_t>(height));
-      // draw triangle
-      trianglePipelineCommands->BindVertexBuffer(0, *vertexBuffer, 0);
-      trianglePipelineCommands->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      trianglePipelineCommands->DrawIndexedVertices(IndicesCount, 1);
+        ShouldInvalidateScene = false;
+      }
 
-      // finish editing mode
-      trianglePipelineCommands->EndWriting();
-
-      ShouldInvalidateScene = false;
+      swapchain->FlushFrame();
     }
 
     if (auto map = tbuf->Map())
@@ -188,19 +179,7 @@ int main()
       float t_val = std::abs(std::sinf(x));
       std::memcpy(map.get(), &t_val, sizeof(float));
     }
-
     x += 0.0001f;
-
-    // swapchain used as generic interface for drawing on window
-    auto && swapchain = ctx->GetSwapchain();
-    // begin frame returns Command buffer you should fill.
-    // It's empty on this step.
-    // Written commands will be upload to GPU and executed
-    auto && commands = swapchain.BeginFrame({0.3f, 0.3f, 0.5f, 1.0f});
-    // push trianglePipelineCommands to CommandBuffer for drawing
-    commands->AddCommands(*trianglePipelineCommands);
-    // finish frame and output image on window
-    swapchain.EndFrame();
   }
 
   // wait while gpu is idle to destroy context and its objects correctly

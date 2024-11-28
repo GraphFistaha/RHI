@@ -43,4 +43,68 @@ VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::BufferGPUUs
       throw std::range_error("Failed to cast usage in Vulkan enum");
   }
 }
+
+template<>
+VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
+{
+  return static_cast<VkImageType>(type);
+}
+
+template<>
+VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(ImageType type)
+{
+  switch (type)
+  {
+    case ImageType::Image1D:
+      return VK_IMAGE_VIEW_TYPE_1D;
+    case ImageType::Image2D:
+      return VK_IMAGE_VIEW_TYPE_2D;
+    case ImageType::Image3D:
+      return VK_IMAGE_VIEW_TYPE_3D;
+    default:
+      throw std::range_error("Invalid ImageType");
+  }
+}
+
+template<>
+VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
+{
+  switch (format)
+  {
+    case ImageFormat::RGB8:
+      return VK_FORMAT_R8G8B8_SRGB;
+    case ImageFormat::RGBA8:
+      return VK_FORMAT_R8G8B8A8_SRGB;
+    default:
+      return VK_FORMAT_UNDEFINED;
+  }
+}
+
+template<>
+VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(
+  ImageGPUUsage usage)
+{
+  switch (usage)
+  {
+    case ImageGPUUsage::Sample:
+      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    case ImageGPUUsage::Storage:
+      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    case ImageGPUUsage::FramebufferColorAttachment:
+      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    case ImageGPUUsage::FramebufferDepthStencilAttachment:
+      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    case ImageGPUUsage::FramebufferInputAttachment:
+      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    default:
+      return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
+  }
+}
+
+template<>
+VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits, SamplesCount>(
+  SamplesCount count)
+{
+  return static_cast<VkSampleCountFlagBits>(count);
+}
 } // namespace RHI::vulkan::utils

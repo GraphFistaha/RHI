@@ -207,7 +207,7 @@ std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args
   return std::make_unique<ImageGPU>(*this, *m_allocator, *m_transferer, args);
 }
 
-void Context::WaitForIdle() const
+void Context::WaitForIdle() const noexcept
 {
   vkDeviceWaitIdle(GetDevice());
 }
