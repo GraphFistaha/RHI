@@ -1,5 +1,3 @@
-#pragma once
-
 #include "VulkanContext.hpp"
 
 namespace RHI::vulkan::utils

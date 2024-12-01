@@ -154,9 +154,15 @@ struct Context::Impl final
   std::pair<uint32_t, VkQueue> GetQueue(vkb::QueueType type) const
   {
     auto queue_ret = m_device.get_queue(type);
-    auto familly_index = m_device.get_queue_index(type);
+    // if device doesn't have compute or transfer queue, try graphics for that
+    if ((type == vkb::QueueType::compute || type == vkb::QueueType::transfer) && !queue_ret)
+    {
+      type = vkb::QueueType::graphics;
+      queue_ret = m_device.get_queue(type);
+    }
     if (!queue_ret)
       throw std::runtime_error("failed to request queue");
+    auto familly_index = m_device.get_queue_index(type);
     return std::make_pair(familly_index.value(), queue_ret.value());
   }
 

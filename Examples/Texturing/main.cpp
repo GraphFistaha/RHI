@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <cstring>
+#include <cmath>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -176,7 +178,7 @@ int main()
 
     if (auto map = tbuf->Map())
     {
-      float t_val = std::abs(std::sinf(x));
+      float t_val = std::abs(std::sin(x));
       std::memcpy(map.get(), &t_val, sizeof(float));
     }
     x += 0.0001f;
