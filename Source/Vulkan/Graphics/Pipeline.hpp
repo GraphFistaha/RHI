@@ -6,11 +6,11 @@
 #include "../Utils/PipelineBuilder.hpp"
 #include "../Utils/PipelineLayoutBuilder.hpp"
 #include "DescriptorsBuffer.hpp"
-#include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
 struct Context;
+struct RenderPass;
 }
 
 namespace RHI::vulkan

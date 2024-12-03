@@ -55,7 +55,7 @@ private:
   /// Flag to notify that subpasses can begin pass
   std::atomic_bool m_isReadyForRendering = false;
 
-  std::unique_ptr<details::Submitter> m_submitter;
+  details::Submitter m_submitter;
   std::list<Subpass> m_subpasses;
 };
 } // namespace RHI::vulkan

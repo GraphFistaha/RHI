@@ -1,4 +1,5 @@
 #include "CommandBuffer.hpp"
+
 #include "../VulkanContext.hpp"
 
 namespace
@@ -54,6 +55,30 @@ CommandBuffer::~CommandBuffer()
   }
   if (!!m_pool)
     vkDestroyCommandPool(m_context.GetDevice(), m_pool, nullptr);
+}
+
+CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept
+  : m_context(rhs.m_context)
+{
+  std::swap(rhs.m_pool, m_pool);
+  std::swap(rhs.m_buffer, m_buffer);
+  std::swap(rhs.m_commandsCount, m_commandsCount);
+  std::swap(rhs.m_level, m_level);
+}
+
+CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs)
+{
+  if (this != &rhs)
+  {
+    if (&m_context != &rhs.m_context)
+      throw std::logic_error(
+        "Move command buffer from one context to command buffer from another context");
+    std::swap(rhs.m_pool, m_pool);
+    std::swap(rhs.m_buffer, m_buffer);
+    std::swap(rhs.m_commandsCount, m_commandsCount);
+    std::swap(rhs.m_level, m_level);
+  }
+  return *this;
 }
 
 void CommandBuffer::BeginWriting() const

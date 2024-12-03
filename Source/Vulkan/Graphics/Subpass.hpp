@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
+#include "Pipeline.hpp"
 
 namespace RHI::vulkan
 {
@@ -58,16 +59,16 @@ public: // IInvalidable Interface
   virtual void Invalidate() override;
 
 public:
-  const details::CommandBuffer & GetCommandBuffer() const & noexcept { return *m_executableBuffer; }
+  const details::CommandBuffer & GetCommandBuffer() const & noexcept { return m_executableBuffer; }
   void LockWriting(bool lock) const noexcept;
 
 private:
   const Context & m_context;
   const RenderPass & m_ownerPass;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
-  std::unique_ptr<details::CommandBuffer> m_executableBuffer;
-  std::unique_ptr<details::CommandBuffer> m_writingBuffer;
-  std::unique_ptr<Pipeline> m_pipeline;
+  details::CommandBuffer m_executableBuffer;
+  details::CommandBuffer m_writingBuffer;
+  Pipeline m_pipeline;
   mutable std::mutex m_write_lock;
   std::atomic_bool m_enabled = true;
 };

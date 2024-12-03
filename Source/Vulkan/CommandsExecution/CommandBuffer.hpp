@@ -15,6 +15,8 @@ struct CommandBuffer
 {
   explicit CommandBuffer(const Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
   virtual ~CommandBuffer();
+  CommandBuffer(CommandBuffer && rhs) noexcept;
+  CommandBuffer & operator= (CommandBuffer && rhs);
 
   void BeginWriting() const;
   void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,

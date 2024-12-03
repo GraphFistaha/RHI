@@ -1,19 +1,20 @@
 #include "RenderPass.hpp"
 
 #include "../CommandsExecution/Submitter.hpp"
+#include "../VulkanContext.hpp"
 #include "RenderTarget.hpp"
 #include "Subpass.hpp"
-#include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
 {
 
 RenderPass::RenderPass(const Context & ctx)
   : m_context(ctx)
+  , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
+  , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
+  , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
 {
-  std::tie(m_graphicsQueueFamily, m_graphicsQueue) = ctx.GetQueue(QueueType::Graphics);
-  m_submitter = std::make_unique<details::Submitter>(ctx, m_graphicsQueue, m_graphicsQueueFamily,
-                                                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 RenderPass::~RenderPass()
@@ -32,8 +33,8 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
   assert(m_boundRenderTarget != nullptr);
-  m_submitter->WaitForSubmitCompleted();
-  m_submitter->BeginWriting();
+  m_submitter.WaitForSubmitCompleted();
+  m_submitter.BeginWriting();
 
   VkFramebuffer buf = m_boundRenderTarget ? m_boundRenderTarget->GetHandle() : VK_NULL_HANDLE;
   VkExtent2D extent = m_boundRenderTarget->GetVkExtent();
@@ -48,7 +49,7 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   renderPassInfo.clearValueCount = 1;
   renderPassInfo.pClearValues = &clearValue;
 
-  m_submitter->PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
+  m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                            VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   // execute commands for subpasses
@@ -61,7 +62,7 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
         subpassBuffers.push_back(subpass.GetCommandBuffer().GetHandle());
     }
     if (!subpassBuffers.empty())
-      m_submitter->AddCommands(subpassBuffers);
+      m_submitter.AddCommands(subpassBuffers);
 
     for (auto && subpass : m_subpasses)
     {
@@ -70,9 +71,9 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   }
 
 
-  m_submitter->PushCommand(vkCmdEndRenderPass);
-  m_submitter->EndWriting();
-  auto res = m_submitter->Submit(false /*waitPrevSubmitOnGPU*/, {imageAvailiableSemaphore});
+  m_submitter.PushCommand(vkCmdEndRenderPass);
+  m_submitter.EndWriting();
+  auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, {imageAvailiableSemaphore});
   m_boundRenderTarget = nullptr;
   UpdateRenderingReadyFlag();
   return res;

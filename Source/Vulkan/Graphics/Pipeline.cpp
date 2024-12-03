@@ -1,6 +1,7 @@
 #include "Pipeline.hpp"
 
 #include "../VulkanContext.hpp"
+#include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
