@@ -2,6 +2,8 @@
 
 #include "../CommandsExecution/CommandBuffer.hpp"
 #include "../Resources/BufferGPU.hpp"
+#include "../Utils/CastHelper.hpp"
+#include "../VulkanContext.hpp"
 #include "Pipeline.hpp"
 #include "RenderPass.hpp"
 

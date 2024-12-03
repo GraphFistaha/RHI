@@ -5,79 +5,9 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace vk
+
+namespace RHI::vulkan::utils
 {
-class RenderPass;
-class Framebuffer;
-class Device;
-class ImageView;
-struct Extent;
-} // namespace vk
-
-struct VkAttachmentDescription;
-struct VkAttachmentReference;
-struct VkSubpassDescription;
-struct VkSubpassDependency;
-
-namespace RHI::vulkan::details
-{
-
-struct RenderPassBuilder final
-{
-  using SubpassSlots = std::vector<std::pair<ShaderImageSlot, uint32_t>>;
-  void AddAttachment(const VkAttachmentDescription & description);
-  void AddSubpass(SubpassSlots slotsLayout);
-
-  vk::RenderPass Make(const vk::Device & device) const;
-  void Reset();
-
-private:
-  std::vector<SubpassSlots> m_slots;
-  std::vector<VkAttachmentDescription> m_attachments;
-};
-
-} // namespace RHI::vulkan::details
-
-
-namespace RHI::vulkan::details
-{
-struct FramebufferBuilder final
-{
-  void AddAttachment(const vk::ImageView & image);
-  vk::ImageView & SetAttachment(size_t idx) & noexcept;
-  vk::Framebuffer Make(const vk::Device & device, const vk::RenderPass & renderPass,
-                       const vk::Extent2D & extent) const;
-  void Reset();
-
-private:
-  std::vector<vk::ImageView> m_images;
-};
-
-} // namespace RHI::vulkan::details
-
-
-namespace RHI::vulkan::details
-{
-struct DescriptorSetLayoutBuilder final
-{
-  vk::DescriptorSetLayout Make(const vk::Device & device) const;
-  void Reset();
-  void DeclareDescriptor(uint32_t binding, VkDescriptorType type, ShaderType shaderStage);
-
-private:
-  std::vector<VkDescriptorSetLayoutBinding> m_uniformDescriptions;
-};
-
-
-struct PipelineLayoutBuilder final
-{
-  vk::PipelineLayout Make(const vk::Device & device, const vk::DescriptorSetLayout & layout) const;
-  void Reset() { m_layouts.clear(); }
-
-private:
-  std::vector<VkDescriptorSetLayout> m_layouts;
-};
-
 
 /// @brief Utility-class to automatize pipeline building. It provides default values to many settings nad methods to configure your pipeline
 struct PipelineBuilder final
@@ -131,4 +61,5 @@ private:
   PipelineBuilder(const PipelineBuilder &) = delete;
   PipelineBuilder & operator=(const PipelineBuilder &) = delete;
 };
-} // namespace RHI::vulkan::details
+
+} // namespace RHI::vulkan::utils

@@ -3,6 +3,7 @@
 #include <vk_mem_alloc.h>
 
 #include "../VulkanContext.hpp"
+#include "../Utils/CastHelper.hpp"
 #include "Transferer.hpp"
 
 namespace RHI::vulkan

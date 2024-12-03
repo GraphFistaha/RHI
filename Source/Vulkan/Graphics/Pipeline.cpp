@@ -1,8 +1,7 @@
 #include "Pipeline.hpp"
 
-#include "../Utils/Builders.hpp"
-#include "DescriptorsBuffer.hpp"
-#include "RenderPass.hpp"
+#include "../VulkanContext.hpp"
+
 namespace RHI::vulkan
 {
 
@@ -10,10 +9,8 @@ Pipeline::Pipeline(const Context & ctx, const RenderPass & renderPass, uint32_t 
   : m_owner(ctx)
   , m_renderPass(renderPass)
   , m_subpassIndex(subpassIndex)
+  , m_descriptors(ctx)
 {
-  m_descriptors = std::make_unique<DescriptorBuffer>(ctx);
-  m_layoutBuilder = std::make_unique<details::PipelineLayoutBuilder>();
-  m_pipelineBuilder = std::make_unique<details::PipelineBuilder>();
 }
 
 Pipeline::~Pipeline()
@@ -26,42 +23,42 @@ Pipeline::~Pipeline()
 
 void Pipeline::AttachShader(ShaderType type, const std::filesystem::path & path)
 {
-  m_pipelineBuilder->AttachShader(type, path);
+  m_pipelineBuilder.AttachShader(type, path);
   m_invalidPipeline = true;
 }
 
 void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
 {
-  m_pipelineBuilder->AddInputBinding(slot, stride, type);
+  m_pipelineBuilder.AddInputBinding(slot, stride, type);
   m_invalidPipeline = true;
 }
 
 void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType)
 {
-  m_pipelineBuilder->AddInputAttribute(binding, location, offset, elemsCount, elemsType);
+  m_pipelineBuilder.AddInputAttribute(binding, location, offset, elemsCount, elemsType);
   m_invalidPipeline = true;
 }
 
 IBufferGPU * Pipeline::DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
                                       size_t size)
 {
-  return m_descriptors->DeclareUniform(binding, shaderStage, size);
+  return m_descriptors.DeclareUniform(binding, shaderStage, size);
 }
 
 IImageGPU_Sampler * Pipeline::DeclareSampler(const char * name, uint32_t binding,
                                              ShaderType shaderStage)
 {
-  return m_descriptors->DeclareSampler(binding, shaderStage);
+  return m_descriptors.DeclareSampler(binding, shaderStage);
 }
 
 void Pipeline::Invalidate()
 {
-  m_descriptors->Invalidate();
+  m_descriptors.Invalidate();
 
   if (m_invalidPipelineLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder->Make(m_owner.GetDevice(), m_descriptors->GetLayoutHandle());
+    auto new_layout = m_layoutBuilder.Make(m_owner.GetDevice(), m_descriptors.GetLayoutHandle());
     if (!!m_layout)
       vkDestroyPipelineLayout(m_owner.GetDevice(), m_layout, nullptr);
     m_layout = new_layout;
@@ -71,8 +68,8 @@ void Pipeline::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    auto new_pipeline = m_pipelineBuilder->Make(m_owner.GetDevice(), m_renderPass.GetHandle(),
-                                                m_subpassIndex, m_layout);
+    auto new_pipeline = m_pipelineBuilder.Make(m_owner.GetDevice(), m_renderPass.GetHandle(),
+                                               m_subpassIndex, m_layout);
     m_owner.Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
     if (!!m_pipeline)
       vkDestroyPipeline(m_owner.GetDevice(), m_pipeline, nullptr);
@@ -81,11 +78,11 @@ void Pipeline::Invalidate()
   }
 }
 
-void Pipeline::Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint) const
+void Pipeline::Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint)
 {
   assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
-  m_descriptors->Bind(buffer, m_layout, bindPoint);
+  m_descriptors.Bind(buffer, m_layout, bindPoint);
 }
 
 } // namespace RHI::vulkan

@@ -4,8 +4,9 @@
 #include <array>
 #include <numeric>
 
-#include "../Utils/Builders.hpp"
 #include "../Resources/BufferGPU.hpp"
+#include "../Utils/CastHelper.hpp"
+#include "../VulkanContext.hpp"
 
 
 namespace RHI::vulkan
@@ -124,7 +125,6 @@ RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 DescriptorBuffer::DescriptorBuffer(const Context & ctx)
   : m_owner(ctx)
 {
-  m_layoutBuilder = std::make_unique<details::DescriptorSetLayoutBuilder>();
 }
 
 DescriptorBuffer::~DescriptorBuffer()
@@ -142,7 +142,7 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder->Make(m_owner.GetDevice());
+    auto new_layout = m_layoutBuilder.Make(m_owner.GetDevice());
     if (!!m_layout)
       vkDestroyDescriptorSetLayout(m_owner.GetDevice(), m_layout, nullptr);
     m_layout = new_layout;
@@ -192,14 +192,14 @@ IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shade
 {
   const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   assert(binding == m_bufferDescriptors[type].size() && "set binding in sorted order from 0 to N");
-  m_layoutBuilder->DeclareDescriptor(binding, type, shaderStage);
+  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
   m_invalidLayout = true;
   m_capacity[type]++;
 
   auto bufferUsage = details::DescriptorType2BufferUsage(type);
   auto vkBufferUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(bufferUsage);
-  auto && new_buffer = std::make_unique<BufferGPU>(size, vkBufferUsage,
-                       m_owner.GetBuffersAllocator(), nullptr, true);
+  auto && new_buffer =
+    std::make_unique<BufferGPU>(size, vkBufferUsage, m_owner.GetBuffersAllocator(), nullptr, true);
   auto && descriptedBuffer = m_bufferDescriptors[type].emplace_back(binding, std::move(new_buffer));
   return descriptedBuffer.second.get();
 }
@@ -207,7 +207,7 @@ IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shade
 IImageGPU_Sampler * DescriptorBuffer::DeclareSampler(uint32_t binding, ShaderType shaderStage)
 {
   const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  m_layoutBuilder->DeclareDescriptor(binding, type, shaderStage);
+  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
   m_invalidLayout = true;
 
   m_capacity[type]++;

@@ -10,9 +10,6 @@
 
 namespace RHI::vulkan
 {
-constexpr const char * apiFolder = ".vulkan";
-constexpr const char * shaderExtension = ".spv";
-
 enum class QueueType : uint8_t
 {
   Present,
@@ -81,14 +78,5 @@ namespace RHI::vulkan::utils
 vk::Semaphore CreateVkSemaphore(vk::Device device);
 /// @brief creates fence, doesn't own it
 vk::Fence CreateFence(vk::Device device, bool locked = false);
-
-template<typename InternalClassT, typename InterfaceClassT>
-decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
-{
-  return dynamic_cast<const InternalClassT &>(std::forward<InterfaceClassT>(obj));
-}
-
-template<typename VulkanEnumT, typename InterfaceEnumT>
-VulkanEnumT CastInterfaceEnum2Vulkan(InterfaceEnumT value);
 
 } // namespace RHI::vulkan::utils

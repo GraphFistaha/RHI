@@ -1,92 +1,37 @@
-#include "Builders.hpp"
+#include "PipelineBuilder.hpp"
+
+#include "CastHelper.hpp"
 #include "ShaderCompiler.hpp"
 
 namespace
 {
-
-VkShaderStageFlagBits ShaderType2VulkanEnum(RHI::ShaderType type)
-{
-  return static_cast<VkShaderStageFlagBits>(type);
-}
-
-} // namespace
-
-namespace RHI::vulkan::details
-{
-vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Make(const vk::Device & device) const
-{
-  // create descriptor set layout
-  VkDescriptorSetLayoutCreateInfo dsetLayoutInfo{};
-  dsetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  dsetLayoutInfo.bindingCount = static_cast<uint32_t>(m_uniformDescriptions.size());
-  dsetLayoutInfo.pBindings = m_uniformDescriptions.data();
-
-  VkDescriptorSetLayout descr_layout;
-  if (auto res = vkCreateDescriptorSetLayout(device, &dsetLayoutInfo, nullptr, &descr_layout);
-      res != VK_SUCCESS)
-    throw std::runtime_error("Failed to create descriptor set layout");
-  return vk::DescriptorSetLayout(descr_layout);
-}
-
-void DescriptorSetLayoutBuilder::Reset()
-{
-  m_uniformDescriptions.clear();
-}
-
-void DescriptorSetLayoutBuilder::DeclareDescriptor(uint32_t binding, VkDescriptorType type,
-                                                   ShaderType shaderStagesMask)
-{
-  auto && uniformBinding = m_uniformDescriptions.emplace_back();
-  uniformBinding.binding = binding;
-  uniformBinding.descriptorType = type;
-  uniformBinding.descriptorCount = 1;
-  uniformBinding.stageFlags = ShaderType2VulkanEnum(shaderStagesMask);
-  uniformBinding.pImmutableSamplers = nullptr; // Optional
-}
-
-} // namespace RHI::vulkan::details
-
-namespace RHI::vulkan::details
-{
-VkVertexInputRate InputBindingType2VulkanEnum(InputBindingType type)
+VkFormat InputAttributeElementFormat2VulkanEnum(uint32_t elemsCount,
+                                                RHI::InputAttributeElementType type)
 {
   switch (type)
   {
-    case InputBindingType::VertexData:
-      return VK_VERTEX_INPUT_RATE_VERTEX;
-    case InputBindingType::InstanceData:
-      return VK_VERTEX_INPUT_RATE_INSTANCE;
-    default:
-      throw std::runtime_error("Failed to cast InputBindingType to vulkan enum");
-  }
-}
-
-VkFormat InputAttributeElementFormat2VulkanEnum(uint32_t elemsCount, InputAttributeElementType type)
-{
-  switch (type)
-  {
-    case InputAttributeElementType::FLOAT:
+    case RHI::InputAttributeElementType::FLOAT:
     {
       constexpr VkFormat formats[] = {VK_FORMAT_UNDEFINED, VK_FORMAT_R32_SFLOAT,
                                       VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT,
                                       VK_FORMAT_R32G32B32A32_SFLOAT};
       return formats[elemsCount];
     }
-    case InputAttributeElementType::DOUBLE:
+    case RHI::InputAttributeElementType::DOUBLE:
     {
       constexpr VkFormat formats[] = {VK_FORMAT_UNDEFINED, VK_FORMAT_R64_SFLOAT,
                                       VK_FORMAT_R64G64_SFLOAT, VK_FORMAT_R64G64B64_SFLOAT,
                                       VK_FORMAT_R64G64B64A64_SFLOAT};
       return formats[elemsCount];
     }
-    case InputAttributeElementType::UINT:
+    case RHI::InputAttributeElementType::UINT:
     {
       constexpr VkFormat formats[] = {VK_FORMAT_UNDEFINED, VK_FORMAT_R32_UINT,
                                       VK_FORMAT_R32G32_UINT, VK_FORMAT_R32G32B32_UINT,
                                       VK_FORMAT_R32G32B32A32_UINT};
       return formats[elemsCount];
     }
-    case InputAttributeElementType::SINT:
+    case RHI::InputAttributeElementType::SINT:
     {
       constexpr VkFormat formats[] = {VK_FORMAT_UNDEFINED, VK_FORMAT_R32_SINT,
                                       VK_FORMAT_R32G32_SINT, VK_FORMAT_R32G32B32_SINT,
@@ -97,31 +42,9 @@ VkFormat InputAttributeElementFormat2VulkanEnum(uint32_t elemsCount, InputAttrib
       throw std::runtime_error("Failed to cast InputAttributeFormat to vulkan enum");
   }
 }
+} // namespace
 
-
-vk::PipelineLayout PipelineLayoutBuilder::Make(
-  const vk::Device & device, const vk::DescriptorSetLayout & descriptorsLayout) const
-{
-  auto tmp = static_cast<VkDescriptorSetLayout>(descriptorsLayout);
-  // create pipeline layout
-  VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = tmp == VK_NULL_HANDLE ? 0 : 1;       // Optional
-  pipelineLayoutInfo.pSetLayouts = tmp == VK_NULL_HANDLE ? nullptr : &tmp; // Optional
-  pipelineLayoutInfo.pushConstantRangeCount = 0;                           // Optional
-  pipelineLayoutInfo.pPushConstantRanges = nullptr;                        // Optional
-
-  VkPipelineLayout layout;
-  if (auto res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &layout);
-      res != VK_SUCCESS)
-    throw std::runtime_error("Failed to create pipeline layout - ");
-  return layout;
-}
-
-} // namespace RHI::vulkan::details
-
-
-namespace RHI::vulkan::details
+namespace RHI::vulkan::utils
 {
 PipelineBuilder::PipelineBuilder()
 {
@@ -214,7 +137,7 @@ vk::Pipeline PipelineBuilder::Make(const vk::Device & device, const VkRenderPass
     compiledShaders.push_back(module);
     auto && info = shaderStages.emplace_back(VkPipelineShaderStageCreateInfo{});
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    info.stage = ::ShaderType2VulkanEnum(type);
+    info.stage = CastInterfaceEnum2Vulkan<VkShaderStageFlagBits>(type);
     info.pName = "main";
     info.module = module;
   }
@@ -282,7 +205,7 @@ void PipelineBuilder::AddInputBinding(uint32_t slot, uint32_t stride, InputBindi
   auto && bindingDescription = m_bindings.emplace_back();
   bindingDescription.binding = slot;
   bindingDescription.stride = stride;
-  bindingDescription.inputRate = details::InputBindingType2VulkanEnum(type);
+  bindingDescription.inputRate = CastInterfaceEnum2Vulkan<VkVertexInputRate>(type);
 }
 
 void PipelineBuilder::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -292,7 +215,7 @@ void PipelineBuilder::AddInputAttribute(uint32_t binding, uint32_t location, uin
   attrDescription.binding = binding;
   attrDescription.location = location;
   attrDescription.offset = offset;
-  attrDescription.format = details::InputAttributeElementFormat2VulkanEnum(elemsCount, type);
+  attrDescription.format = ::InputAttributeElementFormat2VulkanEnum(elemsCount, type);
 }
 
-} // namespace RHI::vulkan::details
+} // namespace RHI::vulkan::utils

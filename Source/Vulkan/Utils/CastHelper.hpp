@@ -1,9 +1,28 @@
-#include "VulkanContext.hpp"
+#pragma once
+
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan::utils
 {
+template<typename InternalClassT, typename InterfaceClassT>
+decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
+{
+  return dynamic_cast<const InternalClassT &>(std::forward<InterfaceClassT>(obj));
+}
+
+template<typename VulkanEnumT, typename InterfaceEnumT>
+inline VulkanEnumT CastInterfaceEnum2Vulkan(InterfaceEnumT value);
+
+} // namespace RHI::vulkan::utils
+
+
+// ------------------------ Specializations ---------------------------
+namespace RHI::vulkan::utils
+{
+
 template<>
-VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(RHI::IndexType type)
+inline VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(RHI::IndexType type)
 {
   using namespace RHI;
   switch (type)
@@ -20,7 +39,7 @@ VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(RHI::IndexType
 }
 
 template<>
-VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::BufferGPUUsage>(
+inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::BufferGPUUsage>(
   RHI::BufferGPUUsage usage)
 {
   switch (usage)
@@ -43,13 +62,13 @@ VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::BufferGPUUs
 }
 
 template<>
-VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
+inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
 {
   return static_cast<VkImageType>(type);
 }
 
 template<>
-VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(ImageType type)
+inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(ImageType type)
 {
   switch (type)
   {
@@ -65,7 +84,7 @@ VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(ImageType t
 }
 
 template<>
-VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
+inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
 {
   switch (format)
   {
@@ -79,8 +98,7 @@ VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
 }
 
 template<>
-VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(
-  ImageGPUUsage usage)
+inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(ImageGPUUsage usage)
 {
   switch (usage)
   {
@@ -100,9 +118,32 @@ VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(
 }
 
 template<>
-VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits, SamplesCount>(
+inline VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits, SamplesCount>(
   SamplesCount count)
 {
   return static_cast<VkSampleCountFlagBits>(count);
 }
+
+template<>
+inline VkShaderStageFlagBits CastInterfaceEnum2Vulkan<VkShaderStageFlagBits, RHI::ShaderType>(
+  RHI::ShaderType type)
+{
+  return static_cast<VkShaderStageFlagBits>(type);
+}
+
+template<>
+inline VkVertexInputRate CastInterfaceEnum2Vulkan<VkVertexInputRate, RHI::InputBindingType>(
+  InputBindingType type)
+{
+  switch (type)
+  {
+    case InputBindingType::VertexData:
+      return VK_VERTEX_INPUT_RATE_VERTEX;
+    case InputBindingType::InstanceData:
+      return VK_VERTEX_INPUT_RATE_INSTANCE;
+    default:
+      throw std::runtime_error("Failed to cast InputBindingType to vulkan enum");
+  }
+}
+
 } // namespace RHI::vulkan::utils

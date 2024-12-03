@@ -1,16 +1,20 @@
 #pragma once
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "../Utils/PipelineBuilder.hpp"
+#include "../Utils/PipelineLayoutBuilder.hpp"
+#include "DescriptorsBuffer.hpp"
+#include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
-struct RenderPass;
-struct DescriptorBuffer;
-namespace details
+struct Context;
+}
+
+namespace RHI::vulkan
 {
-struct PipelineBuilder;
-struct PipelineLayoutBuilder;
-} // namespace details
 
 struct Pipeline final : public IPipeline
 {
@@ -24,14 +28,14 @@ struct Pipeline final : public IPipeline
   virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
                                       size_t size) override;
   virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
-                                     ShaderType shaderStage) override;
+                                             ShaderType shaderStage) override;
 
   virtual void Invalidate() override;
   virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }
 
   vk::Pipeline GetPipelineHandle() const noexcept { return m_pipeline; }
 
-  void Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint) const;
+  void Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint);
 
 private:
   const Context & m_owner;
@@ -40,11 +44,11 @@ private:
 
   vk::PipelineLayout m_layout = VK_NULL_HANDLE;
   vk::Pipeline m_pipeline = VK_NULL_HANDLE;
-  std::unique_ptr<DescriptorBuffer> m_descriptors;
+  DescriptorBuffer m_descriptors;
 
 
-  std::unique_ptr<details::PipelineLayoutBuilder> m_layoutBuilder;
-  std::unique_ptr<details::PipelineBuilder> m_pipelineBuilder;
+  utils::PipelineLayoutBuilder m_layoutBuilder;
+  utils::PipelineBuilder m_pipelineBuilder;
   bool m_invalidPipeline : 1 = false;
   bool m_invalidPipelineLayout : 1 = false;
 };

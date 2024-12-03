@@ -5,9 +5,15 @@
 #include <string>
 #include <vector>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
 
-namespace RHI::vulkan::details
+namespace RHI::vulkan
+{
+constexpr const char * apiFolder = ".vulkan";
+constexpr const char * shaderExtension = ".spv";
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan::utils
 {
 
 /// @brief reads shader SPIR-V file as binary
@@ -16,11 +22,11 @@ namespace RHI::vulkan::details
 std::vector<uint32_t> ReadSPIRV(const std::filesystem::path & path)
 {
   std::vector<uint32_t> words;
-  #ifdef _WIN32
+#ifdef _WIN32
   FILE * f = _wfopen(path.c_str(), L"rb");
-  #else
+#else
   FILE * f = fopen(path.c_str(), "rb");
-  #endif
+#endif
   if (f)
   {
     fseek(f, 0, SEEK_END);
@@ -56,4 +62,4 @@ vk::ShaderModule BuildShaderModule(const vk::Device & device, const std::filesys
   return vk::ShaderModule(module);
 }
 
-} // namespace RHI::vulkan::details
+} // namespace RHI::vulkan::utils

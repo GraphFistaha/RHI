@@ -66,6 +66,7 @@ SemaphoreHandle Transferer::Flush()
   m_submitter->EndWriting();
   return m_submitter->Submit(true, {});
 }
+
 void Transferer::UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept
 {
   m_tasks.emplace(UploadTask{dstBuffer, VK_NULL_HANDLE, std::move(stagingBuffer)});

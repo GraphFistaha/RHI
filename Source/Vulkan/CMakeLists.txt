@@ -2,8 +2,9 @@ target_sources (${PROJECT_NAME}
 PRIVATE
 	VulkanContext.cpp
 	VulkanContext.hpp
-	EnumCasts.cpp
-	
+		
+	Graphics/SwapchainBase.cpp
+	Graphics/SwapchainBase.hpp
 	Graphics/Swapchain.cpp
 	Graphics/Swapchain.hpp
 	Graphics/DescriptorsBuffer.cpp
@@ -20,9 +21,18 @@ PRIVATE
 	Resources/Transferer.hpp
 	Resources/Transferer.cpp
 
-	Utils/PipelineBuilder.cpp 
+	Utils/CastHelper.hpp
+	Utils/DescriptorSetLayoutBuilder.cpp
+	Utils/DescriptorSetLayoutBuilder.hpp
 	Utils/FramebufferBuilder.cpp
-	Utils/Builders.hpp
+	Utils/FramebufferBuilder.hpp
+	Utils/PipelineBuilder.cpp 
+	Utils/PipelineBuilder.hpp
+	Utils/PipelineLayoutBuilder.cpp
+	Utils/PipelineLayoutBuilder.hpp
+	Utils/RenderPassBuilder.cpp
+	Utils/RenderPassBuilder.hpp
+	Utils/ShaderCompiler.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

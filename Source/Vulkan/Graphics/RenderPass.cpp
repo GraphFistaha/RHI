@@ -1,16 +1,15 @@
 #include "RenderPass.hpp"
 
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Utils/Builders.hpp"
 #include "RenderTarget.hpp"
 #include "Subpass.hpp"
+#include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
 {
 
 RenderPass::RenderPass(const Context & ctx)
   : m_context(ctx)
-  , m_builder(new details::RenderPassBuilder())
 {
   std::tie(m_graphicsQueueFamily, m_graphicsQueue) = ctx.GetQueue(QueueType::Graphics);
   m_submitter = std::make_unique<details::Submitter>(ctx, m_graphicsQueue, m_graphicsQueueFamily,
@@ -91,7 +90,7 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
   VkFramebuffer fbHandle = renderTarget->GetHandle();
   if (m_cachedAttachments != renderTarget->GetAttachments())
   {
-    m_builder->Reset();
+    m_builder.Reset();
     auto && fboAttachments = renderTarget->GetAttachments();
     uint32_t attachmentIndex = 0;
     for (auto && attachment : fboAttachments)
@@ -108,8 +107,8 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
       renderPassAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
       renderPassAttachment.finalLayout = attachment.GetImageLayout();
 
-      m_builder->AddAttachment(renderPassAttachment);
-      m_builder->AddSubpass(
+      m_builder.AddAttachment(renderPassAttachment);
+      m_builder.AddSubpass(
         {{ShaderImageSlot::Color /*TODO: it depends on attachment*/, attachmentIndex++}});
     }
     m_cachedAttachments = renderTarget->GetAttachments();
@@ -123,7 +122,7 @@ void RenderPass::Invalidate()
 {
   if (m_invalidRenderPass || !m_renderPass)
   {
-    auto new_renderpass = m_builder->Make(m_context.GetDevice());
+    auto new_renderpass = m_builder.Make(m_context.GetDevice());
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
     m_context.WaitForIdle();
     if (!!m_renderPass)

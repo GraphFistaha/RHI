@@ -1,14 +1,18 @@
 #pragma once
 
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
 #include "../Resources/ImageGPU.hpp"
-#include "../VulkanContext.hpp"
+#include "../Utils/DescriptorSetLayoutBuilder.hpp"
 
 namespace RHI::vulkan
 {
-namespace details
-{
-struct DescriptorSetLayoutBuilder;
+struct Context;
 }
+
+namespace RHI::vulkan
+{
 
 struct DescriptorBuffer final
 {
@@ -43,7 +47,7 @@ private:
   std::unordered_map<VkDescriptorType, BufferDescriptors> m_bufferDescriptors;
   std::unordered_map<VkDescriptorType, ImageDescriptors> m_imageDescriptors;
 
-  std::unique_ptr<details::DescriptorSetLayoutBuilder> m_layoutBuilder;
+  utils::DescriptorSetLayoutBuilder m_layoutBuilder;
 
   bool m_invalidLayout : 1 = false;
   bool m_invalidPool : 1 = false;

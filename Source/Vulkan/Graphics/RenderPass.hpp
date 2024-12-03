@@ -4,18 +4,22 @@
 #include <list>
 #include <shared_mutex>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "../CommandsExecution/Submitter.hpp"
+#include "../Utils/RenderPassBuilder.hpp"
 #include "FramebufferAttachment.hpp"
+#include "Subpass.hpp"
 
 namespace RHI::vulkan
 {
-namespace details
+struct Context;
+}
+
+namespace RHI::vulkan
 {
-struct RenderPassBuilder;
-struct Submitter;
-} // namespace details
 struct RenderTarget;
-struct Subpass;
 
 struct RenderPass : public IInvalidable
 {
@@ -46,7 +50,7 @@ private:
   /// There is a lot of thread-readers, so it's must be synchronized access
   vk::RenderPass m_renderPass = VK_NULL_HANDLE;
   bool m_invalidRenderPass : 1 = false;
-  std::unique_ptr<details::RenderPassBuilder> m_builder;
+  utils::RenderPassBuilder m_builder;
 
   /// Flag to notify that subpasses can begin pass
   std::atomic_bool m_isReadyForRendering = false;

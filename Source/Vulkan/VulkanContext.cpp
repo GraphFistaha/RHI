@@ -14,6 +14,8 @@
 #include "Resources/ImageGPU.hpp"
 #include "Resources/Transferer.hpp"
 
+#include "Utils/CastHelper.hpp"
+
 // --------------------- Static functions ------------------------------
 
 namespace

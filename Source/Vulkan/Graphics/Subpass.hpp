@@ -1,15 +1,19 @@
 #pragma once
-#include <mutex>
 #include <atomic>
+#include <mutex>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "../CommandsExecution/CommandBuffer.hpp"
 
 namespace RHI::vulkan
 {
-namespace details
-{
-struct CommandBuffer;
+struct Context;
 }
+
+namespace RHI::vulkan
+{
 struct RenderPass;
 struct Pipeline;
 
@@ -26,7 +30,7 @@ public: // ISubpass Interface
   virtual void SetEnabled(bool enabled) noexcept override;
   virtual bool IsEnabled() const noexcept override;
 
-public: // Commands 
+public: // Commands
   /// @brief draw vertices command (analog glDrawArrays)
   void DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
                     std::uint32_t firstVertex = 0, std::uint32_t firstInstance = 0) override;

@@ -3,7 +3,7 @@
 #include <VkBootstrap.h>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
-#include "../Utils/Builders.hpp"
+#include "../VulkanContext.hpp"
 #include "RenderPass.hpp"
 
 namespace RHI::vulkan
@@ -11,7 +11,6 @@ namespace RHI::vulkan
 
 RenderTarget::RenderTarget(const Context & ctx)
   : m_context(ctx)
-  , m_builder(new details::FramebufferBuilder())
 {
 }
 
@@ -36,7 +35,7 @@ void RenderTarget::Invalidate()
   assert(m_boundRenderPass);
   if (m_invalidFramebuffer || !m_framebuffer)
   {
-    auto new_framebuffer = m_builder->Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
+    auto new_framebuffer = m_builder.Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkFramebuffer");
     if (!!m_framebuffer)
       vkDestroyFramebuffer(m_context.GetDevice(), m_framebuffer, nullptr);
@@ -62,7 +61,7 @@ const std::vector<FramebufferAttachment> & RenderTarget::GetAttachments() const 
 void RenderTarget::AddAttachment(const FramebufferAttachment & attachment)
 {
   m_attachments.push_back(attachment);
-  m_builder->AddAttachment(attachment.GetImageView());
+  m_builder.AddAttachment(attachment.GetImageView());
   m_invalidFramebuffer = true;
 }
 

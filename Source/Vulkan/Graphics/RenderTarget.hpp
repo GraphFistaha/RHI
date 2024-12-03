@@ -1,17 +1,20 @@
 #pragma once
 #include <list>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "../Utils/FramebufferBuilder.hpp"
 #include "FramebufferAttachment.hpp"
+#include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
-struct RenderPass;
+struct Context;
+}
 
-namespace details
+namespace RHI::vulkan
 {
-struct FramebufferBuilder;
-} // namespace details
 
 struct RenderTarget : public IRenderTarget
 {
@@ -48,7 +51,7 @@ protected: // framebuffer params
 
 protected: // handle
   vk::Framebuffer m_framebuffer = VK_NULL_HANDLE;
-  std::unique_ptr<details::FramebufferBuilder> m_builder;
+  utils::FramebufferBuilder m_builder;
   bool m_invalidFramebuffer : 1 = false;
 };
 
