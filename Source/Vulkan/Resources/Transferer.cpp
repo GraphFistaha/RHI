@@ -8,19 +8,19 @@ namespace RHI::vulkan
 
 Transferer::Transferer(const Context & ctx)
   : m_context(ctx)
+  , m_queueFamilyIndex(ctx.GetQueue(QueueType::Transfer).first)
+  , m_queue(ctx.GetQueue(QueueType::Transfer).second)
+  , m_submitter(ctx, m_queue, m_queueFamilyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT)
 {
-  auto [familyIndex, queue] = ctx.GetQueue(QueueType::Transfer);
-  m_submitter =
-    std::make_unique<details::Submitter>(ctx, queue, familyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT);
 }
 
 SemaphoreHandle Transferer::Flush()
 {
   if (m_tasks.empty())
     return VK_NULL_HANDLE;
-  m_submitter->WaitForSubmitCompleted();
-  m_submitter->Reset();
-  m_submitter->BeginWriting();
+  m_submitter.WaitForSubmitCompleted();
+  m_submitter.Reset();
+  m_submitter.BeginWriting();
   std::queue<BufferGPU> buffers;
   while (!m_tasks.empty())
   {
@@ -36,11 +36,11 @@ SemaphoreHandle Transferer::Flush()
       copy.dstOffset = 0;
       copy.srcOffset = 0;
       copy.size = stagingBuffer.Size();
-      m_submitter->PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
+      m_submitter.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
     }
     else if (dstImage)
     {
-      dstImage->SetImageLayout(*m_submitter , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
       auto && args = dstImage->GetParameters();
       VkBufferImageCopy region{};
       region.bufferOffset = 0;
@@ -55,16 +55,16 @@ SemaphoreHandle Transferer::Flush()
       region.imageSubresource.baseArrayLayer = 0;
       region.imageSubresource.layerCount = 1;
 
-      m_submitter->PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(),
-                               dstImage->GetHandle(),
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-      dstImage->SetImageLayout(*m_submitter, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      m_submitter.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(),
+                              dstImage->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                              &region);
+      dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
-    
+
     buffers.push(std::move(stagingBuffer));
   }
-  m_submitter->EndWriting();
-  return m_submitter->Submit(true, {});
+  m_submitter.EndWriting();
+  return m_submitter.Submit(true, {});
 }
 
 void Transferer::UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept

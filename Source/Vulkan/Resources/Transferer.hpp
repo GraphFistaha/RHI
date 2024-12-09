@@ -31,7 +31,9 @@ private:
   using UploadTask = std::tuple<VkBuffer, ImageGPU*, BufferGPU>;
 
   const Context & m_context;
-  std::unique_ptr<details::Submitter> m_submitter;
+  uint32_t m_queueFamilyIndex;
+  VkQueue m_queue;
+  details::Submitter m_submitter;
   std::queue<UploadTask> m_tasks;
 };
 
