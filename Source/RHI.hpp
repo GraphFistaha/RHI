@@ -281,30 +281,33 @@ struct IBufferGPU
   virtual size_t Size() const noexcept = 0;
 };
 
-enum class ImageType : uint8_t
-{
-  Image1D = 0,
-  Image2D,
-  Image3D
-};
 
+//----------------- Images ---------------------
+
+/// @brief Defines how image can be used during its life
 enum class ImageGPUUsage : uint8_t
 {
-  Sample,
-  Storage,
-  FramebufferColorAttachment,
-  FramebufferDepthStencilAttachment,
-  FramebufferInputAttachment
+  Sample = BIT(1),
+  Storage = BIT(2),
+  FramebufferColorAttachment = BIT(3),
+  FramebufferDepthStencilAttachment = BIT(4),
+  FramebufferInputAttachment = BIT(5)
 };
 
-enum class SamplesCount : uint8_t
+/// @brief Defines image's layout in memory. Also defines if image can have mipmaps or not
+///        For example image1d is line of pixels, image2d is a rectangle of pixels
+enum class ImageType
 {
-  One = 1,
-  Two = 2,
-  Four = 4,
-  Eight = 8,
+  Image1D = 0, ///< image with height = 1. has only width.Can have one mipmap for a whole image
+  Image2D = 1, ///< generic image with width and height. Can have one mipmap for a whole image
+  Image3D = 2, ///< layered image2d (with depth). Can have one mipmap for a whole image
+  Image1D_Array =
+    3, ///< array of 1d images, layered in memory like 2d image, but each row of pixels has its own mipmap
+  Image2D_Array = 4, ///< the same as image3d, but each layer should have own mipmap
+  Cubemap = 4,       ///< it's image2d_array with length = 6
 };
 
+/// @brief host's image format. Defines in what format image will be uploaded or downloaded
 enum class ImageFormat : uint8_t
 {
   R8,
@@ -316,31 +319,43 @@ enum class ImageFormat : uint8_t
   BGRA8,
   DEPTH,
   DEPTH_STENCIL,
-  TOTAL
 };
 
-struct ImageExtent
+enum class ImageInternalFormat : uint8_t
 {
-  uint32_t width;
-  uint32_t height;
-  uint32_t depth = 1u;
+    RGBA8,
+    DEPTH,
+    DEPTH_STENCIL,
+
 };
+
+enum class SamplesCount : uint8_t
+{
+  One = 1,
+  Two = 2,
+  Four = 4,
+  Eight = 8,
+};
+
+/// @brief Generic pointer on image's pixel.
+/// For Image1D used only 0'th index
+/// For Image2D used only 0 and 1 index
+/// For Image3D used all 3 indices like width, height and layer
+/// For Image1D used 0 and 1 index as width and i-th array element
+/// For Image2D used all 3 indices as width, height and i-th array element
+/// For Cubemap used all 3 indices as width, height and i-th surface of cube
+using ImageExtent = std::array<uint32_t, 3>;
 
 struct ImageRegion
 {
-  uint32_t width_offset = 0;
-  uint32_t height_offset = 0;
-  uint32_t depth_offset = 0;
-  uint32_t width;
-  uint32_t height;
-  uint32_t depth = 1u;
+  ImageExtent offset;
+  ImageExtent extent;
 };
 
 struct ImageCreateArguments final
 {
   ImageType type;
   ImageExtent extent;
-  ImageFormat format;
   uint32_t mipLevels;
   ImageGPUUsage usage;
   SamplesCount samples;
@@ -360,9 +375,8 @@ struct IImageGPU
   virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
   //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
   virtual void Invalidate() noexcept = 0;
-  virtual ImageType GetImageType() const noexcept = 0;
   virtual ImageFormat GetImageFormat() const noexcept = 0;
-  /// @brief Get size of buffer in bytes
+  /// @brief Get size of image in bytes
   virtual size_t Size() const noexcept = 0;
   //virtual void SetSwizzle() = 0;
 };
@@ -401,7 +415,9 @@ struct IContext
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;
 
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage1D(const ImageCreateArguments & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage2D(const ImageCreateArguments & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage3D(const ImageCreateArguments & args) const = 0;
 };
 
 /// @brief Factory-function to create context

@@ -62,21 +62,23 @@ inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::Buff
 }
 
 template<>
-inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
+inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageDimensionality>(
+  ImageDimensionality type)
 {
   return static_cast<VkImageType>(type);
 }
 
 template<>
-inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(ImageType type)
+inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageDimensionality>(
+  ImageDimensionality type)
 {
   switch (type)
   {
-    case ImageType::Image1D:
+    case ImageDimensionality::Image1D:
       return VK_IMAGE_VIEW_TYPE_1D;
-    case ImageType::Image2D:
+    case ImageDimensionality::Image2D:
       return VK_IMAGE_VIEW_TYPE_2D;
-    case ImageType::Image3D:
+    case ImageDimensionality::Image3D:
       return VK_IMAGE_VIEW_TYPE_3D;
     default:
       throw std::range_error("Invalid ImageType");
@@ -90,7 +92,7 @@ inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat form
   switch (format)
   {
     case ImageFormat::R8:
-    case ImageFormat::ALPHA8:
+    case ImageFormat::A8:
       return VK_FORMAT_R8_SRGB;
     case ImageFormat::RG8:
     case ImageFormat::RGB8:
