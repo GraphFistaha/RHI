@@ -83,22 +83,34 @@ inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(Imag
   }
 }
 
+/// @brief cats RHI::ImageFormat into internal image format
 template<>
 inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
 {
   switch (format)
   {
+    case ImageFormat::R8:
+    case ImageFormat::ALPHA8:
+      return VK_FORMAT_R8_SRGB;
+    case ImageFormat::RG8:
     case ImageFormat::RGB8:
-      return VK_FORMAT_R8G8B8_SRGB;
     case ImageFormat::RGBA8:
       return VK_FORMAT_R8G8B8A8_SRGB;
+    case ImageFormat::BGR8:
+    case ImageFormat::BGRA8:
+      return VK_FORMAT_B8G8R8A8_SRGB;
+    case ImageFormat::DEPTH:
+      return VK_FORMAT_D32_SFLOAT;
+    case ImageFormat::DEPTH_STENCIL:
+      return VK_FORMAT_D24_UNORM_S8_UINT;
     default:
       return VK_FORMAT_UNDEFINED;
   }
 }
 
 template<>
-inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(ImageGPUUsage usage)
+inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(
+  ImageGPUUsage usage)
 {
   switch (usage)
   {

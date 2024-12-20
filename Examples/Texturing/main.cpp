@@ -61,6 +61,33 @@ static constexpr VertexData Vertices[] = {
 static constexpr uint32_t IndicesCount = 6;
 static constexpr uint32_t Indices[] = {0, 1, 2, 0, 2, 3};
 
+/// @brief uploads image from file and create RHI image object
+std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path)
+{
+  int w = 0, h = 0, channels = 4;
+  uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, STBI_rgb_alpha);
+  if (!pixel_data)
+  {
+    stbi_image_free(pixel_data);
+    throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
+  }
+
+  RHI::ImageCreateArguments imageArgs{};
+  imageArgs.width = w;
+  imageArgs.height = h;
+  imageArgs.depth = 1;
+  imageArgs.type = RHI::ImageType::Image2D;
+  imageArgs.shared = false;
+  imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
+  imageArgs.mipLevels = 1;
+  imageArgs.samples = RHI::SamplesCount::One;
+  imageArgs.usage = RHI::ImageGPUUsage::Sample;
+  auto texture = ctx.AllocImage(imageArgs);
+  texture->UploadAsync(pixel_data, w * h * sizeof(int));
+  stbi_image_free(pixel_data);
+  return texture;
+}
+
 int main()
 {
   glfwInit();
@@ -90,26 +117,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  int w = 0, h = 0, channels = 4;
-  uint8_t * pixel_data = stbi_load("texture.png", &w, &h, &channels, STBI_rgb_alpha);
-  if (!pixel_data)
-  {
-    throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
-  }
-
-  RHI::ImageCreateArguments imageArgs{};
-  imageArgs.width = w;
-  imageArgs.height = h;
-  imageArgs.depth = 1;
-  imageArgs.type = RHI::ImageType::Image2D;
-  imageArgs.shared = false;
-  imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
-  imageArgs.mipLevels = 1;
-  imageArgs.samples = RHI::SamplesCount::One;
-  imageArgs.usage = RHI::ImageGPUUsage::Sample;
-  auto texture = ctx->AllocImage(imageArgs);
-  texture->UploadAsync(pixel_data, w * h * sizeof(int));
-  stbi_image_free(pixel_data);
+  auto texture = CreateAndLoadImage(*ctx, "texture.png");
 
   auto * swapchain = ctx->GetSurfaceSwapchain();
   auto * subpass = swapchain->CreateSubpass();

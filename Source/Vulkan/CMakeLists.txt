@@ -34,10 +34,18 @@ PRIVATE
 	Utils/RenderPassBuilder.hpp
 	Utils/ShaderCompiler.hpp
 
+	Utils/ImageUtils.cpp
+	Utils/ImageUtils.hpp
+	Utils/ImageFormatsConversation.hpp
+
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp
 	Resources/ImageGPU.cpp
 	Resources/ImageGPU.hpp
+	Resources/ImageSampler.hpp
+	Resources/ImageSampler.cpp
+	Resources/ImageView.cpp
+	Resources/ImageView.hpp
 	Resources/BuffersAllocator.hpp
 	Resources/BuffersAllocator.cpp
 	Resources/BufferBase.hpp
@@ -47,7 +55,7 @@ PRIVATE
 	CommandsExecution/CommandBuffer.hpp 
 	CommandsExecution/Submitter.cpp
 	CommandsExecution/Submitter.hpp
-)
+ )
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)

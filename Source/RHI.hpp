@@ -168,36 +168,6 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
-enum class ImageType : uint8_t
-{
-  Image1D,
-  Image2D,
-  Image3D
-};
-
-enum class ImageGPUUsage : uint8_t
-{
-  Sample,
-  Storage,
-  FramebufferColorAttachment,
-  FramebufferDepthStencilAttachment,
-  FramebufferInputAttachment
-};
-
-enum class SamplesCount : uint8_t
-{
-  One = 1,
-  Two = 2,
-  Four = 4,
-  Eight = 8,
-};
-
-enum class ImageFormat : uint8_t
-{
-  RGB8,
-  RGBA8,
-};
-
 struct IBufferGPU;
 struct IImageGPU;
 struct IImageGPU_Sampler;
@@ -251,7 +221,7 @@ struct ISubpass : IInvalidable
   virtual void SetEnabled(bool enabled) noexcept = 0;
   virtual bool IsEnabled() const noexcept = 0;
 
-   /// @brief draw vertices command (analog glDrawArrays)
+  /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
                             uint32_t firstInstance = 0) = 0;
   /// @brief draw vertices with indieces (analog glDrawElements)
@@ -311,25 +281,89 @@ struct IBufferGPU
   virtual size_t Size() const noexcept = 0;
 };
 
+enum class ImageType : uint8_t
+{
+  Image1D = 0,
+  Image2D,
+  Image3D
+};
+
+enum class ImageGPUUsage : uint8_t
+{
+  Sample,
+  Storage,
+  FramebufferColorAttachment,
+  FramebufferDepthStencilAttachment,
+  FramebufferInputAttachment
+};
+
+enum class SamplesCount : uint8_t
+{
+  One = 1,
+  Two = 2,
+  Four = 4,
+  Eight = 8,
+};
+
+enum class ImageFormat : uint8_t
+{
+  R8,
+  A8,
+  RG8,
+  BGR8,
+  RGB8,
+  RGBA8,
+  BGRA8,
+  DEPTH,
+  DEPTH_STENCIL,
+  TOTAL
+};
+
+struct ImageExtent
+{
+  uint32_t width;
+  uint32_t height;
+  uint32_t depth = 1u;
+};
+
+struct ImageRegion
+{
+  uint32_t width_offset = 0;
+  uint32_t height_offset = 0;
+  uint32_t depth_offset = 0;
+  uint32_t width;
+  uint32_t height;
+  uint32_t depth = 1u;
+};
+
 struct ImageCreateArguments final
 {
   ImageType type;
-  uint32_t width;
-  uint32_t height;
-  uint32_t depth;
-  uint32_t mipLevels;
+  ImageExtent extent;
   ImageFormat format;
+  uint32_t mipLevels;
   ImageGPUUsage usage;
   SamplesCount samples;
   bool shared;
 };
 
-struct IImageGPU : public IBufferGPU
+struct CopyImageArguments
+{
+  ImageFormat format;
+  ImageRegion src;
+  ImageRegion dst;
+};
+
+struct IImageGPU
 {
   virtual ~IImageGPU() = default;
+  virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
+  //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
   virtual void Invalidate() noexcept = 0;
   virtual ImageType GetImageType() const noexcept = 0;
   virtual ImageFormat GetImageFormat() const noexcept = 0;
+  /// @brief Get size of buffer in bytes
+  virtual size_t Size() const noexcept = 0;
   //virtual void SetSwizzle() = 0;
 };
 
@@ -357,7 +391,7 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
-  virtual ITransferer* GetTransferer() = 0;
+  virtual ITransferer * GetTransferer() = 0;
   virtual void WaitForIdle() const noexcept = 0;
 
 

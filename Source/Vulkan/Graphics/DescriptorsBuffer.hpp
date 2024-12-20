@@ -3,7 +3,8 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Resources/ImageGPU.hpp"
+#include "../Resources/BufferGPU.hpp"
+#include "../Resources/ImageSampler.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
 
 namespace RHI::vulkan
