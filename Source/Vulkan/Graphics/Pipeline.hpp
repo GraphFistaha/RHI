@@ -32,6 +32,7 @@ public: // IPipeline interface
                                                     ShaderType shaderStage) override;
   virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding,
                                                      ShaderType shaderStage) override;
+  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) override;
 
   virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }
 
@@ -40,6 +41,7 @@ public: // IInvalidable Interface
 
 public: // public internal API
   vk::Pipeline GetPipelineHandle() const noexcept { return m_pipeline; }
+  VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_layout; }
   void BindToCommandBuffer(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint);
   Subpass & GetSubpassOwner() & noexcept { return m_owner; }
 
@@ -50,6 +52,7 @@ private:
 
   uint32_t m_subpassIndex;
 
+  std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
   vk::PipelineLayout m_layout = VK_NULL_HANDLE;
   vk::Pipeline m_pipeline = VK_NULL_HANDLE;
   DescriptorBuffer m_descriptors;

@@ -56,7 +56,9 @@ public: // Commands
   void BindIndexBuffer(const IBufferGPU & buffer, IndexType type,
                        std::uint32_t offset = 0) override;
 
-//public: // IInvalidable Interface
+
+  void PushConstant(const void * data, size_t size) override;
+  //public: // IInvalidable Interface
   //virtual void Invalidate() override;
 
 public:

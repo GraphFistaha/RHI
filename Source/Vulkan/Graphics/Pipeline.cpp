@@ -1,5 +1,6 @@
 #include "Pipeline.hpp"
 
+#include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 #include "RenderPass.hpp"
 #include "Subpass.hpp"
@@ -54,13 +55,27 @@ ISamplerUniformDescriptor * Pipeline::DeclareSampler(uint32_t binding, ShaderTyp
   return m_descriptors.DeclareSampler(binding, shaderStage);
 }
 
+void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
+{
+  VkPushConstantRange newPushConstantRange{};
+  newPushConstantRange.offset = 0;
+  newPushConstantRange.size = size;
+  newPushConstantRange.stageFlags =
+    utils::CastInterfaceEnum2Vulkan<VkShaderStageFlagBits>(shaderStage);
+  m_pushConstantRange.emplace(newPushConstantRange);
+  m_invalidPipelineLayout = true;
+}
+
 void Pipeline::Invalidate()
 {
   m_descriptors.Invalidate();
 
   if (m_invalidPipelineLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder.Make(m_context.GetDevice(), m_descriptors.GetLayoutHandle());
+    auto new_layout = m_layoutBuilder.Make(m_context.GetDevice(), m_descriptors.GetLayoutHandle(),
+                                           m_pushConstantRange.has_value()
+                                             ? &m_pushConstantRange.value()
+                                             : nullptr);
     if (!!m_layout)
       vkDestroyPipelineLayout(m_context.GetDevice(), m_layout, nullptr);
     m_layout = new_layout;

@@ -8,7 +8,8 @@ namespace RHI::vulkan::utils
 {
 struct PipelineLayoutBuilder final
 {
-  vk::PipelineLayout Make(const vk::Device & device, const vk::DescriptorSetLayout & layout) const;
+  vk::PipelineLayout Make(const vk::Device & device, const vk::DescriptorSetLayout & layout,
+                          const VkPushConstantRange * pushConstantRange) const;
   void Reset() { m_layouts.clear(); }
 
 private:

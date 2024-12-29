@@ -109,6 +109,12 @@ void Subpass::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, std::ui
                               utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
 }
 
+void Subpass::PushConstant(const void * data, size_t size)
+{
+  m_writingBuffer.PushCommand(vkCmdPushConstants, m_pipeline.GetPipelineLayoutHandle(),
+                              VK_SHADER_STAGE_ALL, 0, static_cast<uint32_t>(size), data);
+}
+
 
 /* void Subpass::Invalidate(){
 }*/

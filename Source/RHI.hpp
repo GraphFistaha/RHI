@@ -213,6 +213,7 @@ struct IPipeline : public IInvalidable
 
   virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding, ShaderType shaderStage) = 0;
   virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
+  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
   /* virtual std::pair<IUniformDescriptor *, size_t> DeclareUniformsArray(
     uint32_t binding,
                                                                        ShaderType shaderStage) = 0;*/
@@ -256,6 +257,7 @@ struct ISubpass /* : IInvalidable*/
                                 uint32_t offset = 0) = 0;
   /// @brief binds buffer as index buffer
   virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
+  virtual void PushConstant(const void * data, size_t size) = 0;
 };
 
 // IFramebuffer
