@@ -5,8 +5,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
+#include "../Images/ImageGPU.hpp"
 #include "BufferGPU.hpp"
-#include "ImageGPU.hpp"
 
 namespace RHI::vulkan
 {
@@ -28,7 +28,7 @@ public:
   void UploadImage(ImageGPU *, BufferGPU && stagingBuffer) noexcept;
 
 private:
-  using UploadTask = std::tuple<VkBuffer, ImageGPU*, BufferGPU>;
+  using UploadTask = std::tuple<VkBuffer, ImageGPU *, BufferGPU>;
 
   const Context & m_context;
   uint32_t m_queueFamilyIndex;

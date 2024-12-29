@@ -14,7 +14,7 @@ Subpass::Subpass(const Context & ctx, const RenderPass & ownerPass, uint32_t sub
   , m_ownerPass(ownerPass)
   , m_executableBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writingBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_pipeline(ctx, ownerPass, subpassIndex)
+  , m_pipeline(ctx, *this, ownerPass, subpassIndex)
 {
 }
 
@@ -31,7 +31,7 @@ void Subpass::BeginPass()
   m_pipeline.Invalidate();
   m_writingBuffer.Reset();
   m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpass());
-  m_pipeline.Bind(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
+  m_pipeline.BindToCommandBuffer(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 void Subpass::EndPass()
@@ -42,6 +42,7 @@ void Subpass::EndPass()
     std::lock_guard lk{m_write_lock};
     std::swap(m_executableBuffer, m_writingBuffer);
   }
+  m_shouldBeInvalidated = false;
 }
 
 IPipeline & Subpass::GetConfiguration() & noexcept
@@ -57,6 +58,11 @@ void Subpass::SetEnabled(bool enabled) noexcept
 bool Subpass::IsEnabled() const noexcept
 {
   return m_enabled && !m_executableBuffer.IsEmpty();
+}
+
+bool Subpass::ShouldBeInvalidated() const noexcept
+{
+  return m_shouldBeInvalidated;
 }
 
 void Subpass::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
@@ -104,9 +110,8 @@ void Subpass::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, std::ui
 }
 
 
-void Subpass::Invalidate()
-{
-}
+/* void Subpass::Invalidate(){
+}*/
 
 void Subpass::LockWriting(bool lock) const noexcept
 {
@@ -114,6 +119,11 @@ void Subpass::LockWriting(bool lock) const noexcept
     m_write_lock.lock();
   else
     m_write_lock.unlock();
+}
+
+void Subpass::SetDirtyCacheCommands() noexcept
+{
+  m_shouldBeInvalidated = true;
 }
 
 } // namespace RHI::vulkan

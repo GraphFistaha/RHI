@@ -10,10 +10,9 @@
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/Swapchain.hpp"
+#include "Images/ImageGPU.hpp"
 #include "Resources/BufferGPU.hpp"
-#include "Resources/ImageGPU.hpp"
 #include "Resources/Transferer.hpp"
-
 #include "Utils/CastHelper.hpp"
 
 // --------------------- Static functions ------------------------------
@@ -152,6 +151,10 @@ struct Context::Impl final
   VkInstance GetInstance() const noexcept { return m_instance; }
   VkPhysicalDevice GetGPU() const noexcept { return m_gpu; }
   VkSurfaceKHR GetSurface() const noexcept { return m_surface; }
+  const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept
+  {
+    return m_gpu.properties;
+  }
 
   std::pair<uint32_t, VkQueue> GetQueue(vkb::QueueType type) const
   {
@@ -233,6 +236,11 @@ const vk::Device Context::GetDevice() const
 const vk::PhysicalDevice Context::GetGPU() const
 {
   return m_impl->GetGPU();
+}
+
+const VkPhysicalDeviceProperties & Context::GetGpuProperties() const & noexcept
+{
+  return m_impl->GetGpuProperties();
 }
 
 std::pair<uint32_t, VkQueue> Context::GetQueue(QueueType type) const

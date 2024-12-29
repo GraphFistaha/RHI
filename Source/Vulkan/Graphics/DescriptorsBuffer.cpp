@@ -7,6 +7,8 @@
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
+#include "Pipeline.hpp"
+#include "Subpass.hpp"
 
 
 namespace RHI::vulkan
@@ -58,54 +60,41 @@ vk::DescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool
 }
 
 
-void LinkBufferToDescriptor(const Context & ctx, VkDescriptorSet set, VkDescriptorType type,
-                            uint32_t binding, const BufferGPU & buffer)
+//discover https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
+template<typename UniformT>
+  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, ImageSampler>)
+void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const UniformT & uniform)
 {
-  VkDescriptorBufferInfo bufferInfo{};
-  bufferInfo.buffer = buffer.GetHandle();
-  bufferInfo.range = buffer.Size();
-  bufferInfo.offset = 0;
+  assert(set);
+  auto && info = uniform.CreateDescriptorInfo();
 
   VkWriteDescriptorSet descriptorWrite{};
   descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   descriptorWrite.dstSet = set;
-  descriptorWrite.dstBinding = binding;
+  descriptorWrite.dstBinding = uniform.GetBinding();
   descriptorWrite.dstArrayElement = 0;
-  descriptorWrite.descriptorType = type;
+  descriptorWrite.descriptorType = uniform.GetDescriptorType();
   descriptorWrite.descriptorCount = 1;
-  descriptorWrite.pBufferInfo = &bufferInfo;
-  descriptorWrite.pImageInfo = nullptr;       // Optional
+  if constexpr (std::is_same_v<UniformT, BufferUniform>)
+  {
+    descriptorWrite.pBufferInfo = &info;
+    descriptorWrite.pImageInfo = nullptr; // Optional
+  }
+  else if constexpr (std::is_same_v<UniformT, ImageSampler>)
+  {
+    assert(uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+           uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+           uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER);
+    descriptorWrite.pBufferInfo = nullptr;
+    descriptorWrite.pImageInfo = &info; // Optional
+  }
   descriptorWrite.pTexelBufferView = nullptr; // Optional
 
   vkUpdateDescriptorSets(ctx.GetDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void LinkImageToDescriptor(const Context & ctx, VkDescriptorSet set, VkDescriptorType type,
-                           uint32_t binding, const IImageGPU_Sampler & sampler)
-{
-  VkDescriptorImageInfo imageInfo{};
-  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = reinterpret_cast<VkImageView>(sampler.GetImageView().GetHandle());
-  imageInfo.sampler = reinterpret_cast<VkSampler>(sampler.GetHandle());
 
-  assert(type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-         type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || type == VK_DESCRIPTOR_TYPE_SAMPLER);
-
-  VkWriteDescriptorSet descriptorWrite{};
-  descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptorWrite.dstSet = set;
-  descriptorWrite.dstBinding = binding;
-  descriptorWrite.dstArrayElement = 0;
-  descriptorWrite.descriptorType = type;
-  descriptorWrite.descriptorCount = 1;
-  descriptorWrite.pBufferInfo = nullptr;
-  descriptorWrite.pImageInfo = &imageInfo;    // Optional
-  descriptorWrite.pTexelBufferView = nullptr; // Optional
-
-  vkUpdateDescriptorSets(ctx.GetDevice(), 1, &descriptorWrite, 0, nullptr);
-}
-
-RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
+constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 {
   switch (type)
   {
@@ -122,17 +111,18 @@ RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 } // namespace details
 
 
-DescriptorBuffer::DescriptorBuffer(const Context & ctx)
-  : m_owner(ctx)
+DescriptorBuffer::DescriptorBuffer(const Context & ctx, Pipeline & owner)
+  : m_context(ctx)
+  , m_owner(owner)
 {
 }
 
 DescriptorBuffer::~DescriptorBuffer()
 {
   if (m_layout)
-    vkDestroyDescriptorSetLayout(m_owner.GetDevice(), m_layout, nullptr);
+    vkDestroyDescriptorSetLayout(m_context.GetDevice(), m_layout, nullptr);
   if (m_pool)
-    vkDestroyDescriptorPool(m_owner.GetDevice(), m_pool, nullptr);
+    vkDestroyDescriptorPool(m_context.GetDevice(), m_pool, nullptr);
 }
 
 void DescriptorBuffer::Invalidate()
@@ -142,9 +132,9 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder.Make(m_owner.GetDevice());
+    auto new_layout = m_layoutBuilder.Make(m_context.GetDevice());
     if (!!m_layout)
-      vkDestroyDescriptorSetLayout(m_owner.GetDevice(), m_layout, nullptr);
+      vkDestroyDescriptorSetLayout(m_context.GetDevice(), m_layout, nullptr);
     m_layout = new_layout;
     m_invalidLayout = false;
     m_invalidSet = true;
@@ -152,10 +142,10 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidPool || !m_pool)
   {
-    auto new_pool = details::CreateDescriptorPool(m_owner, m_capacity);
+    auto new_pool = details::CreateDescriptorPool(m_context, m_capacity);
     if (!!m_pool)
     {
-      vkDestroyDescriptorPool(m_owner.GetDevice(), m_pool, nullptr);
+      vkDestroyDescriptorPool(m_context.GetDevice(), m_pool, nullptr);
       m_set = VK_NULL_HANDLE;
     }
     m_pool = new_pool;
@@ -165,60 +155,83 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidSet || !m_set)
   {
-    auto new_set = details::CreateDescriptorSet(m_owner, m_pool, m_layout);
-    for (auto && [type, bufs] : m_bufferDescriptors)
-    {
-      for (auto && [binding, bufPtr] : bufs)
-        details::LinkBufferToDescriptor(m_owner, new_set, type, binding, *bufPtr);
-    }
+    auto new_set = details::CreateDescriptorSet(m_context, m_pool, m_layout);
 
     if (m_set)
     {
       VkDescriptorSet deleting_set = m_set;
-      vkFreeDescriptorSets(m_owner.GetDevice(), m_pool, 1, &deleting_set);
+      vkFreeDescriptorSets(m_context.GetDevice(), m_pool, 1, &deleting_set);
     }
     m_set = new_set;
     m_invalidSet = false;
   }
 
-  for (auto && [type, bufs] : m_imageDescriptors)
+  for (auto && [type, oneTypeDescriptors] : m_bufferUniformDescriptors)
   {
-    for (auto && [binding, samplerPtr] : bufs)
-      details::LinkImageToDescriptor(m_owner, m_set, type, binding, *samplerPtr.get());
+    for (auto && descriptor : oneTypeDescriptors)
+      details::UpdateDescriptorResource(m_context, m_set, descriptor);
+  }
+
+  for (auto && [type, oneTypeDescriptors] : m_samplerDescriptors)
+  {
+    for (auto && descriptor : oneTypeDescriptors)
+      details::UpdateDescriptorResource(m_context, m_set, descriptor);
+  }
+
+  m_owner.GetSubpassOwner().SetDirtyCacheCommands();
+}
+
+BufferUniform * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shaderStage)
+{
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  auto && descriptors = m_bufferUniformDescriptors[type];
+  assert(binding == descriptors.size() && "set binding in sorted order from 0 to N");
+  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
+  m_invalidLayout = true;
+  m_capacity[type]++;
+
+  BufferUniform new_uniform(m_context, *this, type,
+                            static_cast<uint32_t>(descriptors.size()) /*descriptorIndex*/, binding);
+  auto && uniform = descriptors.emplace_back(std::move(new_uniform));
+  return &uniform;
+}
+
+ImageSampler * DescriptorBuffer::DeclareSampler(uint32_t binding, ShaderType shaderStage)
+{
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  auto && descriptors = m_samplerDescriptors[type];
+  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
+  m_invalidLayout = true;
+
+  m_capacity[type]++;
+
+  ImageSampler new_uniform(m_context, *this, type,
+                           static_cast<uint32_t>(descriptors.size()) /*descriptorIndex*/, binding);
+  auto && uniform = descriptors.emplace_back(std::move(new_uniform));
+  return &uniform;
+}
+
+void DescriptorBuffer::OnDescriptorChanged(const BufferUniform & descriptor) noexcept
+{
+  if (m_set)
+  {
+    details::UpdateDescriptorResource(m_context, m_set, descriptor);
+    m_owner.GetSubpassOwner().SetDirtyCacheCommands();
   }
 }
 
-IBufferGPU * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shaderStage, size_t size)
+void DescriptorBuffer::OnDescriptorChanged(const ImageSampler & descriptor) noexcept
 {
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  assert(binding == m_bufferDescriptors[type].size() && "set binding in sorted order from 0 to N");
-  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
-  m_invalidLayout = true;
-  m_capacity[type]++;
-
-  auto bufferUsage = details::DescriptorType2BufferUsage(type);
-  auto vkBufferUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(bufferUsage);
-  auto && new_buffer =
-    std::make_unique<BufferGPU>(size, vkBufferUsage, m_owner.GetBuffersAllocator(), nullptr, true);
-  auto && descriptedBuffer = m_bufferDescriptors[type].emplace_back(binding, std::move(new_buffer));
-  return descriptedBuffer.second.get();
+  if (m_set)
+  {
+    details::UpdateDescriptorResource(m_context, m_set, descriptor);
+    m_owner.GetSubpassOwner().SetDirtyCacheCommands();
+  }
 }
 
-IImageGPU_Sampler * DescriptorBuffer::DeclareSampler(uint32_t binding, ShaderType shaderStage)
-{
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
-  m_invalidLayout = true;
-
-  m_capacity[type]++;
-
-  auto && sampler = std::make_unique<ImageGPU_Sampler>(m_owner);
-  auto && descriptedImage = m_imageDescriptors[type].emplace_back(binding, std::move(sampler));
-  return descriptedImage.second.get();
-}
-
-void DescriptorBuffer::Bind(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
-                            VkPipelineBindPoint bindPoint)
+void DescriptorBuffer::BindToCommandBuffer(const vk::CommandBuffer & buffer,
+                                           vk::PipelineLayout pipelineLayout,
+                                           VkPipelineBindPoint bindPoint)
 {
   if (m_set)
   {

@@ -1,6 +1,6 @@
 #pragma once
 #include "../CommandsExecution/CommandBuffer.hpp"
-#include "BufferGPU.hpp"
+#include "../Resources/BufferGPU.hpp"
 
 namespace RHI::vulkan
 {
@@ -17,6 +17,7 @@ struct ImageGPU : public IImageGPU,
   virtual void UploadImage(const uint8_t * data, const CopyImageArguments & args) override;
   virtual size_t Size() const noexcept override { return BufferBase::Size(); }
 
+  virtual ImageExtent GetExtent() const noexcept override;
   virtual ImageType GetImageType() const noexcept override;
   virtual ImageFormat GetImageFormat() const noexcept override;
 

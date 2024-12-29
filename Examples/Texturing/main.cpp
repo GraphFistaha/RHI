@@ -1,12 +1,12 @@
+#include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <cmath>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <GLFW/glfw3.h>
 #include <RHI.hpp>
+
+#include "stb_image.h"
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -33,6 +33,7 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 
 // flag means that you should clear and update trianglePipelineCommands (see in main)
 bool ShouldInvalidateScene = true;
+bool ShouldSwitchNextImage = false;
 
 // Resize window callback
 void OnResizeWindow(GLFWwindow * window, int width, int height)
@@ -40,6 +41,14 @@ void OnResizeWindow(GLFWwindow * window, int width, int height)
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
   ctx->GetSurfaceSwapchain()->Invalidate();
   ShouldInvalidateScene = true;
+}
+
+void OnKeyPressed(GLFWwindow * window, int key, int scancode, int action, int mods)
+{
+  if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+  {
+    ShouldSwitchNextImage = true;
+  }
 }
 
 struct VertexData
@@ -62,28 +71,31 @@ static constexpr uint32_t IndicesCount = 6;
 static constexpr uint32_t Indices[] = {0, 1, 2, 0, 2, 3};
 
 /// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path)
+std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path,
+                                                   bool with_alpha)
 {
-  int w = 0, h = 0, channels = 4;
-  uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, STBI_rgb_alpha);
+  int w = 0, h = 0, channels = 3;
+  uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);
   if (!pixel_data)
   {
-    stbi_image_free(pixel_data);
     throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
   }
 
+  RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+
   RHI::ImageCreateArguments imageArgs{};
-  imageArgs.width = w;
-  imageArgs.height = h;
-  imageArgs.depth = 1;
+  imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;
-  imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
+  imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  imageArgs.usage = RHI::ImageGPUUsage::Sample;
   auto texture = ctx.AllocImage(imageArgs);
-  texture->UploadAsync(pixel_data, w * h * sizeof(int));
+  RHI::CopyImageArguments copyArgs{};
+  copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
+  copyArgs.src.extent = extent;
+  copyArgs.dst.extent = extent;
+  texture->UploadImage(pixel_data, copyArgs);
   stbi_image_free(pixel_data);
   return texture;
 }
@@ -103,6 +115,7 @@ int main()
   }
   // set callback on resize
   glfwSetWindowSizeCallback(window, OnResizeWindow);
+  glfwSetKeyCallback(window, OnKeyPressed);
 
   // fill structure for surface with OS handles
   RHI::SurfaceConfig surface{};
@@ -117,7 +130,12 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  auto texture = CreateAndLoadImage(*ctx, "texture.png");
+  std::list<std::unique_ptr<RHI::IImageGPU>> textures;
+  textures.emplace_back(CreateAndLoadImage(*ctx, "texture.png", true));
+  textures.emplace_back(CreateAndLoadImage(*ctx, "jackal.jpg", false));
+  auto image_it = textures.begin();
+
+  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
 
   auto * swapchain = ctx->GetSurfaceSwapchain();
   auto * subpass = swapchain->CreateSubpass();
@@ -133,13 +151,14 @@ int main()
   trianglePipeline.AddInputAttribute(0, 1, offsetof(VertexData, uv_x), 2,
                                      RHI::InputAttributeElementType::FLOAT);
 
-  auto && tbuf =
-    trianglePipeline.DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                    sizeof(float));
+  auto && u_t =
+    trianglePipeline.DeclareUniform(0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
+  u_t->Invalidate();
+  u_t->AssignBuffer(*tBuf);
 
-  auto && texSampler = trianglePipeline.DeclareSampler("texSampler", 1, RHI::ShaderType::Fragment);
-  texSampler->GetImageView().AssignImage(*texture);
+  auto && texSampler = trianglePipeline.DeclareSampler(1, RHI::ShaderType::Fragment);
   texSampler->Invalidate();
+  texSampler->AssignImage(*image_it->get());
 
   // create vertex buffer
   auto && vertexBuffer =
@@ -162,7 +181,17 @@ int main()
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-      if (ShouldInvalidateScene)
+
+      // change texture at realtime
+      if (ShouldSwitchNextImage)
+      {
+        image_it = std::next(image_it);
+        if (image_it == textures.end())
+          image_it = textures.begin();
+        texSampler->AssignImage(*image_it->get());
+        ShouldSwitchNextImage = false;
+      }
+      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
         // get size of window
         int width, height;
@@ -180,15 +209,11 @@ int main()
 
         ShouldInvalidateScene = false;
       }
-
       swapchain->FlushFrame();
     }
 
-    if (auto map = tbuf->Map())
-    {
-      float t_val = std::abs(std::sin(x));
-      std::memcpy(map.get(), &t_val, sizeof(float));
-    }
+    float t_val = std::abs(std::sin(x));
+    tBuf->UploadSync(&t_val, sizeof(float));
     x += 0.0001f;
   }
 

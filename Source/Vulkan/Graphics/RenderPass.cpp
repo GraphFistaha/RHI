@@ -33,12 +33,13 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
   assert(m_boundRenderTarget != nullptr);
-  m_submitter.WaitForSubmitCompleted();
-  m_submitter.BeginWriting();
-
   VkFramebuffer buf = m_boundRenderTarget ? m_boundRenderTarget->GetHandle() : VK_NULL_HANDLE;
   VkExtent2D extent = m_boundRenderTarget->GetVkExtent();
   VkClearValue clearValue = m_boundRenderTarget->GetClearValue();
+
+  m_submitter.WaitForSubmitCompleted();
+  m_submitter.BeginWriting();
+
 
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -50,7 +51,7 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   renderPassInfo.pClearValues = &clearValue;
 
   m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
-                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+                          VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   // execute commands for subpasses
   {

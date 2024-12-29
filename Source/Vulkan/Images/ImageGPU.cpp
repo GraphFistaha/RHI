@@ -2,10 +2,11 @@
 
 #include <vk_mem_alloc.h>
 
+#include "../Resources/Transferer.hpp"
 #include "../Utils/CastHelper.hpp"
-#include "../Utils/ImageUtils.hpp"
 #include "../VulkanContext.hpp"
-#include "Transferer.hpp"
+#include "ImageFormatsConversation.hpp"
+#include "ImageTraits.hpp"
 
 namespace RHI::vulkan
 {
@@ -18,15 +19,15 @@ std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(args.type);
-  imageInfo.extent.width = args.extent.width;
-  imageInfo.extent.height = args.extent.height;
-  imageInfo.extent.depth = args.extent.depth;
+  imageInfo.extent.width = args.extent[0];
+  imageInfo.extent.height = args.extent[1];
+  imageInfo.extent.depth = args.extent[2];
   imageInfo.mipLevels = args.mipLevels;
   imageInfo.arrayLayers = 1;
   imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(args.format);
   imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
   imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  imageInfo.usage = utils::CastInterfaceEnum2Vulkan<VkImageUsageFlags>(args.usage);
+  imageInfo.usage = utils::CastInterfaceEnum2Vulkan<VkImageUsageFlags>(args.format);
   imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(args.samples);
   imageInfo.sharingMode = args.shared ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
@@ -79,13 +80,14 @@ void ImageGPU::UploadImage(const uint8_t * data, const CopyImageArguments & args
 {
   if (!m_transferer)
     throw std::runtime_error("Image has no transferer. Async upload is impossible");
-  BufferGPU stagingBuffer(utils::GetSizeForImageRegion(args.dst, m_internalFormat),
+  BufferGPU stagingBuffer(utils::GetSizeOfImage(args.dst.extent, m_internalFormat),
                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
-    utils::CopyImageRegion_Host2GPU(data, args.src, args.format,
-                                    reinterpret_cast<uint8_t *>(mapped_ptr.get()), args.dst,
-                                    m_internalFormat);
+    utils::CopyImageFromHost(data, args.src.extent, args.src, args.hostFormat,
+                             reinterpret_cast<uint8_t *>(mapped_ptr.get()), args.dst.extent,
+                             args.dst, m_internalFormat);
+    mapped_ptr.reset();
     stagingBuffer.Flush();
     m_transferer->UploadImage(this, std::move(stagingBuffer));
   }
@@ -150,6 +152,11 @@ void ImageGPU::SetImageLayout(details::CommandBuffer & commandBuffer,
 ImageType ImageGPU::GetImageType() const noexcept
 {
   return m_args.type;
+}
+
+ImageExtent ImageGPU::GetExtent() const noexcept
+{
+  return m_args.extent;
 }
 
 ImageFormat ImageGPU::GetImageFormat() const noexcept

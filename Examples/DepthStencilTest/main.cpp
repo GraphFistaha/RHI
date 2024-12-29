@@ -56,18 +56,21 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, co
     throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
   }
 
+  RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+ 
   RHI::ImageCreateArguments imageArgs{};
-  imageArgs.width = w;
-  imageArgs.height = h;
-  imageArgs.depth = 1;
+  imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;
   imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  imageArgs.usage = RHI::ImageGPUUsage::Sample;
   auto texture = ctx.AllocImage(imageArgs);
-  texture->UploadAsync(pixel_data, w * h * sizeof(int));
+  RHI::CopyImageArguments copyArgs{};
+  copyArgs.hostFormat = channels == 4 ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
+  copyArgs.src.extent = extent;
+  copyArgs.dst.extent = extent;
+  texture->UploadImage(pixel_data, copyArgs);
   stbi_image_free(pixel_data);
   return texture;
 }
@@ -139,7 +142,7 @@ int main()
         subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
         // set scissor
         subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-        
+
         // draw first quad
         texSampler->GetImageView().AssignImage(*texture1);
         texSampler->Invalidate();

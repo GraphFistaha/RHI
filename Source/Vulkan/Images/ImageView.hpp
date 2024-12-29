@@ -10,17 +10,16 @@ struct Context;
 
 namespace RHI::vulkan
 {
-struct ImageGPU_View final : public IImageGPU_View
+struct ImageGPU_View final
 {
   explicit ImageGPU_View(const Context & ctx);
-  virtual ~ImageGPU_View() override;
+  ~ImageGPU_View();
   ImageGPU_View(ImageGPU_View && rhs) noexcept;
   ImageGPU_View & operator=(ImageGPU_View && rhs) noexcept;
 
-  virtual void AssignImage(const IImageGPU & image) override;
-  virtual bool IsImageAssigned() const noexcept override;
-
-  virtual InternalObjectHandle GetHandle() const noexcept override;
+  void AssignImage(const IImageGPU & image);
+  bool IsImageAssigned() const noexcept;
+  VkImageView GetHandle() const noexcept;
 
 private:
   const Context & m_context;

@@ -30,6 +30,7 @@ public: // ISubpass Interface
   virtual IPipeline & GetConfiguration() & noexcept override;
   virtual void SetEnabled(bool enabled) noexcept override;
   virtual bool IsEnabled() const noexcept override;
+  virtual bool ShouldBeInvalidated() const noexcept override;
 
 public: // Commands
   /// @brief draw vertices command (analog glDrawArrays)
@@ -55,12 +56,13 @@ public: // Commands
   void BindIndexBuffer(const IBufferGPU & buffer, IndexType type,
                        std::uint32_t offset = 0) override;
 
-public: // IInvalidable Interface
-  virtual void Invalidate() override;
+//public: // IInvalidable Interface
+  //virtual void Invalidate() override;
 
 public:
   const details::CommandBuffer & GetCommandBuffer() const & noexcept { return m_executableBuffer; }
   void LockWriting(bool lock) const noexcept;
+  void SetDirtyCacheCommands() noexcept;
 
 private:
   const Context & m_context;
@@ -71,6 +73,7 @@ private:
   Pipeline m_pipeline;
   mutable std::mutex m_write_lock;
   std::atomic_bool m_enabled = true;
+  std::atomic_bool m_shouldBeInvalidated = true;
 };
 
 } // namespace RHI::vulkan

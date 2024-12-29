@@ -68,6 +68,8 @@ struct Renderer
   {
     m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
     m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
+    if (m_subpass->ShouldBeInvalidated())
+      AsyncDrawScene();
   }
 
 private:
@@ -136,7 +138,7 @@ int main()
     auto sem = ctx->GetTransferer()->Flush();
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.1, 1.0, 0.4, 1.0);
+      renderTarget->SetClearColor(0.1f, 1.0f, 0.4f, 1.0f);
       swapchain->FlushFrame();
     }
   }
@@ -172,7 +174,7 @@ Renderer::Renderer(const RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWw
   // create index buffer
   m_indexBuffer =
     ctx.AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  m_indexBuffer->UploadSync(Indices, IndicesCount * sizeof(uint32_t));
+  m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 }
 
 bool Renderer::DrawSceneImpl()

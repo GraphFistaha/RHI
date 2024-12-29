@@ -6,13 +6,13 @@
 namespace RHI::vulkan::utils
 {
 template<typename InternalClassT, typename InterfaceClassT>
-decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
+constexpr decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
 {
   return dynamic_cast<const InternalClassT &>(std::forward<InterfaceClassT>(obj));
 }
 
 template<typename VulkanEnumT, typename InterfaceEnumT>
-inline VulkanEnumT CastInterfaceEnum2Vulkan(InterfaceEnumT value);
+constexpr inline VulkanEnumT CastInterfaceEnum2Vulkan(InterfaceEnumT value);
 
 } // namespace RHI::vulkan::utils
 
@@ -22,7 +22,8 @@ namespace RHI::vulkan::utils
 {
 
 template<>
-inline VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(RHI::IndexType type)
+constexpr inline VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(
+  RHI::IndexType type)
 {
   using namespace RHI;
   switch (type)
@@ -39,8 +40,8 @@ inline VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexType>(RHI::In
 }
 
 template<>
-inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::BufferGPUUsage>(
-  RHI::BufferGPUUsage usage)
+constexpr inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<
+  VkBufferUsageFlags, RHI::BufferGPUUsage>(RHI::BufferGPUUsage usage)
 {
   switch (usage)
   {
@@ -62,23 +63,37 @@ inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<VkBufferUsageFlags, RHI::Buff
 }
 
 template<>
-inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageDimensionality>(
-  ImageDimensionality type)
-{
-  return static_cast<VkImageType>(type);
-}
-
-template<>
-inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageDimensionality>(
-  ImageDimensionality type)
+constexpr inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
 {
   switch (type)
   {
-    case ImageDimensionality::Image1D:
+    case ImageType::Image1D:
+      return VK_IMAGE_TYPE_1D;
+    case ImageType::Image2D:
+      return VK_IMAGE_TYPE_2D;
+    case ImageType::Image3D:
+      return VK_IMAGE_TYPE_3D;
+    case ImageType::Image1D_Array:
+      return VK_IMAGE_TYPE_2D;
+    case ImageType::Image2D_Array:
+    case ImageType::Cubemap:
+      return VK_IMAGE_TYPE_3D;
+    default:
+      throw std::invalid_argument("Invalid image type");
+  }
+}
+
+template<>
+constexpr inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageType>(
+  ImageType type)
+{
+  switch (type)
+  {
+    case ImageType::Image1D:
       return VK_IMAGE_VIEW_TYPE_1D;
-    case ImageDimensionality::Image2D:
+    case ImageType::Image2D:
       return VK_IMAGE_VIEW_TYPE_2D;
-    case ImageDimensionality::Image3D:
+    case ImageType::Image3D:
       return VK_IMAGE_VIEW_TYPE_3D;
     default:
       throw std::range_error("Invalid ImageType");
@@ -87,7 +102,7 @@ inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, ImageDimensiona
 
 /// @brief cats RHI::ImageFormat into internal image format
 template<>
-inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
+constexpr inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat format)
 {
   switch (format)
   {
@@ -111,29 +126,32 @@ inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageFormat form
 }
 
 template<>
-inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageGPUUsage>(
-  ImageGPUUsage usage)
+constexpr inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageFormat>(
+  ImageFormat format)
 {
-  switch (usage)
+  switch (format)
   {
-    case ImageGPUUsage::Sample:
-      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    case ImageGPUUsage::Storage:
-      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-    case ImageGPUUsage::FramebufferColorAttachment:
-      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    case ImageGPUUsage::FramebufferDepthStencilAttachment:
-      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    case ImageGPUUsage::FramebufferInputAttachment:
-      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    case ImageFormat::A8:
+    case ImageFormat::R8:
+    case ImageFormat::RG8:
+    case ImageFormat::RGB8:
+    case ImageFormat::RGBA8:
+    case ImageFormat::BGR8:
+    case ImageFormat::BGRA8:
+      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    case ImageFormat::DEPTH:
+    case ImageFormat::DEPTH_STENCIL:
+      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+             VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     default:
       return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
   }
 }
 
 template<>
-inline VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits, SamplesCount>(
-  SamplesCount count)
+constexpr inline VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits,
+                                                                SamplesCount>(SamplesCount count)
 {
   return static_cast<VkSampleCountFlagBits>(count);
 }
@@ -146,8 +164,8 @@ inline VkShaderStageFlagBits CastInterfaceEnum2Vulkan<VkShaderStageFlagBits, RHI
 }
 
 template<>
-inline VkVertexInputRate CastInterfaceEnum2Vulkan<VkVertexInputRate, RHI::InputBindingType>(
-  InputBindingType type)
+constexpr inline VkVertexInputRate CastInterfaceEnum2Vulkan<
+  VkVertexInputRate, RHI::InputBindingType>(InputBindingType type)
 {
   switch (type)
   {

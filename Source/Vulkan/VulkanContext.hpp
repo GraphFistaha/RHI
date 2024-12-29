@@ -50,6 +50,7 @@ public: // RHI-only API
   const vk::Instance GetInstance() const;
   const vk::Device GetDevice() const;
   const vk::PhysicalDevice GetGPU() const;
+  const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept;
   std::pair<uint32_t, VkQueue> GetQueue(QueueType type) const;
   uint32_t GetVulkanVersion() const;
   void Log(LogMessageStatus status, const std::string & message) const noexcept;

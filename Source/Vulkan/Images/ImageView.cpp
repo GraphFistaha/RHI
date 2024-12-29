@@ -61,8 +61,8 @@ ImageGPU_View & ImageGPU_View::operator=(ImageGPU_View && rhs) noexcept
 
 void ImageGPU_View::AssignImage(const IImageGPU & image)
 {
-  auto new_view =
-    details::CreateImageView(m_context.GetDevice(), dynamic_cast<const ImageGPU &>(image));
+  auto new_view = details::CreateImageView(m_context.GetDevice(),
+                                           utils::CastInterfaceClass2Internal<const ImageGPU &>(image));
   if (m_view)
     vkDestroyImageView(m_context.GetDevice(), m_view, nullptr);
   m_view = new_view;
@@ -73,7 +73,7 @@ bool ImageGPU_View::IsImageAssigned() const noexcept
   return m_view;
 }
 
-InternalObjectHandle ImageGPU_View::GetHandle() const noexcept
+VkImageView ImageGPU_View::GetHandle() const noexcept
 {
   return m_view;
 }

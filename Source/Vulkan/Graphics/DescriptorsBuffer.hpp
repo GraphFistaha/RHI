@@ -4,49 +4,52 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../Resources/BufferGPU.hpp"
-#include "../Resources/ImageSampler.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
+#include "BufferUniform.hpp"
+#include "SamplerUniform.hpp"
 
 namespace RHI::vulkan
 {
 struct Context;
-}
+struct Pipeline;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
 struct DescriptorBuffer final
 {
-  explicit DescriptorBuffer(const Context & ctx);
+  explicit DescriptorBuffer(const Context & ctx, Pipeline & owner);
   ~DescriptorBuffer();
 
   void Invalidate();
 
-  IBufferGPU * DeclareUniform(uint32_t binding, ShaderType shaderStage, size_t size);
-  IImageGPU_Sampler * DeclareSampler(uint32_t binding, ShaderType shaderStage);
+  BufferUniform * DeclareUniform(uint32_t binding, ShaderType shaderStage);
+  ImageSampler * DeclareSampler(uint32_t binding, ShaderType shaderStage);
+  void OnDescriptorChanged(const BufferUniform & descriptor) noexcept;
+  void OnDescriptorChanged(const ImageSampler & descriptor) noexcept;
 
-  void Bind(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
-            VkPipelineBindPoint bindPoint);
+  void BindToCommandBuffer(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
+                           VkPipelineBindPoint bindPoint);
+
   vk::DescriptorSetLayout GetLayoutHandle() const noexcept;
   vk::DescriptorSet GetHandle() const noexcept;
 
 private:
-  using BufferDescriptor = std::pair<uint32_t /*binding*/, std::unique_ptr<BufferGPU>>;
-  using BufferDescriptors = std::vector<BufferDescriptor>;
-
-  using ImageDescriptor = std::pair<uint32_t /*binding*/, std::unique_ptr<IImageGPU_Sampler>>;
-  using ImageDescriptors = std::vector<ImageDescriptor>;
+  using BufferUniforms = std::vector<BufferUniform>;
+  using SamplerUniforms = std::vector<ImageSampler>;
 
 private:
-  const Context & m_owner;
+  const Context & m_context;
+  Pipeline & m_owner;
 
   vk::DescriptorSetLayout m_layout = VK_NULL_HANDLE;
   vk::DescriptorSet m_set = VK_NULL_HANDLE;
   vk::DescriptorPool m_pool = VK_NULL_HANDLE;
 
   std::unordered_map<VkDescriptorType, uint32_t> m_capacity;
-  std::unordered_map<VkDescriptorType, BufferDescriptors> m_bufferDescriptors;
-  std::unordered_map<VkDescriptorType, ImageDescriptors> m_imageDescriptors;
+  std::unordered_map<VkDescriptorType, BufferUniforms> m_bufferUniformDescriptors;
+  std::unordered_map<VkDescriptorType, SamplerUniforms> m_samplerDescriptors;
 
   utils::DescriptorSetLayoutBuilder m_layoutBuilder;
 

@@ -116,8 +116,6 @@ int main()
   // to make sure that buffer is sent on GPU
   indexBuffer->Flush();
 
-  ShouldInvalidateScene = true;
-
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {
@@ -126,13 +124,16 @@ int main()
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearColor(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      // fill trianglePipelineCommands
-      if (ShouldInvalidateScene)
+
+      // draw scene
+      // ShouldInvalidateScene - assign true if you want refresh scene from client code
+      // ShouldBeInvalidated() - returns true if scene should be redrawn because of internal changes
+      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
         // get size of window
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        subpass->BeginPass();
+        subpass->BeginPass(); // begin drawing pass
         // set viewport
         subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
         // set scissor
@@ -141,9 +142,7 @@ int main()
         subpass->BindVertexBuffer(0, *vertexBuffer, 0);
         subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
         subpass->DrawIndexedVertices(IndicesCount, 1);
-
-        // finish editing mode
-        subpass->EndPass();
+        subpass->EndPass(); // finish drawing pass
         ShouldInvalidateScene = false;
       }
       swapchain->FlushFrame();

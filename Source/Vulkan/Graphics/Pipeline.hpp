@@ -11,41 +11,48 @@ namespace RHI::vulkan
 {
 struct Context;
 struct RenderPass;
-}
+struct Subpass;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
 struct Pipeline final : public IPipeline
 {
-  explicit Pipeline(const Context & ctx, const RenderPass & renderPass, uint32_t subpassIndex);
+  explicit Pipeline(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
+                    uint32_t subpassIndex);
   virtual ~Pipeline() override;
 
+public: // IPipeline interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
-  virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
-                                      size_t size) override;
-  virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
-                                             ShaderType shaderStage) override;
+  virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding,
+                                                    ShaderType shaderStage) override;
+  virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding,
+                                                     ShaderType shaderStage) override;
 
-  virtual void Invalidate() override;
   virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }
 
-  vk::Pipeline GetPipelineHandle() const noexcept { return m_pipeline; }
+public: // IInvalidable Interface
+  virtual void Invalidate() override;
 
-  void Bind(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint);
+public: // public internal API
+  vk::Pipeline GetPipelineHandle() const noexcept { return m_pipeline; }
+  void BindToCommandBuffer(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint);
+  Subpass & GetSubpassOwner() & noexcept { return m_owner; }
 
 private:
-  const Context & m_owner;
+  const Context & m_context;
   const RenderPass & m_renderPass;
+  Subpass & m_owner;
+
   uint32_t m_subpassIndex;
 
   vk::PipelineLayout m_layout = VK_NULL_HANDLE;
   vk::Pipeline m_pipeline = VK_NULL_HANDLE;
   DescriptorBuffer m_descriptors;
-
 
   utils::PipelineLayoutBuilder m_layoutBuilder;
   utils::PipelineBuilder m_pipelineBuilder;

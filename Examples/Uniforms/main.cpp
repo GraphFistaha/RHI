@@ -83,11 +83,13 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
+  // create buffers for each uniform variables
+  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
+  auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
+
   auto * swapchain = ctx->GetSurfaceSwapchain();
   auto * subpass = swapchain->CreateSubpass();
-  // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
-  // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
@@ -98,12 +100,15 @@ int main()
   trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
                                      RHI::InputAttributeElementType::FLOAT);
 
-  auto && tbuf =
-    trianglePipeline.DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                    sizeof(float));
+  // declare uniform variables
+  auto && u_t =
+    trianglePipeline.DeclareUniform(0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
+  u_t->Invalidate();
+  u_t->AssignBuffer(*tBuf); // bind buffer to uniform variable
 
-  auto && transformBuf =
-    trianglePipeline.DeclareUniform("tb", 1, RHI::ShaderType::Vertex, 2 * sizeof(float));
+  auto && u_transform = trianglePipeline.DeclareUniform(1, RHI::ShaderType::Vertex);
+  u_transform->Invalidate();
+  u_transform->AssignBuffer(*transformBuf); // bind buffer to uniform variable
 
   // create vertex buffer
   auto && vertexBuffer =
@@ -115,32 +120,24 @@ int main()
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
   indexBuffer->UploadSync(Indices, IndicesCount * sizeof(uint32_t));
 
-  ShouldInvalidateScene = true;
   float x = 0.0f;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    if (auto map = tbuf->Map())
-    {
-      float t_val = std::abs(std::sin(x));
-      std::memcpy(map.get(), &t_val, sizeof(float));
-    }
+    float t_val = std::abs(std::sin(x));
+    tBuf->UploadSync(&t_val, sizeof(float));
 
-    if (auto map = transformBuf->Map())
-    {
-      float cos_val = std::cos(x);
-      float sin_val = std::sin(x);
-      std::memcpy(map.get(), &sin_val, sizeof(float));
-      std::memcpy(reinterpret_cast<char *>(map.get()) + sizeof(float), &cos_val, sizeof(float));
-    }
+    std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
+    transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
     x += 0.0001f;
+    ctx->GetTransferer()->Flush();
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-      if (ShouldInvalidateScene)
+      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
         // get size of window
         int width, height;

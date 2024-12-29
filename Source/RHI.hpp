@@ -170,13 +170,31 @@ enum class IndexType : uint8_t
 
 struct IBufferGPU;
 struct IImageGPU;
-struct IImageGPU_Sampler;
 using SemaphoreHandle = InternalObjectHandle;
 
 struct IInvalidable
 {
   virtual ~IInvalidable() = default;
   virtual void Invalidate() = 0;
+};
+
+struct IUniformDescriptor : public IInvalidable
+{
+  virtual ~IUniformDescriptor() = default;
+  virtual uint32_t GetDescriptorIndex() const noexcept = 0;
+  virtual uint32_t GetBinding() const noexcept = 0;
+};
+
+struct ISamplerUniformDescriptor : public IUniformDescriptor
+{
+  virtual void AssignImage(const IImageGPU & image) = 0;
+  virtual bool IsImageAssigned() const noexcept = 0;
+};
+
+struct IBufferUniformDescriptor : public IUniformDescriptor
+{
+  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) = 0;
+  virtual bool IsBufferAssigned() const noexcept = 0;
 };
 
 /// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
@@ -193,11 +211,11 @@ struct IPipeline : public IInvalidable
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
 
-  virtual IBufferGPU * DeclareUniform(const char * name, uint32_t binding, ShaderType shaderStage,
-                                      size_t size) = 0;
-
-  virtual IImageGPU_Sampler * DeclareSampler(const char * name, uint32_t binding,
-                                             ShaderType shaderStage) = 0;
+  virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding, ShaderType shaderStage) = 0;
+  virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
+  /* virtual std::pair<IUniformDescriptor *, size_t> DeclareUniformsArray(
+    uint32_t binding,
+                                                                       ShaderType shaderStage) = 0;*/
 
   /// @brief Get subpass index
   virtual uint32_t GetSubpass() const = 0;
@@ -212,7 +230,7 @@ struct IRenderTarget : public IInvalidable
   virtual void SetClearColor(float r, float g, float b, float a) noexcept = 0;
 };
 
-struct ISubpass : IInvalidable
+struct ISubpass /* : IInvalidable*/
 {
   virtual ~ISubpass() = default;
   virtual void BeginPass() = 0;
@@ -220,6 +238,7 @@ struct ISubpass : IInvalidable
   virtual IPipeline & GetConfiguration() & noexcept = 0;
   virtual void SetEnabled(bool enabled) noexcept = 0;
   virtual bool IsEnabled() const noexcept = 0;
+  virtual bool ShouldBeInvalidated() const noexcept = 0;
 
   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
@@ -284,32 +303,22 @@ struct IBufferGPU
 
 //----------------- Images ---------------------
 
-/// @brief Defines how image can be used during its life
-enum class ImageGPUUsage : uint8_t
-{
-  Sample = BIT(1),
-  Storage = BIT(2),
-  FramebufferColorAttachment = BIT(3),
-  FramebufferDepthStencilAttachment = BIT(4),
-  FramebufferInputAttachment = BIT(5)
-};
-
 /// @brief Defines image's layout in memory. Also defines if image can have mipmaps or not
 ///        For example image1d is line of pixels, image2d is a rectangle of pixels
 enum class ImageType
 {
-  Image1D = 0, ///< image with height = 1. has only width.Can have one mipmap for a whole image
-  Image2D = 1, ///< generic image with width and height. Can have one mipmap for a whole image
-  Image3D = 2, ///< layered image2d (with depth). Can have one mipmap for a whole image
-  Image1D_Array =
-    3, ///< array of 1d images, layered in memory like 2d image, but each row of pixels has its own mipmap
-  Image2D_Array = 4, ///< the same as image3d, but each layer should have own mipmap
-  Cubemap = 4,       ///< it's image2d_array with length = 6
+  Image1D, ///< image with height = 1. has only width.Can have one mipmap for a whole image
+  Image2D, ///< generic image with width and height. Can have one mipmap for a whole image
+  Image3D, ///< layered image2d (with depth). Can have one mipmap for a whole image
+  Image1D_Array, ///< array of 1d images, layered in memory like 2d image, but each row of pixels has its own mipmap
+  Image2D_Array, ///< the same as image3d, but each layer should have own mipmap
+  Cubemap,       ///< it's image2d_array with length = 6
 };
 
-/// @brief host's image format. Defines in what format image will be uploaded or downloaded
+/// @brief internal image format.
 enum class ImageFormat : uint8_t
 {
+  // general formats
   R8,
   A8,
   RG8,
@@ -317,16 +326,13 @@ enum class ImageFormat : uint8_t
   RGB8,
   RGBA8,
   BGRA8,
+  // service formats
   DEPTH,
   DEPTH_STENCIL,
-};
-
-enum class ImageInternalFormat : uint8_t
-{
-    RGBA8,
-    DEPTH,
-    DEPTH_STENCIL,
-
+  // compressed types
+  //BC1,
+  //BC5,
+  //BC7
 };
 
 enum class SamplesCount : uint8_t
@@ -357,14 +363,30 @@ struct ImageCreateArguments final
   ImageType type;
   ImageExtent extent;
   uint32_t mipLevels;
-  ImageGPUUsage usage;
+  ImageFormat format;
   SamplesCount samples;
   bool shared;
 };
 
+/// @brief Defines in what format image will be uploaded or downloaded
+enum class HostImageFormat : uint8_t
+{
+  R8,
+  A8,
+  RG8,
+  BGR8,
+  RGB8,
+  RGBA8,
+  BGRA8,
+  // compressed types
+  //BC1,
+  //BC5,
+  //BC7
+};
+
 struct CopyImageArguments
 {
-  ImageFormat format;
+  HostImageFormat hostFormat;
   ImageRegion src;
   ImageRegion dst;
 };
@@ -376,28 +398,12 @@ struct IImageGPU
   //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
   virtual void Invalidate() noexcept = 0;
   virtual ImageFormat GetImageFormat() const noexcept = 0;
+  virtual ImageExtent GetExtent() const noexcept = 0;
+  virtual ImageType GetImageType() const noexcept = 0;
   /// @brief Get size of image in bytes
   virtual size_t Size() const noexcept = 0;
   //virtual void SetSwizzle() = 0;
 };
-
-struct IImageGPU_View
-{
-  virtual ~IImageGPU_View() = default;
-  virtual void AssignImage(const IImageGPU & image) = 0;
-  virtual bool IsImageAssigned() const noexcept = 0;
-  virtual InternalObjectHandle GetHandle() const noexcept = 0;
-};
-
-struct IImageGPU_Sampler
-{
-  virtual ~IImageGPU_Sampler() = default;
-  virtual void Invalidate() = 0;
-  virtual InternalObjectHandle GetHandle() const noexcept = 0;
-  virtual IImageGPU_View & GetImageView() & noexcept = 0;
-  virtual const IImageGPU_View & GetImageView() const & noexcept = 0;
-};
-
 
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext
@@ -415,9 +421,7 @@ struct IContext
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;
 
-  virtual std::unique_ptr<IImageGPU> AllocImage1D(const ImageCreateArguments & args) const = 0;
-  virtual std::unique_ptr<IImageGPU> AllocImage2D(const ImageCreateArguments & args) const = 0;
-  virtual std::unique_ptr<IImageGPU> AllocImage3D(const ImageCreateArguments & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const = 0;
 };
 
 /// @brief Factory-function to create context

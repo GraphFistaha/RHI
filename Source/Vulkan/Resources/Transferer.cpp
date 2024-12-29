@@ -47,7 +47,7 @@ SemaphoreHandle Transferer::Flush()
       region.bufferRowLength = 0;
       region.bufferImageHeight = 0;
 
-      region.imageExtent = {args.extent.width, args.extent.height, args.extent.depth};
+      region.imageExtent = *reinterpret_cast<const VkExtent3D*>(&args.extent);
       region.imageOffset = {0, 0, 0};
 
       region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
