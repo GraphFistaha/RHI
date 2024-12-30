@@ -164,7 +164,7 @@ int main()
     {
       renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
 
-      // change texture at realtime
+      // change textures at realtime
       if (ShouldSwitchNextImage)
       {
         image_it = std::next(image_it);
@@ -178,9 +178,9 @@ int main()
           if (it == textures.end())
             it = textures.begin();
         }
-
         ShouldSwitchNextImage = false;
       }
+
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
         int width, height;
