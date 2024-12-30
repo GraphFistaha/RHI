@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -36,8 +38,8 @@ struct DescriptorBuffer final
   vk::DescriptorSet GetHandle() const noexcept;
 
 private:
-  using BufferUniforms = std::vector<BufferUniform>;
-  using SamplerUniforms = std::vector<ImageSampler>;
+  using BufferUniforms = std::deque<BufferUniform>;
+  using SamplerUniforms = std::deque<ImageSampler>;
 
 private:
   const Context & m_context;

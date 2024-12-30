@@ -112,7 +112,8 @@ void Subpass::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, std::ui
 void Subpass::PushConstant(const void * data, size_t size)
 {
   m_writingBuffer.PushCommand(vkCmdPushConstants, m_pipeline.GetPipelineLayoutHandle(),
-                              VK_SHADER_STAGE_ALL, 0, static_cast<uint32_t>(size), data);
+                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                              static_cast<uint32_t>(size), data);
 }
 
 

@@ -124,6 +124,10 @@ int main()
   std::list<std::unique_ptr<RHI::IImageGPU>> textures;
   textures.emplace_back(CreateAndLoadImage(*ctx, "texture.png", true));
   textures.emplace_back(CreateAndLoadImage(*ctx, "jackal.jpg", false));
+  textures.emplace_back(CreateAndLoadImage(*ctx, "shrek1.jpg", false));
+  textures.emplace_back(CreateAndLoadImage(*ctx, "shrek2.jpg", false));
+  textures.emplace_back(CreateAndLoadImage(*ctx, "mike_wazowski.jpg", false));
+  textures.emplace_back(CreateAndLoadImage(*ctx, "pepe.jpg", false));
   auto image_it = textures.begin();
 
   auto * swapchain = ctx->GetSurfaceSwapchain();
@@ -137,9 +141,18 @@ int main()
   trianglePipeline.DefinePushConstant(sizeof(PushConstant),
                                       RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
 
-  auto && texSampler = trianglePipeline.DeclareSampler(1, RHI::ShaderType::Fragment);
-  texSampler->Invalidate();
-  texSampler->AssignImage(*image_it->get());
+  std::vector<RHI::ISamplerUniformDescriptor *> samplers;
+  auto it = textures.begin();
+  for (uint32_t i = 0; i < 8; ++i)
+  {
+    auto * texture = trianglePipeline.DeclareSampler(i, RHI::ShaderType::Fragment);
+    texture->Invalidate();
+    texture->AssignImage(*it->get());
+    samplers.push_back(texture);
+    it = std::next(it);
+    if (it == textures.end())
+      it = textures.begin();
+  }
 
   while (!glfwWindowShouldClose(window))
   {
@@ -157,7 +170,15 @@ int main()
         image_it = std::next(image_it);
         if (image_it == textures.end())
           image_it = textures.begin();
-        texSampler->AssignImage(*image_it->get());
+        auto it = image_it;
+        for (auto && sampler : samplers)
+        {
+          sampler->AssignImage(*it->get());
+          it = std::next(it);
+          if (it == textures.end())
+            it = textures.begin();
+        }
+
         ShouldSwitchNextImage = false;
       }
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
@@ -167,14 +188,26 @@ int main()
         subpass->BeginPass();
         subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
         subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        constexpr int cells_count_in_row = 8;
+        constexpr float cell_width = 2.0f / cells_count_in_row;
+        constexpr float offset = -1.0f + cell_width / 2.0f;
+        constexpr float margin = 0.05f;
         PushConstant ct;
-        ct.scale_x = 0.25;
-        ct.scale_y = 0.25;
-        ct.pos_x = 0.0;
-        ct.pos_y = 0.0;
+        ct.scale_x = cell_width / 2.0f;
+        ct.scale_y = cell_width / 2.0f;
         ct.texture_index = 0;
-        subpass->PushConstant(&ct, sizeof(PushConstant));
-        subpass->DrawVertices(6, 1);
+        for (int i = 0; i <= cells_count_in_row; ++i)
+        {
+          for (int j = 0; j <= cells_count_in_row; ++j)
+          {
+            ct.pos_x = offset + j * (cell_width + margin);
+            ct.pos_y = offset + i * (cell_width + margin);
+            ct.texture_index = (ct.texture_index + 1) % textures.size();
+            subpass->PushConstant(&ct, sizeof(PushConstant));
+            subpass->DrawVertices(6, 1);
+          }
+        }
+
         subpass->EndPass();
         ShouldInvalidateScene = false;
       }
