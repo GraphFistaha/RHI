@@ -47,12 +47,23 @@ void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t o
 
 IBufferUniformDescriptor * Pipeline::DeclareUniform(uint32_t binding, ShaderType shaderStage)
 {
-  return m_descriptors.DeclareUniform(binding, shaderStage);
+  BufferUniform * result = nullptr;
+  m_descriptors.DeclareUniformsArray(binding, shaderStage, 1, &result);
+  return result;
 }
 
 ISamplerUniformDescriptor * Pipeline::DeclareSampler(uint32_t binding, ShaderType shaderStage)
 {
-  return m_descriptors.DeclareSampler(binding, shaderStage);
+  SamplerUniform * result = nullptr;
+  m_descriptors.DeclareSamplersArray(binding, shaderStage, 1, &result);
+  return result;
+}
+
+void Pipeline::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * out_array[])
+{
+  m_descriptors.DeclareSamplersArray(binding, shaderStage, size,
+                                     reinterpret_cast<SamplerUniform **>(out_array));
 }
 
 void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)

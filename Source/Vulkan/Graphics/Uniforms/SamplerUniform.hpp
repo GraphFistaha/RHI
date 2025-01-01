@@ -1,0 +1,45 @@
+#pragma once
+
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "../../Images/ImageView.hpp"
+#include "BaseUniform.hpp"
+
+
+namespace RHI::vulkan
+{
+
+struct SamplerUniform final : public ISamplerUniformDescriptor,
+                              private details::BaseUniform
+{
+  explicit SamplerUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+                          uint32_t binding, uint32_t arrayIndex = 0);
+  virtual ~SamplerUniform() override;
+  SamplerUniform(SamplerUniform && rhs) noexcept;
+  SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
+
+public: // ISamplerUniformDescriptor interface
+  virtual void AssignImage(const IImageGPU & image) override;
+  virtual bool IsImageAssigned() const noexcept override;
+
+public:
+  virtual uint32_t GetBinding() const noexcept override;
+  virtual uint32_t GetArrayIndex() const noexcept override;
+
+public: // IInvalidable interface
+  virtual void Invalidate() override;
+
+public: // public internal API
+  VkSampler GetHandle() const noexcept;
+  VkImageView GetImageView() const noexcept { return m_view.GetHandle(); }
+  VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
+  using BaseUniform::GetDescriptorType;
+
+private:
+  ImageGPU_View m_view{m_context};
+  vk::Sampler m_sampler = VK_NULL_HANDLE;
+  bool m_invalidSampler = true;
+};
+
+} // namespace RHI::vulkan

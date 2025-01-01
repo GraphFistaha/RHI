@@ -7,8 +7,8 @@
 
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
-#include "BufferUniform.hpp"
-#include "SamplerUniform.hpp"
+#include "Uniforms/BufferUniform.hpp"
+#include "Uniforms/SamplerUniform.hpp"
 
 namespace RHI::vulkan
 {
@@ -26,10 +26,14 @@ struct DescriptorBuffer final
 
   void Invalidate();
 
-  BufferUniform * DeclareUniform(uint32_t binding, ShaderType shaderStage);
-  ImageSampler * DeclareSampler(uint32_t binding, ShaderType shaderStage);
+  void DeclareUniformsArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                            BufferUniform * out_array[]);
+  void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                            SamplerUniform * out_array[]);
+
+
   void OnDescriptorChanged(const BufferUniform & descriptor) noexcept;
-  void OnDescriptorChanged(const ImageSampler & descriptor) noexcept;
+  void OnDescriptorChanged(const SamplerUniform & descriptor) noexcept;
 
   void BindToCommandBuffer(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
                            VkPipelineBindPoint bindPoint);
@@ -39,7 +43,7 @@ struct DescriptorBuffer final
 
 private:
   using BufferUniforms = std::deque<BufferUniform>;
-  using SamplerUniforms = std::deque<ImageSampler>;
+  using SamplerUniforms = std::deque<SamplerUniform>;
 
 private:
   const Context & m_context;

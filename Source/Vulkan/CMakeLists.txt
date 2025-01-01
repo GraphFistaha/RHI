@@ -17,10 +17,12 @@ PRIVATE
 	Graphics/RenderTarget.hpp
 	Graphics/Pipeline.cpp 
 	Graphics/Pipeline.hpp
-	Graphics/SamplerUniform.hpp
-	Graphics/SamplerUniform.cpp
-	Graphics/BufferUniform.cpp
-	Graphics/BufferUniform.hpp
+
+	Graphics/Uniforms/BaseUniform.hpp
+	Graphics/Uniforms/SamplerUniform.hpp
+	Graphics/Uniforms/SamplerUniform.cpp
+	Graphics/Uniforms/BufferUniform.cpp
+	Graphics/Uniforms/BufferUniform.hpp
 
 	Resources/Transferer.hpp
 	Resources/Transferer.cpp

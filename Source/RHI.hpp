@@ -181,8 +181,8 @@ struct IInvalidable
 struct IUniformDescriptor : public IInvalidable
 {
   virtual ~IUniformDescriptor() = default;
-  virtual uint32_t GetDescriptorIndex() const noexcept = 0;
   virtual uint32_t GetBinding() const noexcept = 0;
+  virtual uint32_t GetArrayIndex() const noexcept = 0;
 };
 
 struct ISamplerUniformDescriptor : public IUniformDescriptor
@@ -210,13 +210,12 @@ struct IPipeline : public IInvalidable
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
+  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
 
   virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding, ShaderType shaderStage) = 0;
   virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
-  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
-  /* virtual std::pair<IUniformDescriptor *, size_t> DeclareUniformsArray(
-    uint32_t binding,
-                                                                       ShaderType shaderStage) = 0;*/
+  virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * out_array[]) = 0;
 
   /// @brief Get subpass index
   virtual uint32_t GetSubpass() const = 0;

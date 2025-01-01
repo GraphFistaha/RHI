@@ -62,7 +62,7 @@ vk::DescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool
 
 //discover https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
 template<typename UniformT>
-  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, ImageSampler>)
+  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, SamplerUniform>)
 void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const UniformT & uniform)
 {
   assert(set);
@@ -72,7 +72,7 @@ void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const Un
   descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   descriptorWrite.dstSet = set;
   descriptorWrite.dstBinding = uniform.GetBinding();
-  descriptorWrite.dstArrayElement = 0;
+  descriptorWrite.dstArrayElement = uniform.GetArrayIndex();
   descriptorWrite.descriptorType = uniform.GetDescriptorType();
   descriptorWrite.descriptorCount = 1;
   if constexpr (std::is_same_v<UniformT, BufferUniform>)
@@ -80,7 +80,7 @@ void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const Un
     descriptorWrite.pBufferInfo = &info;
     descriptorWrite.pImageInfo = nullptr; // Optional
   }
-  else if constexpr (std::is_same_v<UniformT, ImageSampler>)
+  else if constexpr (std::is_same_v<UniformT, SamplerUniform>)
   {
     assert(uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
            uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
@@ -181,34 +181,38 @@ void DescriptorBuffer::Invalidate()
   m_owner.GetSubpassOwner().SetDirtyCacheCommands();
 }
 
-BufferUniform * DescriptorBuffer::DeclareUniform(uint32_t binding, ShaderType shaderStage)
+void DescriptorBuffer::DeclareUniformsArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                                            BufferUniform * out_array[])
 {
   const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   auto && descriptors = m_bufferUniformDescriptors[type];
-  assert(binding == descriptors.size() && "set binding in sorted order from 0 to N");
-  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
+  m_layoutBuilder.DeclareDescriptorsArray(binding, type, shaderStage, size);
   m_invalidLayout = true;
-  m_capacity[type]++;
+  m_capacity[type] += size;
 
-  BufferUniform new_uniform(m_context, *this, type,
-                            static_cast<uint32_t>(descriptors.size()) /*descriptorIndex*/, binding);
-  auto && uniform = descriptors.emplace_back(std::move(new_uniform));
-  return &uniform;
+  for (uint32_t i = 0; i < size; ++i)
+  {
+    BufferUniform new_uniform(m_context, *this, type, binding, i);
+    auto && uniform = descriptors.emplace_back(std::move(new_uniform));
+    out_array[i] = &uniform;
+  }
 }
 
-ImageSampler * DescriptorBuffer::DeclareSampler(uint32_t binding, ShaderType shaderStage)
+void DescriptorBuffer::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                                            SamplerUniform * out_array[])
 {
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   auto && descriptors = m_samplerDescriptors[type];
-  m_layoutBuilder.DeclareDescriptor(binding, type, shaderStage);
+  m_layoutBuilder.DeclareDescriptorsArray(binding, type, shaderStage, size);
   m_invalidLayout = true;
 
-  m_capacity[type]++;
-
-  ImageSampler new_uniform(m_context, *this, type,
-                           static_cast<uint32_t>(descriptors.size()) /*descriptorIndex*/, binding);
-  auto && uniform = descriptors.emplace_back(std::move(new_uniform));
-  return &uniform;
+  m_capacity[type] += size;
+  for (uint32_t i = 0; i < size; ++i)
+  {
+    SamplerUniform new_uniform(m_context, *this, type, binding, i);
+    auto && uniform = descriptors.emplace_back(std::move(new_uniform));
+    out_array[i] = &uniform;
+  }
 }
 
 void DescriptorBuffer::OnDescriptorChanged(const BufferUniform & descriptor) noexcept
@@ -220,7 +224,7 @@ void DescriptorBuffer::OnDescriptorChanged(const BufferUniform & descriptor) noe
   }
 }
 
-void DescriptorBuffer::OnDescriptorChanged(const ImageSampler & descriptor) noexcept
+void DescriptorBuffer::OnDescriptorChanged(const SamplerUniform & descriptor) noexcept
 {
   if (m_set)
   {

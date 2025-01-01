@@ -1,7 +1,7 @@
 #include "SamplerUniform.hpp"
 
-#include "../VulkanContext.hpp"
-#include "DescriptorsBuffer.hpp"
+#include "../../VulkanContext.hpp"
+#include "../DescriptorsBuffer.hpp"
 
 namespace RHI::vulkan
 {
@@ -36,44 +36,33 @@ vk::Sampler CreateSampler(const vk::Device & device)
 } // namespace details
 
 
-ImageSampler::ImageSampler(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
-                           uint32_t descriptorIndex, uint32_t binding)
-  : m_context(ctx)
-  , m_owner(&owner)
-  , m_type(type)
-  , m_descriptorIndex(descriptorIndex)
-  , m_binding(binding)
+SamplerUniform::SamplerUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+                               uint32_t binding, uint32_t arrayIndex)
+  : BaseUniform(ctx, owner, type, binding, arrayIndex)
+  , ISamplerUniformDescriptor()
 {
-  assert(m_owner);
-  assert(descriptorIndex != InvalidDescriptorIndex);
 }
 
-ImageSampler::~ImageSampler()
+SamplerUniform::~SamplerUniform()
 {
   if (m_sampler)
     vkDestroySampler(m_context.GetDevice(), m_sampler, nullptr);
 }
 
-ImageSampler::ImageSampler(ImageSampler && rhs) noexcept
-  : m_context(rhs.m_context)
+SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
+  : BaseUniform(std::move(rhs))
+  , ISamplerUniformDescriptor()
 {
-  std::swap(m_owner, rhs.m_owner);
-  std::swap(m_type, rhs.m_type);
-  std::swap(m_descriptorIndex, rhs.m_descriptorIndex);
-  std::swap(m_binding, rhs.m_binding);
   std::swap(rhs.m_view, m_view);
   std::swap(rhs.m_sampler, m_sampler);
   std::swap(rhs.m_invalidSampler, m_invalidSampler);
 }
 
-ImageSampler & ImageSampler::operator=(ImageSampler && rhs) noexcept
+SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
 {
+  BaseUniform::operator=(std::move(rhs));
   if (this != &rhs && &rhs.m_context == &m_context)
   {
-    std::swap(m_owner, rhs.m_owner);
-    std::swap(m_type, rhs.m_type);
-    std::swap(m_descriptorIndex, rhs.m_descriptorIndex);
-    std::swap(m_binding, rhs.m_binding);
     std::swap(rhs.m_view, m_view);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);
@@ -81,12 +70,12 @@ ImageSampler & ImageSampler::operator=(ImageSampler && rhs) noexcept
   return *this;
 }
 
-VkSampler ImageSampler::GetHandle() const noexcept
+VkSampler SamplerUniform::GetHandle() const noexcept
 {
   return m_sampler;
 }
 
-VkDescriptorImageInfo ImageSampler::CreateDescriptorInfo() const noexcept
+VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
 {
   assert(m_sampler);
   VkDescriptorImageInfo imageInfo{};
@@ -96,7 +85,7 @@ VkDescriptorImageInfo ImageSampler::CreateDescriptorInfo() const noexcept
   return imageInfo;
 }
 
-void ImageSampler::Invalidate()
+void SamplerUniform::Invalidate()
 {
   if (m_invalidSampler || !m_sampler)
   {
@@ -108,25 +97,25 @@ void ImageSampler::Invalidate()
   }
 }
 
-void ImageSampler::AssignImage(const IImageGPU & image)
+void SamplerUniform::AssignImage(const IImageGPU & image)
 {
   m_view.AssignImage(image);
   assert(m_owner);
   m_owner->OnDescriptorChanged(*this);
 }
 
-bool ImageSampler::IsImageAssigned() const noexcept
+bool SamplerUniform::IsImageAssigned() const noexcept
 {
   return m_view.IsImageAssigned();
 }
 
-uint32_t ImageSampler::GetDescriptorIndex() const noexcept
+uint32_t SamplerUniform::GetBinding() const noexcept
 {
-  return m_descriptorIndex;
+  return BaseUniform::GetBinding();
 }
 
-uint32_t ImageSampler::GetBinding() const noexcept
+uint32_t SamplerUniform::GetArrayIndex() const noexcept
 {
-  return m_binding;
+  return BaseUniform::GetArrayIndex();
 }
 } // namespace RHI::vulkan

@@ -28,11 +28,13 @@ public: // IPipeline interface
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
+  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) override;
   virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding,
                                                     ShaderType shaderStage) override;
   virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding,
                                                      ShaderType shaderStage) override;
-  virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) override;
+  virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * out_array[]) override;
 
   virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }
 

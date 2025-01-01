@@ -27,11 +27,19 @@ void DescriptorSetLayoutBuilder::Reset()
 void DescriptorSetLayoutBuilder::DeclareDescriptor(uint32_t binding, VkDescriptorType type,
                                                    ShaderType shaderStagesMask)
 {
+  DeclareDescriptorsArray(binding, type, shaderStagesMask, 1);
+}
+
+void DescriptorSetLayoutBuilder::DeclareDescriptorsArray(uint32_t binding, VkDescriptorType type,
+                                                         ShaderType shaderStage, uint32_t size)
+{
+  if (binding != m_uniformDescriptions.size())
+    throw std::runtime_error("Uniforms must be declared in order of ascending binding index");
   auto && uniformBinding = m_uniformDescriptions.emplace_back();
   uniformBinding.binding = binding;
   uniformBinding.descriptorType = type;
-  uniformBinding.descriptorCount = 1;
-  uniformBinding.stageFlags = CastInterfaceEnum2Vulkan<VkShaderStageFlagBits>(shaderStagesMask);
+  uniformBinding.descriptorCount = size;
+  uniformBinding.stageFlags = CastInterfaceEnum2Vulkan<VkShaderStageFlagBits>(shaderStage);
   uniformBinding.pImmutableSamplers = nullptr; // Optional
 }
 
