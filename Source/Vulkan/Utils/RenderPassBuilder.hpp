@@ -12,7 +12,7 @@ struct RenderPassBuilder final
   void AddAttachment(const VkAttachmentDescription & description);
   void AddSubpass(SubpassSlots slotsLayout);
 
-  vk::RenderPass Make(const vk::Device & device) const;
+  VkRenderPass Make(const VkDevice & device) const;
   void Reset();
 
 private:

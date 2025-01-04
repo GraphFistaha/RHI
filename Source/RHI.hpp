@@ -397,7 +397,6 @@ struct IImageGPU
   virtual ~IImageGPU() = default;
   virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
   //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
-  virtual void Invalidate() noexcept = 0;
   virtual ImageFormat GetImageFormat() const noexcept = 0;
   virtual ImageExtent GetExtent() const noexcept = 0;
   virtual ImageType GetImageType() const noexcept = 0;
@@ -413,7 +412,7 @@ struct IContext
 
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
   virtual ITransferer * GetTransferer() = 0;
-  virtual void WaitForIdle() const noexcept = 0;
+  virtual void ClearResources() = 0;
 
 
   /// @brief create offscreen framebuffer

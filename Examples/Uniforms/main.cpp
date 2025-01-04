@@ -158,6 +158,8 @@ int main()
 
       swapchain->FlushFrame();
     }
+
+    ctx->ClearResources();
   }
 
   glfwTerminate();

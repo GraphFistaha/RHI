@@ -2,19 +2,19 @@
 
 namespace RHI::vulkan::utils //--------------- Framebuffer builder ------------
 {
-void FramebufferBuilder::AddAttachment(const vk::ImageView & image)
+void FramebufferBuilder::AddAttachment(const VkImageView & image)
 {
   m_images.push_back(image);
 }
 
-vk::ImageView & FramebufferBuilder::SetAttachment(size_t idx) & noexcept
+VkImageView & FramebufferBuilder::SetAttachment(size_t idx) & noexcept
 {
   return m_images[idx];
 }
 
-vk::Framebuffer FramebufferBuilder::Make(const vk::Device & device,
-                                         const vk::RenderPass & renderPass,
-                                         const vk::Extent2D & extent) const
+VkFramebuffer FramebufferBuilder::Make(const VkDevice & device,
+                                         const VkRenderPass & renderPass,
+                                         const VkExtent2D & extent) const
 {
   VkFramebufferCreateInfo framebufferInfo{};
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -27,7 +27,7 @@ vk::Framebuffer FramebufferBuilder::Make(const vk::Device & device,
   VkFramebuffer framebuffer;
   if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS)
     throw std::runtime_error("failed to create framebuffer!");
-  return vk::Framebuffer(framebuffer);
+  return VkFramebuffer(framebuffer);
 }
 
 void FramebufferBuilder::Reset()

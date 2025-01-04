@@ -13,7 +13,7 @@ namespace RHI::vulkan::utils
 struct PipelineBuilder final
 {
   PipelineBuilder();
-  vk::Pipeline Make(const vk::Device & device, const VkRenderPass & renderPass,
+  VkPipeline Make(const VkDevice & device, const VkRenderPass & renderPass,
                     uint32_t subpass_index, const VkPipelineLayout & layout);
   void Reset();
 

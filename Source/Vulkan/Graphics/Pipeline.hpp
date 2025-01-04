@@ -42,9 +42,9 @@ public: // IInvalidable Interface
   virtual void Invalidate() override;
 
 public: // public internal API
-  vk::Pipeline GetPipelineHandle() const noexcept { return m_pipeline; }
+  VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_layout; }
-  void BindToCommandBuffer(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint);
+  void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint);
   Subpass & GetSubpassOwner() & noexcept { return m_owner; }
 
 private:
@@ -55,8 +55,8 @@ private:
   uint32_t m_subpassIndex;
 
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
-  vk::PipelineLayout m_layout = VK_NULL_HANDLE;
-  vk::Pipeline m_pipeline = VK_NULL_HANDLE;
+  VkPipelineLayout m_layout = VK_NULL_HANDLE;
+  VkPipeline m_pipeline = VK_NULL_HANDLE;
   DescriptorBuffer m_descriptors;
 
   utils::PipelineLayoutBuilder m_layoutBuilder;

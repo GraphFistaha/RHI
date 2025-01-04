@@ -10,14 +10,14 @@ namespace RHI::vulkan::utils
 
 struct FramebufferBuilder final
 {
-  void AddAttachment(const vk::ImageView & image);
-  vk::ImageView & SetAttachment(size_t idx) & noexcept;
-  vk::Framebuffer Make(const vk::Device & device, const vk::RenderPass & renderPass,
-                       const vk::Extent2D & extent) const;
+  void AddAttachment(const VkImageView & image);
+  VkImageView & SetAttachment(size_t idx) & noexcept;
+  VkFramebuffer Make(const VkDevice & device, const VkRenderPass & renderPass,
+                       const VkExtent2D & extent) const;
   void Reset();
 
 private:
-  std::vector<vk::ImageView> m_images;
+  std::vector<VkImageView> m_images;
 };
 
 } // namespace RHI::vulkan::utils

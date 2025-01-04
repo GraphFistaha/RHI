@@ -1,6 +1,5 @@
 #include "Transferer.hpp"
 
-#include "../Resources/BufferGPU.hpp"
 #include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
@@ -26,7 +25,7 @@ SemaphoreHandle Transferer::Flush()
   {
     UploadTask task = std::move(m_tasks.front());
     m_tasks.pop();
-    auto && dstBuffer = std::get<0>(task);
+    BufferGPU * dstBuffer = std::get<0>(task);
     ImageGPU * dstImage = std::get<1>(task);
     auto && stagingBuffer = std::get<2>(task);
 
@@ -36,7 +35,8 @@ SemaphoreHandle Transferer::Flush()
       copy.dstOffset = 0;
       copy.srcOffset = 0;
       copy.size = stagingBuffer.Size();
-      m_submitter.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
+      m_submitter.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer->GetHandle(), 1,
+                              &copy);
     }
     else if (dstImage)
     {
@@ -47,7 +47,7 @@ SemaphoreHandle Transferer::Flush()
       region.bufferRowLength = 0;
       region.bufferImageHeight = 0;
 
-      region.imageExtent = *reinterpret_cast<const VkExtent3D*>(&args.extent);
+      region.imageExtent = *reinterpret_cast<const VkExtent3D *>(&args.extent);
       region.imageOffset = {0, 0, 0};
 
       region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -67,7 +67,7 @@ SemaphoreHandle Transferer::Flush()
   return m_submitter.Submit(true, {});
 }
 
-void Transferer::UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept
+void Transferer::UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer) noexcept
 {
   m_tasks.emplace(UploadTask{dstBuffer, VK_NULL_HANDLE, std::move(stagingBuffer)});
 }

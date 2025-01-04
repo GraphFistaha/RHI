@@ -9,7 +9,7 @@ namespace RHI::vulkan
 
 namespace details
 {
-vk::ImageView CreateImageView(const vk::Device & device, const ImageGPU & image)
+VkImageView CreateImageView(VkDevice device, const ImageGPU & image)
 {
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -26,7 +26,7 @@ vk::ImageView CreateImageView(const vk::Device & device, const ImageGPU & image)
   if (auto res = vkCreateImageView(device, &viewInfo, nullptr, &view); res != VK_SUCCESS)
     throw std::invalid_argument("Failed to create image view!");
 
-  return vk::ImageView(view);
+  return VkImageView(view);
 }
 } // namespace details
 
@@ -37,8 +37,7 @@ ImageGPU_View::ImageGPU_View(const Context & ctx)
 
 ImageGPU_View::~ImageGPU_View()
 {
-  if (m_view)
-    vkDestroyImageView(m_context.GetDevice(), m_view, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
 }
 
 ImageGPU_View::ImageGPU_View(ImageGPU_View && rhs) noexcept
@@ -61,10 +60,10 @@ ImageGPU_View & ImageGPU_View::operator=(ImageGPU_View && rhs) noexcept
 
 void ImageGPU_View::AssignImage(const IImageGPU & image)
 {
-  auto new_view = details::CreateImageView(m_context.GetDevice(),
-                                           utils::CastInterfaceClass2Internal<const ImageGPU &>(image));
-  if (m_view)
-    vkDestroyImageView(m_context.GetDevice(), m_view, nullptr);
+  auto new_view =
+    details::CreateImageView(m_context.GetDevice(),
+                             utils::CastInterfaceClass2Internal<const ImageGPU &>(image));
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
   m_view = new_view;
 }
 

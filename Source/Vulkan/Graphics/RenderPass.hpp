@@ -15,11 +15,11 @@
 namespace RHI::vulkan
 {
 struct Context;
-}
+struct RenderTarget;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
-struct RenderTarget;
 
 struct RenderPass : public IInvalidable
 {
@@ -35,7 +35,7 @@ public: // IInvalidable Interface
   virtual void Invalidate() override;
 
 public:
-  vk::RenderPass GetHandle() const noexcept { return m_renderPass; }
+  VkRenderPass GetHandle() const noexcept { return m_renderPass; }
   void WaitForReadyToRendering() const noexcept;
   void UpdateRenderingReadyFlag() noexcept;
 
@@ -44,11 +44,11 @@ private:
   const RenderTarget * m_boundRenderTarget = nullptr;
 
   uint32_t m_graphicsQueueFamily;
-  vk::Queue m_graphicsQueue;
+  VkQueue m_graphicsQueue;
   std::vector<FramebufferAttachment> m_cachedAttachments;
 
   /// There is a lot of thread-readers, so it's must be synchronized access
-  vk::RenderPass m_renderPass = VK_NULL_HANDLE;
+  VkRenderPass m_renderPass = VK_NULL_HANDLE;
   bool m_invalidRenderPass : 1 = false;
   utils::RenderPassBuilder m_builder;
 

@@ -35,11 +35,11 @@ struct DescriptorBuffer final
   void OnDescriptorChanged(const BufferUniform & descriptor) noexcept;
   void OnDescriptorChanged(const SamplerUniform & descriptor) noexcept;
 
-  void BindToCommandBuffer(const vk::CommandBuffer & buffer, vk::PipelineLayout pipelineLayout,
+  void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineLayout pipelineLayout,
                            VkPipelineBindPoint bindPoint);
 
-  vk::DescriptorSetLayout GetLayoutHandle() const noexcept;
-  vk::DescriptorSet GetHandle() const noexcept;
+  VkDescriptorSetLayout GetLayoutHandle() const noexcept;
+  VkDescriptorSet GetHandle() const noexcept;
 
 private:
   using BufferUniforms = std::deque<BufferUniform>;
@@ -49,9 +49,9 @@ private:
   const Context & m_context;
   Pipeline & m_owner;
 
-  vk::DescriptorSetLayout m_layout = VK_NULL_HANDLE;
-  vk::DescriptorSet m_set = VK_NULL_HANDLE;
-  vk::DescriptorPool m_pool = VK_NULL_HANDLE;
+  VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
+  VkDescriptorSet m_set = VK_NULL_HANDLE;
+  VkDescriptorPool m_pool = VK_NULL_HANDLE;
 
   std::unordered_map<VkDescriptorType, uint32_t> m_capacity;
   std::unordered_map<VkDescriptorType, BufferUniforms> m_bufferUniformDescriptors;

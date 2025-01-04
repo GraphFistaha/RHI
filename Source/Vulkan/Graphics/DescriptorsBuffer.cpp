@@ -16,7 +16,7 @@ namespace RHI::vulkan
 namespace details
 {
 
-vk::DescriptorPool CreateDescriptorPool(
+VkDescriptorPool CreateDescriptorPool(
   const Context & ctx, const std::unordered_map<VkDescriptorType, uint32_t> & distribution)
 {
   assert(!distribution.empty());
@@ -41,10 +41,10 @@ vk::DescriptorPool CreateDescriptorPool(
   VkDescriptorPool c_pool;
   if (vkCreateDescriptorPool(ctx.GetDevice(), &poolInfo, nullptr, &c_pool) != VK_SUCCESS)
     throw std::runtime_error("failed to create descriptor pool!");
-  return vk::DescriptorPool(c_pool);
+  return VkDescriptorPool(c_pool);
 }
 
-vk::DescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
+VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
                                       VkDescriptorSetLayout layout)
 {
   VkDescriptorSetAllocateInfo allocInfo{};
@@ -56,7 +56,7 @@ vk::DescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool
   VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
   if (vkAllocateDescriptorSets(ctx.GetDevice(), &allocInfo, &descriptor_set) != VK_SUCCESS)
     throw std::runtime_error("failed to allocate descriptor sets!");
-  return vk::DescriptorSet(descriptor_set);
+  return VkDescriptorSet(descriptor_set);
 }
 
 
@@ -133,8 +133,7 @@ void DescriptorBuffer::Invalidate()
   if (m_invalidLayout || !m_layout)
   {
     auto new_layout = m_layoutBuilder.Make(m_context.GetDevice());
-    if (!!m_layout)
-      vkDestroyDescriptorSetLayout(m_context.GetDevice(), m_layout, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
     m_layout = new_layout;
     m_invalidLayout = false;
     m_invalidSet = true;
@@ -233,8 +232,8 @@ void DescriptorBuffer::OnDescriptorChanged(const SamplerUniform & descriptor) no
   }
 }
 
-void DescriptorBuffer::BindToCommandBuffer(const vk::CommandBuffer & buffer,
-                                           vk::PipelineLayout pipelineLayout,
+void DescriptorBuffer::BindToCommandBuffer(const VkCommandBuffer & buffer,
+                                           VkPipelineLayout pipelineLayout,
                                            VkPipelineBindPoint bindPoint)
 {
   if (m_set)
@@ -244,12 +243,12 @@ void DescriptorBuffer::BindToCommandBuffer(const vk::CommandBuffer & buffer,
   }
 }
 
-vk::DescriptorSetLayout DescriptorBuffer::GetLayoutHandle() const noexcept
+VkDescriptorSetLayout DescriptorBuffer::GetLayoutHandle() const noexcept
 {
   return m_layout;
 }
 
-vk::DescriptorSet DescriptorBuffer::GetHandle() const noexcept
+VkDescriptorSet DescriptorBuffer::GetHandle() const noexcept
 {
   return m_set;
 }

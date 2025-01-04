@@ -35,15 +35,15 @@ struct CommandBuffer
   bool IsEmpty() const noexcept { return m_commandsCount == 0; }
 
 public:
-  vk::CommandBuffer GetHandle() const noexcept { return m_buffer; }
+  VkCommandBuffer GetHandle() const noexcept { return m_buffer; }
 
 protected:
   const Context & m_context;
 
 private:
   VkCommandBufferLevel m_level;
-  vk::CommandPool m_pool = VK_NULL_HANDLE;
-  vk::CommandBuffer m_buffer = VK_NULL_HANDLE;
+  VkCommandPool m_pool = VK_NULL_HANDLE;
+  VkCommandBuffer m_buffer = VK_NULL_HANDLE;
   size_t m_commandsCount = 0;
 };
 

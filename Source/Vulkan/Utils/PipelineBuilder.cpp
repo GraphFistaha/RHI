@@ -63,7 +63,7 @@ PipelineBuilder::PipelineBuilder()
 }
 
 
-vk::Pipeline PipelineBuilder::Make(const vk::Device & device, const VkRenderPass & renderPass,
+VkPipeline PipelineBuilder::Make(const VkDevice & device, const VkRenderPass & renderPass,
                                    uint32_t subpass_index, const VkPipelineLayout & layout)
 {
   VkPipelineDynamicStateCreateInfo dynamicStatesInfo{};
@@ -130,7 +130,7 @@ vk::Pipeline PipelineBuilder::Make(const vk::Device & device, const VkRenderPass
 
   // Build shaders
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-  std::vector<vk::ShaderModule> compiledShaders;
+  std::vector<VkShaderModule> compiledShaders;
   for (auto && [type, path] : m_attachedShaders)
   {
     auto && module = BuildShaderModule(device, path);
@@ -176,7 +176,7 @@ vk::Pipeline PipelineBuilder::Make(const vk::Device & device, const VkRenderPass
   //for (auto && layout_info : m_descriptorsLayout)
   //  result->CreateUniformDescriptors(layout_info.descriptorType, layout_info.descriptorCount);
   //return result;
-  return vk::Pipeline(pipeline);
+  return VkPipeline(pipeline);
 }
 
 void PipelineBuilder::Reset()

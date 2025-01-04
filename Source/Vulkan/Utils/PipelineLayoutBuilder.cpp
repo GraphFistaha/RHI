@@ -2,8 +2,8 @@
 
 namespace RHI::vulkan::utils
 {
-vk::PipelineLayout PipelineLayoutBuilder::Make(const vk::Device & device,
-                                               const vk::DescriptorSetLayout & descriptorsLayout,
+VkPipelineLayout PipelineLayoutBuilder::Make(const VkDevice & device,
+                                               const VkDescriptorSetLayout & descriptorsLayout,
                                                const VkPushConstantRange * pushConstantRange) const
 {
   auto tmp = static_cast<VkDescriptorSetLayout>(descriptorsLayout);

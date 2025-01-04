@@ -8,6 +8,11 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "BuffersAllocator.hpp"
+#include "GarbageCollector.hpp"
+#include "Graphics/Swapchain.hpp"
+#include "Resources/Transferer.hpp"
+
 namespace RHI::vulkan
 {
 enum class QueueType : uint8_t
@@ -17,16 +22,6 @@ enum class QueueType : uint8_t
   Compute,
   Transfer
 };
-
-namespace details
-{
-struct BuffersAllocator;
-}
-struct Swapchain;
-struct Transferer;
-
-struct BufferGPU;
-struct ImageGPU;
 
 /// @brief context is object contains vulkan logical device. Also it provides access to vulkan functions
 ///			If rendering system uses several GPUs, you should create one context for each physical device
@@ -45,24 +40,29 @@ public: // IContext interface
                                                   bool mapped = false) const override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
 
-  virtual void WaitForIdle() const noexcept override;
+  virtual void ClearResources() override;
+
 public: // RHI-only API
-  const vk::Instance GetInstance() const;
-  const vk::Device GetDevice() const;
-  const vk::PhysicalDevice GetGPU() const;
+  VkInstance GetInstance() const noexcept;
+  VkDevice GetDevice() const noexcept;
+  VkPhysicalDevice GetGPU() const noexcept;
   const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept;
   std::pair<uint32_t, VkQueue> GetQueue(QueueType type) const;
-  uint32_t GetVulkanVersion() const;
+  uint32_t GetVulkanVersion() const noexcept;
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
+  void WaitForIdle() const noexcept;
 
   const details::BuffersAllocator & GetBuffersAllocator() const & noexcept;
+  const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
 private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
   std::unique_ptr<details::BuffersAllocator> m_allocator;
-  std::unique_ptr<Swapchain> m_surfaceSwapchain;
-  std::unique_ptr<Transferer> m_transferer;
+  std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
+
+  std::unique_ptr<Transferer> m_transferer;      // TODO: potentially there is a list
+  std::unique_ptr<Swapchain> m_surfaceSwapchain; // TODO: potentially there is a list
   LoggingFunc m_logFunc;
 
 private:
@@ -76,8 +76,8 @@ namespace RHI::vulkan::utils
 {
 
 /// @brief creates semaphore, doesn't own it
-vk::Semaphore CreateVkSemaphore(vk::Device device);
+VkSemaphore CreateVkSemaphore(VkDevice device);
 /// @brief creates fence, doesn't own it
-vk::Fence CreateFence(vk::Device device, bool locked = false);
+VkFence CreateFence(VkDevice device, bool locked = false);
 
 } // namespace RHI::vulkan::utils

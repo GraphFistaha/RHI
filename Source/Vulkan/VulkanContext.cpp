@@ -72,7 +72,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, RHI::Log
   return result;
 }
 
-vk::SurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & config)
+VkSurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & config)
 {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   VkResult result;
@@ -91,7 +91,7 @@ vk::SurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & conf
 #endif
   if (result != VK_SUCCESS)
     throw std::runtime_error("failed to create window surface!");
-  return vk::SurfaceKHR(surface);
+  return VkSurfaceKHR(surface);
 }
 
 vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
@@ -176,7 +176,7 @@ private:
   vkb::PhysicalDevice m_gpu;
   vkb::Device m_device;
   vkb::DispatchTable m_dispatchTable;
-  vk::SurfaceKHR m_surface;
+  VkSurfaceKHR m_surface;
 };
 
 
@@ -187,13 +187,13 @@ Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
   m_allocator = std::make_unique<details::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                             m_impl->GetDevice(),
                                                             GetVulkanVersion());
-  m_surfaceSwapchain = std::make_unique<Swapchain>(*this, m_impl->GetSurface());
+  m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
   m_transferer = std::make_unique<Transferer>(*this);
+  m_surfaceSwapchain = std::make_unique<Swapchain>(*this, m_impl->GetSurface());
 }
 
 Context::~Context()
 {
-  WaitForIdle();
 }
 
 ISwapchain * Context::GetSurfaceSwapchain()
@@ -210,30 +210,30 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
                                                  bool mapped /* = false*/) const
 {
   auto vkUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(usage);
-  return std::make_unique<BufferGPU>(size, vkUsage, *m_allocator, m_transferer.get(), mapped);
+  return std::make_unique<BufferGPU>(*this, m_transferer.get(), size, vkUsage, mapped);
 }
 
 std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args) const
 {
-  return std::make_unique<ImageGPU>(*this, *m_allocator, *m_transferer, args);
+  return std::make_unique<ImageGPU>(*this, *m_transferer, args);
 }
 
-void Context::WaitForIdle() const noexcept
+void Context::ClearResources()
 {
-  vkDeviceWaitIdle(GetDevice());
+  m_gc->ClearObjects();
 }
 
-const vk::Instance Context::GetInstance() const
+VkInstance Context::GetInstance() const noexcept
 {
   return m_impl->GetInstance();
 }
 
-const vk::Device Context::GetDevice() const
+VkDevice Context::GetDevice() const noexcept
 {
   return m_impl->GetDevice();
 }
 
-const vk::PhysicalDevice Context::GetGPU() const
+VkPhysicalDevice Context::GetGPU() const noexcept
 {
   return m_impl->GetGPU();
 }
@@ -248,7 +248,7 @@ std::pair<uint32_t, VkQueue> Context::GetQueue(QueueType type) const
   return m_impl->GetQueue(static_cast<vkb::QueueType>(type));
 }
 
-uint32_t Context::GetVulkanVersion() const
+uint32_t Context::GetVulkanVersion() const noexcept
 {
   return VulkanAPIVersion;
 }
@@ -264,9 +264,19 @@ void Context::Log(LogMessageStatus status, const std::string & message) const no
 #endif
 }
 
+void Context::WaitForIdle() const noexcept
+{
+  vkDeviceWaitIdle(GetDevice());
+}
+
 const details::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept
 {
   return *m_allocator;
+}
+
+const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const & noexcept
+{
+  return *m_gc;
 }
 
 } // namespace RHI::vulkan
@@ -284,7 +294,7 @@ std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
 namespace RHI::vulkan::utils
 {
 
-vk::Semaphore CreateVkSemaphore(vk::Device device)
+VkSemaphore CreateVkSemaphore(VkDevice device)
 {
   VkSemaphore result = VK_NULL_HANDLE;
   VkSemaphoreCreateInfo info{};
@@ -292,10 +302,10 @@ vk::Semaphore CreateVkSemaphore(vk::Device device)
   // Don't use createSemaphore in dispatchTable because it's broken
   if (vkCreateSemaphore(device, &info, nullptr, &result) != VK_SUCCESS)
     throw std::runtime_error("failed to create semaphore");
-  return vk::Semaphore(result);
+  return VkSemaphore(result);
 }
 
-vk::Fence CreateFence(vk::Device device, bool locked)
+VkFence CreateFence(VkDevice device, bool locked)
 {
   VkFenceCreateInfo info{};
   VkFence result = VK_NULL_HANDLE;
@@ -305,6 +315,6 @@ vk::Fence CreateFence(vk::Device device, bool locked)
   // Don't use createFence in dispatchTable because it's broken
   if (vkCreateFence(device, &info, nullptr, &result) != VK_SUCCESS)
     throw std::runtime_error("failed to create fence");
-  return vk::Fence(result);
+  return VkFence(result);
 }
 } // namespace RHI::vulkan::utils

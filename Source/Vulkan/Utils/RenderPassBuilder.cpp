@@ -84,7 +84,7 @@ void RenderPassBuilder::AddSubpass(SubpassSlots slotsLayout)
 }
 
 
-vk::RenderPass RenderPassBuilder::Make(const vk::Device & device) const
+VkRenderPass RenderPassBuilder::Make(const VkDevice & device) const
 {
   if (m_slots.empty() || m_attachments.empty())
     return VK_NULL_HANDLE;
@@ -138,7 +138,7 @@ vk::RenderPass RenderPassBuilder::Make(const vk::Device & device) const
       res != VK_SUCCESS)
     throw std::runtime_error("Failed to create render pass");
 
-  return vk::RenderPass(renderPass);
+  return VkRenderPass(renderPass);
 }
 
 void RenderPassBuilder::Reset()

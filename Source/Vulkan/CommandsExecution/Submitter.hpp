@@ -15,7 +15,7 @@ namespace RHI::vulkan::details
 /// @brief Submits commands into queue, owns primary command buffer
 struct Submitter : public CommandBuffer
 {
-  explicit Submitter(const Context & ctx, vk::Queue queue, uint32_t queueFamily,
+  explicit Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
                      VkPipelineStageFlags waitStages);
   virtual ~Submitter();
 
@@ -25,7 +25,7 @@ struct Submitter : public CommandBuffer
 protected:
   VkPipelineStageFlags m_waitStages;
   uint32_t m_queueFamily;
-  vk::Queue m_queue;
+  VkQueue m_queue;
 
   /// semaphore to wait for commands have been completed on gpu
   /// fence to wait for commands have been completed on cpu

@@ -31,9 +31,9 @@ public: // IInvalidable interface
 public:
   void SetExtent(const VkExtent2D & extent) noexcept;
 
-  void BindRenderPass(const vk::RenderPass & renderPass) noexcept;
+  void BindRenderPass(const VkRenderPass & renderPass) noexcept;
 
-  vk::Framebuffer GetHandle() const noexcept;
+  VkFramebuffer GetHandle() const noexcept;
   VkClearValue GetClearValue() const noexcept { return m_clearValue; }
   VkExtent2D GetVkExtent() const noexcept { return m_extent; }
 
@@ -42,7 +42,7 @@ public:
 
 protected:
   const Context & m_context;
-  vk::RenderPass m_boundRenderPass = nullptr;
+  VkRenderPass m_boundRenderPass = nullptr;
   std::vector<FramebufferAttachment> m_attachments;
 
 protected: // framebuffer params
@@ -50,7 +50,7 @@ protected: // framebuffer params
   VkClearValue m_clearValue; // make it array (one for each attachment)
 
 protected: // handle
-  vk::Framebuffer m_framebuffer = VK_NULL_HANDLE;
+  VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
   utils::FramebufferBuilder m_builder;
   bool m_invalidFramebuffer : 1 = false;
 };

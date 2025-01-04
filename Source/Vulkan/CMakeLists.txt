@@ -2,7 +2,11 @@ target_sources (${PROJECT_NAME}
 PRIVATE
 	VulkanContext.cpp
 	VulkanContext.hpp
-		
+	GarbageCollector.cpp
+	GarbageCollector.hpp
+	BuffersAllocator.hpp
+	BuffersAllocator.cpp
+
 	Graphics/SwapchainBase.cpp
 	Graphics/SwapchainBase.hpp
 	Graphics/Swapchain.cpp
@@ -51,8 +55,6 @@ PRIVATE
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp
-	Resources/BuffersAllocator.hpp
-	Resources/BuffersAllocator.cpp
 	Resources/BufferBase.hpp
 	Resources/BufferBase.cpp
 

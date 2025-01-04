@@ -38,7 +38,7 @@ public: // public internal API
 
 private:
   ImageGPU_View m_view{m_context};
-  vk::Sampler m_sampler = VK_NULL_HANDLE;
+  VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };
 

@@ -217,8 +217,6 @@ int main()
     }
   }
 
-  // wait while gpu is idle to destroy context and its objects correctly
-  ctx->WaitForIdle();
   glfwTerminate();
   return 0;
 }

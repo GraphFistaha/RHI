@@ -8,7 +8,7 @@ namespace RHI::vulkan::utils
 {
 struct DescriptorSetLayoutBuilder final
 {
-  vk::DescriptorSetLayout Make(const vk::Device & device) const;
+  VkDescriptorSetLayout Make(const VkDevice & device) const;
   void Reset();
   void DeclareDescriptor(uint32_t binding, VkDescriptorType type, ShaderType shaderStage);
   void DeclareDescriptorsArray(uint32_t binding, VkDescriptorType type, ShaderType shaderStage,

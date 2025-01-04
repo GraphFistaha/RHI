@@ -16,8 +16,7 @@ RenderTarget::RenderTarget(const Context & ctx)
 
 RenderTarget::~RenderTarget()
 {
-  if (!!m_framebuffer)
-    vkDestroyFramebuffer(m_context.GetDevice(), m_framebuffer, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
 }
 
 void RenderTarget::SetClearColor(float r, float g, float b, float a) noexcept
@@ -37,14 +36,13 @@ void RenderTarget::Invalidate()
   {
     auto new_framebuffer = m_builder.Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkFramebuffer");
-    if (!!m_framebuffer)
-      vkDestroyFramebuffer(m_context.GetDevice(), m_framebuffer, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
     m_framebuffer = new_framebuffer;
     m_invalidFramebuffer = false;
   }
 }
 
-void RenderTarget::BindRenderPass(const vk::RenderPass & renderPass) noexcept
+void RenderTarget::BindRenderPass(const VkRenderPass & renderPass) noexcept
 {
   if (renderPass != m_boundRenderPass)
   {
@@ -65,7 +63,7 @@ void RenderTarget::AddAttachment(const FramebufferAttachment & attachment)
   m_invalidFramebuffer = true;
 }
 
-vk::Framebuffer RenderTarget::GetHandle() const noexcept
+VkFramebuffer RenderTarget::GetHandle() const noexcept
 {
   return m_framebuffer;
 }

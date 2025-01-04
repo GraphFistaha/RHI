@@ -4,7 +4,7 @@
 
 namespace RHI::vulkan::details
 {
-Submitter::Submitter(const Context & ctx, vk::Queue queue, uint32_t queueFamily,
+Submitter::Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
                      VkPipelineStageFlags waitStages)
   : CommandBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_PRIMARY)
   , m_queueFamily(queueFamily)
@@ -25,10 +25,8 @@ Submitter::~Submitter()
   std::array<Barrier *, 2> barriers{&m_oldBarrier, &m_newBarrier};
   for (auto && barrier : barriers)
   {
-    if (!!barrier->first)
-      vkDestroySemaphore(m_context.GetDevice(), barrier->first, nullptr);
-    if (!!barrier->second)
-      vkDestroyFence(m_context.GetDevice(), barrier->second, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(barrier->first, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(barrier->second, nullptr);
   }
 }
 

@@ -7,7 +7,7 @@ namespace RHI::vulkan
 {
 namespace details
 {
-vk::Sampler CreateSampler(const vk::Device & device)
+VkSampler CreateSampler(const VkDevice & device)
 {
   VkSamplerCreateInfo samplerInfo{};
   samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -31,7 +31,7 @@ vk::Sampler CreateSampler(const vk::Device & device)
   VkSampler resultSampler;
   if (vkCreateSampler(device, &samplerInfo, nullptr, &resultSampler) != VK_SUCCESS)
     throw std::invalid_argument("failed to create texture sampler!");
-  return vk::Sampler(resultSampler);
+  return VkSampler(resultSampler);
 }
 } // namespace details
 
@@ -45,8 +45,7 @@ SamplerUniform::SamplerUniform(const Context & ctx, DescriptorBuffer & owner, Vk
 
 SamplerUniform::~SamplerUniform()
 {
-  if (m_sampler)
-    vkDestroySampler(m_context.GetDevice(), m_sampler, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
 }
 
 SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
@@ -90,8 +89,7 @@ void SamplerUniform::Invalidate()
   if (m_invalidSampler || !m_sampler)
   {
     auto new_sampler = details::CreateSampler(m_context.GetDevice());
-    if (m_sampler)
-      vkDestroySampler(m_context.GetDevice(), m_sampler, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
     m_sampler = new_sampler;
     m_invalidSampler = false;
   }

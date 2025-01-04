@@ -10,7 +10,7 @@
 namespace RHI::vulkan
 {
 
-Swapchain::Swapchain(const Context & ctx, const vk::SurfaceKHR surface)
+Swapchain::Swapchain(const Context & ctx, const VkSurfaceKHR surface)
   : SwapchainBase(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
@@ -26,7 +26,6 @@ Swapchain::~Swapchain()
 
 void Swapchain::Invalidate()
 {
-  m_context.WaitForIdle();
   InvalidateSwapchain();
 }
 
@@ -61,6 +60,7 @@ void Swapchain::InvalidateSwapchain()
 
 void Swapchain::DestroyHandles() noexcept
 {
+  m_context.WaitForIdle();
   m_targets.clear();
   if (!m_swapchainImageViews.empty())
     m_swapchain->destroy_image_views(m_swapchainImageViews);
@@ -118,7 +118,7 @@ bool Swapchain::PresentImage(uint32_t activeImage, VkSemaphore waitRenderingSema
   return true;
 }
 
-vk::SwapchainKHR Swapchain::GetHandle() const noexcept
+VkSwapchainKHR Swapchain::GetHandle() const noexcept
 {
   return m_swapchain->swapchain;
 }

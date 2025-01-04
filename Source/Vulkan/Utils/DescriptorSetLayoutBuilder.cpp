@@ -4,7 +4,7 @@
 
 namespace RHI::vulkan::utils
 {
-vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Make(const vk::Device & device) const
+VkDescriptorSetLayout DescriptorSetLayoutBuilder::Make(const VkDevice & device) const
 {
   // create descriptor set layout
   VkDescriptorSetLayoutCreateInfo dsetLayoutInfo{};
@@ -16,7 +16,7 @@ vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Make(const vk::Device & devi
   if (auto res = vkCreateDescriptorSetLayout(device, &dsetLayoutInfo, nullptr, &descr_layout);
       res != VK_SUCCESS)
     throw std::runtime_error("Failed to create descriptor set layout");
-  return vk::DescriptorSetLayout(descr_layout);
+  return VkDescriptorSetLayout(descr_layout);
 }
 
 void DescriptorSetLayoutBuilder::Reset()

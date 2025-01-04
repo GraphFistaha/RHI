@@ -4,7 +4,7 @@
 
 namespace
 {
-vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queue_family_index)
+VkCommandPool CreateCommandPool(VkDevice device, uint32_t queue_family_index)
 {
   VkCommandPool commandPool = VK_NULL_HANDLE;
 
@@ -14,11 +14,11 @@ vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queue_family_index
   poolInfo.queueFamilyIndex = queue_family_index;
   if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
     throw std::invalid_argument("failed to create command pool!");
-  return vk::CommandPool{commandPool};
+  return VkCommandPool{commandPool};
 }
 
 
-vk::CommandBuffer CreateCommandBuffer(vk::Device device, vk::CommandPool pool,
+VkCommandBuffer CreateCommandBuffer(VkDevice device, VkCommandPool pool,
                                       VkCommandBufferLevel level)
 {
   VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
@@ -31,7 +31,7 @@ vk::CommandBuffer CreateCommandBuffer(vk::Device device, vk::CommandPool pool,
   if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
     throw std::runtime_error("failed to allocate command buffers!");
 
-  return vk::CommandBuffer{commandBuffer};
+  return VkCommandBuffer{commandBuffer};
 }
 } // namespace
 
@@ -53,8 +53,7 @@ CommandBuffer::~CommandBuffer()
     const VkCommandBuffer buf = m_buffer;
     vkFreeCommandBuffers(m_context.GetDevice(), m_pool, 1, &buf);
   }
-  if (!!m_pool)
-    vkDestroyCommandPool(m_context.GetDevice(), m_pool, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept

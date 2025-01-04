@@ -15,7 +15,7 @@ namespace RHI::vulkan
 /// @brief vulkan implementation for renderer
 struct Swapchain final : public SwapchainBase
 {
-  explicit Swapchain(const Context & ctx, const vk::SurfaceKHR surface);
+  explicit Swapchain(const Context & ctx, const VkSurfaceKHR surface);
   virtual ~Swapchain() override;
 
 public: // SwapchainBase interface
@@ -27,14 +27,14 @@ public: // IInvalidable interface
   virtual void Invalidate() override;
 
 public: // RHI-only API
-  vk::SwapchainKHR GetHandle() const noexcept;
+  VkSwapchainKHR GetHandle() const noexcept;
 
 private:
-  vk::Queue m_presentQueue = VK_NULL_HANDLE;
+  VkQueue m_presentQueue = VK_NULL_HANDLE;
   uint32_t m_presentQueueIndex;
 
   /// presentation data
-  vk::SurfaceKHR m_surface;       ///< surface
+  VkSurfaceKHR m_surface;       ///< surface
   std::unique_ptr<vkb::Swapchain> m_swapchain; ///< swapchain
 
 private:

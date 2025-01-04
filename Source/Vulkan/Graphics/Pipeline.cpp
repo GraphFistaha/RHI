@@ -20,10 +20,8 @@ Pipeline::Pipeline(const Context & ctx, Subpass & owner, const RenderPass & rend
 
 Pipeline::~Pipeline()
 {
-  if (!!m_pipeline)
-    vkDestroyPipeline(m_context.GetDevice(), m_pipeline, nullptr);
-  if (!!m_layout)
-    vkDestroyPipelineLayout(m_context.GetDevice(), m_layout, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
 }
 
 void Pipeline::AttachShader(ShaderType type, const std::filesystem::path & path)
@@ -87,8 +85,7 @@ void Pipeline::Invalidate()
                                            m_pushConstantRange.has_value()
                                              ? &m_pushConstantRange.value()
                                              : nullptr);
-    if (!!m_layout)
-      vkDestroyPipelineLayout(m_context.GetDevice(), m_layout, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
     m_layout = new_layout;
     m_invalidPipelineLayout = false;
     m_invalidPipeline = true;
@@ -99,8 +96,7 @@ void Pipeline::Invalidate()
     auto new_pipeline = m_pipelineBuilder.Make(m_context.GetDevice(), m_renderPass.GetHandle(),
                                                m_subpassIndex, m_layout);
     m_context.Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
-    if (!!m_pipeline)
-      vkDestroyPipeline(m_context.GetDevice(), m_pipeline, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
   }
@@ -108,7 +104,7 @@ void Pipeline::Invalidate()
   m_owner.SetDirtyCacheCommands();
 }
 
-void Pipeline::BindToCommandBuffer(const vk::CommandBuffer & buffer, VkPipelineBindPoint bindPoint)
+void Pipeline::BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint)
 {
   assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);

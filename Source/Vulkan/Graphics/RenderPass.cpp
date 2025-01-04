@@ -19,8 +19,7 @@ RenderPass::RenderPass(const Context & ctx)
 
 RenderPass::~RenderPass()
 {
-  if (!!m_renderPass)
-    vkDestroyRenderPass(m_context.GetDevice(), m_renderPass, nullptr);
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
 ISubpass * RenderPass::CreateSubpass()
@@ -126,9 +125,7 @@ void RenderPass::Invalidate()
   {
     auto new_renderpass = m_builder.Make(m_context.GetDevice());
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
-    m_context.WaitForIdle();
-    if (!!m_renderPass)
-      vkDestroyRenderPass(m_context.GetDevice(), m_renderPass, nullptr);
+    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;
     UpdateRenderingReadyFlag();
     m_invalidRenderPass = false;

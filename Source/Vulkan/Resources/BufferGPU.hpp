@@ -11,9 +11,8 @@ struct BufferGPU : public IBufferGPU,
 {
   using IBufferGPU::ScopedPointer;
 
-  explicit BufferGPU(size_t size, VkBufferUsageFlags usage,
-                     const details::BuffersAllocator & allocator, Transferer * transferer = nullptr,
-                     bool mapped = false);
+  explicit BufferGPU(const Context & ctx, Transferer * transferer, size_t size,
+                     VkBufferUsageFlags usage, bool mapped = false);
   virtual ~BufferGPU() override;
 
   BufferGPU(BufferGPU && rhs) noexcept;
@@ -33,6 +32,6 @@ public:
   VkBuffer GetHandle() const noexcept;
 
 private:
-  vk::Buffer m_buffer = VK_NULL_HANDLE;
+  VkBuffer m_buffer = VK_NULL_HANDLE;
 };
 } // namespace RHI::vulkan

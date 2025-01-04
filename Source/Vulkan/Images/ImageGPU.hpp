@@ -5,12 +5,15 @@
 namespace RHI::vulkan
 {
 struct Context;
+}
 
+namespace RHI::vulkan
+{
 struct ImageGPU : public IImageGPU,
                   private details::BufferBase
 {
-  explicit ImageGPU(const Context & ctx, const details::BuffersAllocator & allocator,
-                    Transferer & transferer, const ImageCreateArguments & args);
+  explicit ImageGPU(const Context & ctx, Transferer & transferer,
+                    const ImageCreateArguments & args);
   virtual ~ImageGPU() override;
 
 
@@ -21,8 +24,6 @@ struct ImageGPU : public IImageGPU,
   virtual ImageType GetImageType() const noexcept override;
   virtual ImageFormat GetImageFormat() const noexcept override;
 
-  virtual void Invalidate() noexcept override;
-
 public:
   VkImage GetHandle() const noexcept;
   void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
@@ -30,8 +31,7 @@ public:
   const ImageCreateArguments & GetParameters() const & noexcept { return m_args; }
 
 private:
-  const Context & m_context;
-  vk::Image m_image;
+  VkImage m_image;
   VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
   VkFormat m_internalFormat;
   ImageCreateArguments m_args;

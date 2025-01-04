@@ -2,7 +2,6 @@
 
 #include <vk_mem_alloc.h>
 
-#include "../Resources/Transferer.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 #include "ImageFormatsConversation.hpp"
@@ -10,60 +9,15 @@
 
 namespace RHI::vulkan
 {
-namespace details
-{
-std::tuple<VkImage, VmaAllocation, VmaAllocationInfo> CreateVMAImage(
-  VmaAllocator allocator, VmaAllocationCreateFlags flags, const ImageCreateArguments & args,
-  VmaMemoryUsage memory_usage = VMA_MEMORY_USAGE_AUTO)
-{
-  VkImageCreateInfo imageInfo{};
-  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(args.type);
-  imageInfo.extent.width = args.extent[0];
-  imageInfo.extent.height = args.extent[1];
-  imageInfo.extent.depth = args.extent[2];
-  imageInfo.mipLevels = args.mipLevels;
-  imageInfo.arrayLayers = 1;
-  imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(args.format);
-  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  imageInfo.usage = utils::CastInterfaceEnum2Vulkan<VkImageUsageFlags>(args.format);
-  imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(args.samples);
-  imageInfo.sharingMode = args.shared ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
-  VmaAllocationCreateInfo allocCreateInfo = {};
-  allocCreateInfo.usage = memory_usage;
-  allocCreateInfo.flags = flags;
-  allocCreateInfo.priority = 1.0f;
-  VkImage image;
-  VmaAllocation allocation;
-  VmaAllocationInfo allocInfo;
-
-  if (auto res =
-        vmaCreateImage(allocator, &imageInfo, &allocCreateInfo, &image, &allocation, &allocInfo);
-      res != VK_SUCCESS)
-    throw std::invalid_argument("Failed to create VkImage");
-
-  return {image, allocation, allocInfo};
-}
-
-
-} // namespace details
-
-ImageGPU::ImageGPU(const Context & ctx, const details::BuffersAllocator & allocator,
-                   Transferer & transferer, const ImageCreateArguments & args)
-  : BufferBase(allocator, &transferer)
-  , m_context(ctx)
+ImageGPU::ImageGPU(const Context & ctx, Transferer & transferer, const ImageCreateArguments & args)
+  : BufferBase(ctx, &transferer)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   allocation_flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
-  auto allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
-  auto [image, allocation, alloc_info] =
-    details::CreateVMAImage(allocatorHandle, allocation_flags, args);
-  m_image = image;
-  m_memBlock = allocation;
-  m_allocInfo = reinterpret_cast<BufferBase::AllocInfoRawMemory &>(alloc_info);
+  std::tie(m_image, m_memBlock, m_allocInfo) =
+    ctx.GetBuffersAllocator().AllocImage(args, allocation_flags, VMA_MEMORY_USAGE_AUTO);
   m_args = args;
   m_flags = allocation_flags;
   m_internalFormat = utils::CastInterfaceEnum2Vulkan<VkFormat>(args.format);
@@ -71,17 +25,16 @@ ImageGPU::ImageGPU(const Context & ctx, const details::BuffersAllocator & alloca
 
 ImageGPU::~ImageGPU()
 {
-  auto allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator.GetHandle());
-  if (!!m_image)
-    vmaDestroyImage(allocatorHandle, m_image, reinterpret_cast<VmaAllocation>(m_memBlock));
+  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_image, m_memBlock);
 }
 
 void ImageGPU::UploadImage(const uint8_t * data, const CopyImageArguments & args)
 {
   if (!m_transferer)
     throw std::runtime_error("Image has no transferer. Async upload is impossible");
-  BufferGPU stagingBuffer(utils::GetSizeOfImage(args.dst.extent, m_internalFormat),
-                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_allocator);
+  BufferGPU stagingBuffer(m_context, nullptr,
+                          utils::GetSizeOfImage(args.dst.extent, m_internalFormat),
+                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     utils::CopyImageFromHost(data, args.src.extent, args.src, args.hostFormat,
@@ -162,10 +115,6 @@ ImageExtent ImageGPU::GetExtent() const noexcept
 ImageFormat ImageGPU::GetImageFormat() const noexcept
 {
   return m_args.format;
-}
-
-void ImageGPU::Invalidate() noexcept
-{
 }
 
 } // namespace RHI::vulkan

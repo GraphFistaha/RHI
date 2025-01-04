@@ -23,7 +23,7 @@ struct ImageGPU_View final
 
 private:
   const Context & m_context;
-  vk::ImageView m_view = VK_NULL_HANDLE;
+  VkImageView m_view = VK_NULL_HANDLE;
 
 private:
   ImageGPU_View(const ImageGPU_View &) = delete;

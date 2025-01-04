@@ -24,11 +24,11 @@ public: // ITransferer interface
   virtual SemaphoreHandle Flush() override;
 
 public:
-  void UploadBuffer(VkBuffer dstBuffer, BufferGPU && stagingBuffer) noexcept;
-  void UploadImage(ImageGPU *, BufferGPU && stagingBuffer) noexcept;
+  void UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer) noexcept;
+  void UploadImage(ImageGPU * dstImage, BufferGPU && stagingBuffer) noexcept;
 
 private:
-  using UploadTask = std::tuple<VkBuffer, ImageGPU *, BufferGPU>;
+  using UploadTask = std::tuple<BufferGPU *, ImageGPU *, BufferGPU>;
 
   const Context & m_context;
   uint32_t m_queueFamilyIndex;
