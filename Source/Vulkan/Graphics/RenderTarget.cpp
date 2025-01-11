@@ -42,6 +42,11 @@ void RenderTarget::Invalidate()
   }
 }
 
+void RenderTarget::SetInvalid()
+{
+  m_invalidFramebuffer = true;
+}
+
 void RenderTarget::BindRenderPass(const VkRenderPass & renderPass) noexcept
 {
   if (renderPass != m_boundRenderPass)
@@ -56,10 +61,12 @@ const std::vector<FramebufferAttachment> & RenderTarget::GetAttachments() const 
   return m_attachments;
 }
 
-void RenderTarget::AddAttachment(const FramebufferAttachment & attachment)
+void RenderTarget::BindAttachment(uint32_t index, const FramebufferAttachment & attachment)
 {
-  m_attachments.push_back(attachment);
-  m_builder.AddAttachment(attachment.GetImageView());
+  while (index >= m_attachments.size())
+    m_attachments.emplace_back();
+  m_attachments[index] = attachment;
+  m_builder.BindAttachment(index, attachment.GetImageView());
   m_invalidFramebuffer = true;
 }
 

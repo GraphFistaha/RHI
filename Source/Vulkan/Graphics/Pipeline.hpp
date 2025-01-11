@@ -25,6 +25,7 @@ struct Pipeline final : public IPipeline
 
 public: // IPipeline interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
+  virtual void SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
@@ -40,6 +41,7 @@ public: // IPipeline interface
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
+  virtual void SetInvalid() override;
 
 public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }

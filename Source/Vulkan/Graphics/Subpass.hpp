@@ -7,20 +7,20 @@
 
 #include "../CommandsExecution/CommandBuffer.hpp"
 #include "Pipeline.hpp"
+#include "SubpassLayout.hpp"
 
 namespace RHI::vulkan
 {
 struct Context;
-}
+struct RenderPass;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
-struct RenderPass;
-struct Pipeline;
-
 struct Subpass : public ISubpass
 {
-  explicit Subpass(const Context & ctx, const RenderPass & ownerPass, uint32_t subpassIndex,
+  using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderImageSlot>;
+  explicit Subpass(const Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
                    uint32_t familyIndex);
   virtual ~Subpass() override;
 
@@ -56,19 +56,19 @@ public: // Commands
   void BindIndexBuffer(const IBufferGPU & buffer, IndexType type,
                        std::uint32_t offset = 0) override;
 
-
   void PushConstant(const void * data, size_t size) override;
-  //public: // IInvalidable Interface
-  //virtual void Invalidate() override;
 
 public:
   const details::CommandBuffer & GetCommandBuffer() const & noexcept { return m_executableBuffer; }
   void LockWriting(bool lock) const noexcept;
   void SetDirtyCacheCommands() noexcept;
+  void SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot);
+  const SubpassLayout & GetLayout() const & noexcept;
+  SubpassLayout & GetLayout() & noexcept;
 
 private:
   const Context & m_context;
-  const RenderPass & m_ownerPass;
+  RenderPass & m_ownerPass;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
   details::CommandBuffer m_executableBuffer;
   details::CommandBuffer m_writingBuffer;
@@ -76,6 +76,7 @@ private:
   mutable std::mutex m_write_lock;
   std::atomic_bool m_enabled = true;
   std::atomic_bool m_shouldBeInvalidated = true;
-};
 
+  SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
+};
 } // namespace RHI::vulkan

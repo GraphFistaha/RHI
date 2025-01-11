@@ -8,15 +8,14 @@ namespace RHI::vulkan::utils
 {
 struct RenderPassBuilder final
 {
-  using SubpassSlots = std::vector<std::pair<ShaderImageSlot, uint32_t>>;
   void AddAttachment(const VkAttachmentDescription & description);
-  void AddSubpass(SubpassSlots slotsLayout);
+  void AddSubpass(const VkSubpassDescription & description);
 
   VkRenderPass Make(const VkDevice & device) const;
   void Reset();
 
 private:
-  std::vector<SubpassSlots> m_slots;
+  std::vector<VkSubpassDescription> m_subpassDescriptions;
   std::vector<VkAttachmentDescription> m_attachments;
 };
 } // namespace RHI::vulkan::utils

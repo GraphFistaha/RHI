@@ -88,41 +88,30 @@ void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
     return;
   }
 
-  VkFramebuffer fbHandle = renderTarget->GetHandle();
-  if (m_cachedAttachments != renderTarget->GetAttachments())
+  auto && fboAttachments = renderTarget->GetAttachments();
+  if (m_cachedAttachments != fboAttachments)
   {
-    m_builder.Reset();
-    auto && fboAttachments = renderTarget->GetAttachments();
-    uint32_t attachmentIndex = 0;
-    for (auto && attachment : fboAttachments)
-    {
-      VkAttachmentDescription renderPassAttachment{};
-      renderPassAttachment.format = attachment.GetImageFormat();
-      renderPassAttachment.samples = attachment.GetSamplesCount(); // MSAA
-      // action for color/depth buffers in pass begins
-      renderPassAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      // action for color/depth buffers in pass ends
-      renderPassAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-      renderPassAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // action
-      renderPassAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      renderPassAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-      renderPassAttachment.finalLayout = attachment.GetImageLayout();
-
-      m_builder.AddAttachment(renderPassAttachment);
-      m_builder.AddSubpass(
-        {{ShaderImageSlot::Color /*TODO: it depends on attachment*/, attachmentIndex++}});
-    }
-    m_cachedAttachments = renderTarget->GetAttachments();
+    m_cachedAttachments = fboAttachments;
     m_invalidRenderPass = true;
   }
   m_boundRenderTarget = renderTarget;
   UpdateRenderingReadyFlag();
 }
 
+void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
+{
+  std::for_each(m_subpasses.begin(), m_subpasses.end(), std::move(func));
+}
+
 void RenderPass::Invalidate()
 {
   if (m_invalidRenderPass || !m_renderPass)
   {
+    m_builder.Reset();
+    for (auto && attachment : m_cachedAttachments)
+      m_builder.AddAttachment(attachment.BuildAttachmentDescription());
+    for (auto && subpass : m_subpasses)
+      m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(m_context.GetDevice());
     m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
     m_context.GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
@@ -130,6 +119,12 @@ void RenderPass::Invalidate()
     UpdateRenderingReadyFlag();
     m_invalidRenderPass = false;
   }
+}
+
+void RenderPass::SetInvalid()
+{
+  m_cachedAttachments.clear();
+  m_invalidRenderPass = true;
 }
 
 void RenderPass::WaitForReadyToRendering() const noexcept

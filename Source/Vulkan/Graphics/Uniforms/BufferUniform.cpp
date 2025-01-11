@@ -61,6 +61,10 @@ void BufferUniform::Invalidate()
 {
 }
 
+void BufferUniform::SetInvalid()
+{
+}
+
 VkDescriptorBufferInfo BufferUniform::CreateDescriptorInfo() const noexcept
 {
   VkDescriptorBufferInfo bufferInfo{};

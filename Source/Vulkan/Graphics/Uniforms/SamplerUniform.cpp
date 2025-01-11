@@ -95,6 +95,11 @@ void SamplerUniform::Invalidate()
   }
 }
 
+void SamplerUniform::SetInvalid()
+{
+  m_invalidSampler = true;
+}
+
 void SamplerUniform::AssignImage(const IImageGPU & image)
 {
   m_view.AssignImage(image);

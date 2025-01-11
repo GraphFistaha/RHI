@@ -29,6 +29,7 @@ public: // IUniformDescriptor interface
 
 public: // IInvalidable interface
   virtual void Invalidate() override;
+  virtual void SetInvalid() override;
 
 public: // public internal API
   size_t GetOffset() const noexcept { return m_offset; }

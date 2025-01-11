@@ -7,20 +7,24 @@ PRIVATE
 	BuffersAllocator.hpp
 	BuffersAllocator.cpp
 
-	Graphics/SwapchainBase.cpp
-	Graphics/SwapchainBase.hpp
 	Graphics/Swapchain.cpp
 	Graphics/Swapchain.hpp
+	Graphics/PresentativeSwapchain.cpp
+	Graphics/PresentativeSwapchain.hpp
 	Graphics/DescriptorsBuffer.cpp
 	Graphics/DescriptorsBuffer.hpp
 	Graphics/Subpass.cpp
 	Graphics/Subpass.hpp
+	Graphics/SubpassLayout.cpp
+	Graphics/SubpassLayout.hpp
 	Graphics/RenderPass.cpp
 	Graphics/RenderPass.hpp
 	Graphics/RenderTarget.cpp 
 	Graphics/RenderTarget.hpp
 	Graphics/Pipeline.cpp 
 	Graphics/Pipeline.hpp
+	Graphics/FramebufferAttachment.cpp
+	Graphics/FramebufferAttachment.hpp
 
 	Graphics/Uniforms/BaseUniform.hpp
 	Graphics/Uniforms/SamplerUniform.hpp
@@ -62,7 +66,7 @@ PRIVATE
 	CommandsExecution/CommandBuffer.hpp 
 	CommandsExecution/Submitter.cpp
 	CommandsExecution/Submitter.hpp
-)
+ )
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)

@@ -2,20 +2,19 @@
 
 namespace RHI::vulkan::utils //--------------- Framebuffer builder ------------
 {
-void FramebufferBuilder::AddAttachment(const VkImageView & image)
+
+void FramebufferBuilder::BindAttachment(size_t idx, VkImageView imgView)
 {
-  m_images.push_back(image);
+  while (idx >= m_images.size())
+    m_images.push_back(VK_NULL_HANDLE);
+  m_images[idx] = imgView;
 }
 
-VkImageView & FramebufferBuilder::SetAttachment(size_t idx) & noexcept
+VkFramebuffer FramebufferBuilder::Make(const VkDevice & device, const VkRenderPass & renderPass,
+                                       const VkExtent2D & extent) const
 {
-  return m_images[idx];
-}
-
-VkFramebuffer FramebufferBuilder::Make(const VkDevice & device,
-                                         const VkRenderPass & renderPass,
-                                         const VkExtent2D & extent) const
-{
+  if (std::any_of(m_images.begin(), m_images.end(), [](VkImageView view) { return !view; }))
+    throw std::runtime_error("Some framebuffer attachments have no bound images");
   VkFramebufferCreateInfo framebufferInfo{};
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   framebufferInfo.renderPass = renderPass;
@@ -23,7 +22,7 @@ VkFramebuffer FramebufferBuilder::Make(const VkDevice & device,
   framebufferInfo.pAttachments = reinterpret_cast<const VkImageView *>(m_images.data());
   framebufferInfo.width = extent.width;
   framebufferInfo.height = extent.height;
-  framebufferInfo.layers = 1; // ���-�� �����������
+  framebufferInfo.layers = 1;
   VkFramebuffer framebuffer;
   if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS)
     throw std::runtime_error("failed to create framebuffer!");

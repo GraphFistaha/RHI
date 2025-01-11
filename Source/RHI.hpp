@@ -169,12 +169,14 @@ enum class IndexType : uint8_t
 };
 
 struct IBufferGPU;
+struct ImageCreateArguments;
 struct IImageGPU;
 using SemaphoreHandle = InternalObjectHandle;
 
 struct IInvalidable
 {
   virtual ~IInvalidable() = default;
+  virtual void SetInvalid() = 0;
   virtual void Invalidate() = 0;
 };
 
@@ -207,6 +209,8 @@ struct IPipeline : public IInvalidable
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
+  virtual void SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding) = 0;
+
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
@@ -264,10 +268,9 @@ struct ISubpass /* : IInvalidable*/
 struct ISwapchain : public IInvalidable
 {
   virtual ~ISwapchain() = default;
-  /// @brief Get current extent (screen size)
-  virtual std::pair<uint32_t, uint32_t> GetExtent() const = 0;
   virtual IRenderTarget * AcquireFrame() = 0;
   virtual void FlushFrame() = 0;
+  virtual void AddImageAttachment(uint32_t binding, const ImageCreateArguments & args) = 0;
 
   virtual ISubpass * CreateSubpass() = 0;
 };

@@ -30,9 +30,11 @@ public: // IRenderPass Interface
   ISubpass * CreateSubpass();
   VkSemaphore Draw(VkSemaphore imageAvailiableSemaphore);
   void BindRenderTarget(const RenderTarget * renderTarget) noexcept;
+  void ForEachSubpass(std::function<void(Subpass &)> && func);
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
+  virtual void SetInvalid() override;
 
 public:
   VkRenderPass GetHandle() const noexcept { return m_renderPass; }

@@ -2,11 +2,9 @@
 #include <cstdio>
 #include <cstring>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <GLFW/glfw3.h>
 #include <RHI.hpp>
 
-#include "stb_image.h"
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
@@ -41,41 +39,16 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->Invalidate();
+  ctx->GetSurfaceSwapchain()->SetInvalid();
   ShouldInvalidateScene = true;
 }
 
-/// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path)
+using mat4 = std::array<float, 16>;
+struct PushConstant
 {
-  int w = 0, h = 0, channels = 3;
-  uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, STBI_rgb);
-  if (!pixel_data)
-  {
-    stbi_image_free(pixel_data);
-    throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
-  }
-
-  RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
- 
-  RHI::ImageCreateArguments imageArgs{};
-  imageArgs.extent = extent;
-  imageArgs.type = RHI::ImageType::Image2D;
-  imageArgs.shared = false;
-  imageArgs.format = channels == 4 ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
-  imageArgs.mipLevels = 1;
-  imageArgs.samples = RHI::SamplesCount::One;
-  auto texture = ctx.AllocImage(imageArgs);
-  RHI::CopyImageArguments copyArgs{};
-  copyArgs.hostFormat = channels == 4 ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
-  copyArgs.src.extent = extent;
-  copyArgs.dst.extent = extent;
-  texture->UploadImage(pixel_data, copyArgs);
-  stbi_image_free(pixel_data);
-  return texture;
-}
-
-using mat3 = std::array<float, 9>;
+  mat4 transform;
+  std::array<float, 4> color;
+};
 
 int main()
 {
@@ -106,21 +79,22 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  auto texture1 = CreateAndLoadImage(*ctx, "texture1.png");
-  auto texture2 = CreateAndLoadImage(*ctx, "texture2.png");
+  RHI::ImageCreateArguments args;
 
   auto * swapchain = ctx->GetSurfaceSwapchain();
+  swapchain->AddImageAttachment(1, args);
+
   auto * subpass = swapchain->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
-                                std::filesystem::path(SHADERS_FOLDER) / "textured_quad.vert");
+                                std::filesystem::path(SHADERS_FOLDER) / "colored_quad.vert");
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                std::filesystem::path(SHADERS_FOLDER) / "textured_quad.frag");
-
-  auto && texSampler = trianglePipeline.DeclareSampler("texSampler", 0, RHI::ShaderType::Fragment);
-  auto && transform_buf =
-    trianglePipeline.DeclareUniform("u_transform", 1, RHI::ShaderType::Vertex, sizeof(mat3));
+                                std::filesystem::path(SHADERS_FOLDER) / "colored_quad.frag");
+  trianglePipeline.DefinePushConstant(sizeof(PushConstant),
+                                      RHI::ShaderType::Vertex | RHI::ShaderType::Fragment);
+  //trianglePipeline.SetAttachmentUsage(RHI::ShaderImageSlot::Color, 0);
+  //trianglePipeline.SetAttachmentUsage(RHI::ShaderImageSlot::DepthStencil, 1);
 
   ShouldInvalidateScene = true;
   while (!glfwWindowShouldClose(window))
@@ -132,8 +106,14 @@ int main()
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
-      if (ShouldInvalidateScene)
+      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
+        PushConstant constant;
+        constant.color = {1.0, 0.0, 0.0, 1.0};
+        constant.transform = {0.25, 0,    0.0, 0.25, //
+                              0.0,  0.25, 0.0, 0.25, //
+                              0.0,  0.0,  1.0, 0.25, //
+                              0.0,  0.0,  0.0, 1.0};
         // get size of window
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -144,13 +124,16 @@ int main()
         subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
         // draw first quad
-        texSampler->GetImageView().AssignImage(*texture1);
-        texSampler->Invalidate();
+        subpass->PushConstant(&constant, sizeof(constant));
         subpass->DrawVertices(6, 1);
 
         //draw second quad
-        texSampler->GetImageView().AssignImage(*texture1);
-        texSampler->Invalidate();
+        constant.color = {0.0, 1.0, 0.0, 1.0};
+        constant.transform = {0.25, 0,    0.0, 0.0, //
+                              0.0,  0.25, 0.0, 0.0, //
+                              0.0,  0.0,  1.0, 0.0, //
+                              0.0,  0.0,  0.0, 1.0};
+        subpass->PushConstant(&constant, sizeof(constant));
         subpass->DrawVertices(6, 1);
         subpass->EndPass();
 
@@ -161,8 +144,7 @@ int main()
     }
   }
 
-  // wait while gpu is idle to destroy context and its objects correctly
-  ctx->WaitForIdle();
+
   glfwTerminate();
   return 0;
 }

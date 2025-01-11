@@ -8,7 +8,7 @@
 
 namespace RHI::vulkan
 {
-Subpass::Subpass(const Context & ctx, const RenderPass & ownerPass, uint32_t subpassIndex,
+Subpass::Subpass(const Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
                  uint32_t familyIndex)
   : m_context(ctx)
   , m_ownerPass(ownerPass)
@@ -116,10 +116,6 @@ void Subpass::PushConstant(const void * data, size_t size)
                               static_cast<uint32_t>(size), data);
 }
 
-
-/* void Subpass::Invalidate(){
-}*/
-
 void Subpass::LockWriting(bool lock) const noexcept
 {
   if (lock)
@@ -131,6 +127,22 @@ void Subpass::LockWriting(bool lock) const noexcept
 void Subpass::SetDirtyCacheCommands() noexcept
 {
   m_shouldBeInvalidated = true;
+}
+
+void Subpass::SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot)
+{
+  m_layout.AddAttachment(slot, binding);
+  m_ownerPass.SetInvalid();
+}
+
+const SubpassLayout & Subpass::GetLayout() const & noexcept
+{
+  return m_layout;
+}
+
+SubpassLayout & Subpass::GetLayout() & noexcept
+{
+  return m_layout;
 }
 
 } // namespace RHI::vulkan

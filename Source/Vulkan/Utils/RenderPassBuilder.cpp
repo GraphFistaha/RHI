@@ -2,134 +2,45 @@
 
 namespace RHI::vulkan::utils
 {
-struct SubpassLayout
-{
-  const VkAttachmentReference * GetData(ShaderImageSlot slot) const noexcept
-  {
-    switch (slot)
-    {
-      case ShaderImageSlot::Color:
-        return m_colorAttachments.data();
-      case ShaderImageSlot::Input:
-        return m_inputAttachments.data();
-      case ShaderImageSlot::DepthStencil:
-        return UseDepthStencil() ? &m_depthStencilAttachment : nullptr;
-      default:
-        assert(false);
-        return nullptr;
-    }
-  }
-
-  uint32_t GetAttachmentsCount(ShaderImageSlot slot) const noexcept
-  {
-    switch (slot)
-    {
-      case ShaderImageSlot::Color:
-        return static_cast<uint32_t>(m_colorAttachments.size());
-      case ShaderImageSlot::Input:
-        return static_cast<uint32_t>(m_inputAttachments.size());
-      case ShaderImageSlot::DepthStencil:
-        return UseDepthStencil() ? 1 : 0;
-      default:
-        assert(false);
-        return 0;
-    }
-  }
-
-  bool UseDepthStencil() const noexcept
-  {
-    return m_depthStencilAttachment.attachment != VK_ATTACHMENT_UNUSED;
-  }
-
-  void AddAttachment(ShaderImageSlot slot, uint32_t idx)
-  {
-    VkAttachmentReference ref{VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
-    if (slot == ShaderImageSlot::DepthStencil && UseDepthStencil())
-      throw std::runtime_error("DepthStencil attachment is set");
-
-    switch (slot)
-    {
-      case ShaderImageSlot::Color:
-        ref = VkAttachmentReference{idx, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-        m_colorAttachments.push_back(ref);
-        break;
-      case ShaderImageSlot::Input:
-        ref =
-          VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL};
-        m_inputAttachments.push_back(ref);
-        break;
-      case ShaderImageSlot::DepthStencil:
-        ref = VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL};
-        m_depthStencilAttachment = ref;
-        break;
-      default:
-        assert(false);
-    }
-  }
-
-private:
-  std::vector<VkAttachmentReference> m_colorAttachments;
-  std::vector<VkAttachmentReference> m_inputAttachments;
-  VkAttachmentReference m_depthStencilAttachment{VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
-};
 
 void RenderPassBuilder::AddAttachment(const VkAttachmentDescription & description)
 {
   m_attachments.push_back(description);
 }
 
-void RenderPassBuilder::AddSubpass(SubpassSlots slotsLayout)
+void RenderPassBuilder::AddSubpass(const VkSubpassDescription & description)
 {
-  m_slots.push_back(slotsLayout);
+  m_subpassDescriptions.push_back(description);
 }
-
 
 VkRenderPass RenderPassBuilder::Make(const VkDevice & device) const
 {
-  if (m_slots.empty() || m_attachments.empty())
+  if (m_subpassDescriptions.empty() || m_attachments.empty())
     return VK_NULL_HANDLE;
 
   VkRenderPass renderPass = VK_NULL_HANDLE;
 
-  std::vector<SubpassLayout> attachmentsForSubpasses;
-  std::vector<VkSubpassDescription> subpasses;
   std::vector<VkSubpassDependency> dependencies;
 
-  for (auto && subpassSlots : m_slots)
+  for (uint32_t i = 0; i < m_subpassDescriptions.size(); ++i)
   {
-    const uint32_t subpassIndex = static_cast<uint32_t>(subpasses.size());
-    auto && attachments = attachmentsForSubpasses.emplace_back();
-    for (auto && [slot, idx] : subpassSlots)
-      attachments.AddAttachment(slot, idx);
-
     VkSubpassDependency dependencyInfo{};
-    dependencyInfo.srcSubpass = subpassIndex == 0 ? VK_SUBPASS_EXTERNAL : subpassIndex - 1;
-    dependencyInfo.dstSubpass = subpassIndex;
+    dependencyInfo.srcSubpass = i == 0 ? VK_SUBPASS_EXTERNAL : i - 1;
+    dependencyInfo.dstSubpass = i;
     dependencyInfo.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencyInfo.srcAccessMask = 0;
     dependencyInfo.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencyInfo.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies.push_back(dependencyInfo);
-
-    VkSubpassDescription subpassDescription{};
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount =
-      attachments.GetAttachmentsCount(ShaderImageSlot::Color);
-    subpassDescription.pColorAttachments = attachments.GetData(ShaderImageSlot::Color);
-    subpassDescription.inputAttachmentCount =
-      attachments.GetAttachmentsCount(ShaderImageSlot::Input);
-    subpassDescription.pInputAttachments = attachments.GetData(ShaderImageSlot::Input);
-    subpassDescription.pDepthStencilAttachment = attachments.GetData(ShaderImageSlot::DepthStencil);
-    subpasses.push_back(subpassDescription);
   }
 
   VkRenderPassCreateInfo renderPassCreateInfo{};
   renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
   renderPassCreateInfo.pAttachments = m_attachments.data();
-  renderPassCreateInfo.subpassCount = static_cast<uint32_t>(subpasses.size());
-  renderPassCreateInfo.pSubpasses = subpasses.data();
+  renderPassCreateInfo.subpassCount = static_cast<uint32_t>(m_subpassDescriptions.size());
+  renderPassCreateInfo.pSubpasses = m_subpassDescriptions.data();
   renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
   renderPassCreateInfo.pDependencies = dependencies.data();
 
@@ -138,13 +49,13 @@ VkRenderPass RenderPassBuilder::Make(const VkDevice & device) const
       res != VK_SUCCESS)
     throw std::runtime_error("Failed to create render pass");
 
-  return VkRenderPass(renderPass);
+  return renderPass;
 }
 
 void RenderPassBuilder::Reset()
 {
   m_attachments.clear();
-  m_slots.clear();
+  m_subpassDescriptions.clear();
   //m_usageFlags.clear();
 }
 } // namespace RHI::vulkan::utils

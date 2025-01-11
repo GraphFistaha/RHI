@@ -29,6 +29,7 @@ public:
 
 public: // IInvalidable interface
   virtual void Invalidate() override;
+  virtual void SetInvalid() override;
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;

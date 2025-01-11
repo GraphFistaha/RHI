@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 
+#include <RHI.hpp>
 #include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
@@ -21,11 +22,13 @@ struct FramebufferAttachment final
   VkFormat GetImageFormat() const noexcept { return m_imageFormat; }
   VkImageLayout GetImageLayout() const noexcept { return m_imageLayout; }
   VkSampleCountFlagBits GetSamplesCount() const noexcept { return m_samplesCount; }
+  void SetImageView(VkImageView view) { m_imageView = view; }
+  VkAttachmentDescription BuildAttachmentDescription() const noexcept;
 
   bool operator==(const FramebufferAttachment & rhs) const noexcept
   {
-    return m_imageFormat == rhs.m_imageFormat &&
-           m_imageLayout == rhs.m_imageLayout && m_samplesCount == rhs.m_samplesCount;
+    return m_imageFormat == rhs.m_imageFormat && m_imageLayout == rhs.m_imageLayout &&
+           m_samplesCount == rhs.m_samplesCount;
   }
 
 private:

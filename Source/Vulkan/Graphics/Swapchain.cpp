@@ -2,125 +2,91 @@
 
 #include <format>
 
-#include <VkBootstrap.h>
-
 #include "../VulkanContext.hpp"
 #include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
 
-Swapchain::Swapchain(const Context & ctx, const VkSurfaceKHR surface)
-  : SwapchainBase(ctx)
-  , m_surface(surface)
-  , m_swapchain(std::make_unique<vkb::Swapchain>())
+SwapchainBase::SwapchainBase(const Context & ctx)
+  : m_context(ctx)
+  , m_renderPass(ctx)
 {
-  std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Present);
-  InvalidateSwapchain();
 }
 
-Swapchain::~Swapchain()
+SwapchainBase::~SwapchainBase()
 {
-  DestroyHandles();
 }
 
-void Swapchain::Invalidate()
+void SwapchainBase::SetInvalid()
 {
-  InvalidateSwapchain();
+  m_invalidSwapchain = true;
 }
 
-void Swapchain::InvalidateSwapchain()
+size_t SwapchainBase::GetImagesCount() const noexcept
 {
-  auto [presentIndex, presentQueue] = m_context.GetQueue(QueueType::Present);
-  auto [renderIndex, renderQueue] = m_context.GetQueue(QueueType::Graphics);
-  vkb::SwapchainBuilder swapchain_builder(m_context.GetGPU(), m_context.GetDevice(), m_surface,
-                                          renderIndex, presentIndex);
-  auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
-  if (!swap_ret)
-    throw std::runtime_error("Failed to create Vulkan swapchain - " + swap_ret.error().message());
+  return m_targets.size();
+}
 
-  DestroyHandles();
+void SwapchainBase::InitRenderTargets(VkExtent2D extent, size_t frames_count)
+{
+  while (frames_count < m_targets.size())
+    m_targets.pop_back();
 
-  *m_swapchain = swap_ret.value();
-  m_swapchainImages = m_swapchain->get_images().value();
-  m_swapchainImageViews = m_swapchain->get_image_views().value();
-  m_extent = m_swapchain->extent;
+  while (frames_count > m_targets.size())
+    m_targets.emplace_back(m_context);
 
-  for (auto && imageView : m_swapchainImageViews)
+  for (auto && target : m_targets)
   {
-    m_imageAvailabilitySemaphores.emplace_back(utils::CreateVkSemaphore(m_context.GetDevice()));
-    auto && target = m_targets.emplace_back(m_context);
-    FramebufferAttachment colorAttachment{imageView, m_swapchain->image_format,
-                                          VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_SAMPLE_COUNT_1_BIT};
-    target.AddAttachment(colorAttachment);
-    target.SetExtent(m_swapchain->extent);
-    target.BindRenderPass(m_renderPass->GetHandle());
+    target.SetExtent(extent);
+    target.BindRenderPass(m_renderPass.GetHandle());
   }
 }
 
-void Swapchain::DestroyHandles() noexcept
+void SwapchainBase::ForEachRenderTarget(std::function<void(RenderTarget &)> && func)
 {
-  m_context.WaitForIdle();
-  m_targets.clear();
-  if (!m_swapchainImageViews.empty())
-    m_swapchain->destroy_image_views(m_swapchainImageViews);
-  vkb::destroy_swapchain(*m_swapchain);
-  for (auto && semaphore : m_imageAvailabilitySemaphores)
-  {
-    if (!!semaphore)
-      vkDestroySemaphore(m_context.GetDevice(), semaphore, nullptr);
-  }
-  m_imageAvailabilitySemaphores.clear();
+  std::for_each(m_targets.begin(), m_targets.end(), std::move(func));
 }
 
-uint32_t Swapchain::AcquireImage(VkSemaphore signalSemaphore) noexcept
+IRenderTarget * SwapchainBase::AcquireFrame()
 {
-  uint32_t imageIndex = InvalidImageIndex;
-  auto res = vkAcquireNextImageKHR(m_context.GetDevice(), m_swapchain->swapchain, UINT64_MAX,
-                                   signalSemaphore, VK_NULL_HANDLE, &imageIndex);
-  if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
+  Invalidate();
+  auto [imageIndex, waitSemaphore] = AcquireImage();
+  if (imageIndex == InvalidImageIndex)
   {
-    Invalidate();
-    return InvalidImageIndex;
+    return nullptr;
   }
-  else if (res != VK_SUCCESS)
-  {
-    m_context.Log(LogMessageStatus::LOG_ERROR,
-                  std::format("Failed to acquire swap chain image - {}",
-                              static_cast<uint32_t>(res)));
-    return InvalidImageIndex;
-  }
-  return imageIndex;
+
+  m_cachedActiveImage = imageIndex;
+  m_cachedPresentSemaphore = waitSemaphore;
+  auto && activeTarget = m_targets[m_cachedActiveImage];
+
+  m_renderPass.BindRenderTarget(&activeTarget);
+  m_renderPass.Invalidate();
+  activeTarget.BindRenderPass(m_renderPass.GetHandle());
+  activeTarget.Invalidate();
+  return &activeTarget;
 }
 
-bool Swapchain::PresentImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore) noexcept
+void SwapchainBase::FlushFrame()
 {
-  const VkSwapchainKHR swapchains[] = {GetHandle()};
-  VkPresentInfoKHR presentInfo{};
-  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &waitRenderingSemaphore;
-  presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapchains;
-  presentInfo.pImageIndices = &activeImage;
-  presentInfo.pResults = nullptr; // Optional
-  auto res = vkQueuePresentKHR(m_presentQueue, &presentInfo);
-  if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
-  {
-    Invalidate();
-    return false;
-  }
-  else if (res != VK_SUCCESS)
-  {
-    m_context.Log(LogMessageStatus::LOG_ERROR,
-                  std::format("Failed to queue image in present - {}", static_cast<uint32_t>(res)));
-  }
-  return true;
+  VkSemaphore passSemaphore = m_renderPass.Draw(m_cachedPresentSemaphore);
+  PresentImage(m_cachedActiveImage, passSemaphore);
+  m_cachedPresentSemaphore = VK_NULL_HANDLE;
+  m_cachedActiveImage = InvalidImageIndex;
 }
 
-VkSwapchainKHR Swapchain::GetHandle() const noexcept
+ISubpass * SwapchainBase::CreateSubpass()
 {
-  return m_swapchain->swapchain;
+  return m_renderPass.CreateSubpass();
+}
+
+void SwapchainBase::AddImageAttachment(uint32_t binding, const ImageCreateArguments & args)
+{
+  if (m_protoAttachments.size() <= binding)
+    m_protoAttachments.resize(binding + 1);
+
+  m_protoAttachments[binding] = args;
 }
 
 } // namespace RHI::vulkan

@@ -30,6 +30,11 @@ void Pipeline::AttachShader(ShaderType type, const std::filesystem::path & path)
   m_invalidPipeline = true;
 }
 
+void Pipeline::SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding)
+{
+  m_owner.SetImageAttachmentUsage(binding, slot);
+}
+
 void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
 {
   m_pipelineBuilder.AddInputBinding(slot, stride, type);
@@ -102,6 +107,12 @@ void Pipeline::Invalidate()
   }
 
   m_owner.SetDirtyCacheCommands();
+}
+
+void Pipeline::SetInvalid()
+{
+  m_invalidPipeline = true;
+  m_invalidPipelineLayout = true;
 }
 
 void Pipeline::BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint)

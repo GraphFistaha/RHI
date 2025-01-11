@@ -10,7 +10,7 @@
 
 #include "BuffersAllocator.hpp"
 #include "GarbageCollector.hpp"
-#include "Graphics/Swapchain.hpp"
+#include "Graphics/PresentativeSwapchain.hpp"
 #include "Resources/Transferer.hpp"
 
 namespace RHI::vulkan

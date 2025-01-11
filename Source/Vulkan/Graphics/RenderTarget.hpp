@@ -27,10 +27,10 @@ public: // IRenderTarget interface
 
 public: // IInvalidable interface
   virtual void Invalidate() override;
+  virtual void SetInvalid() override;
 
 public:
   void SetExtent(const VkExtent2D & extent) noexcept;
-
   void BindRenderPass(const VkRenderPass & renderPass) noexcept;
 
   VkFramebuffer GetHandle() const noexcept;
@@ -38,7 +38,7 @@ public:
   VkExtent2D GetVkExtent() const noexcept { return m_extent; }
 
   const std::vector<FramebufferAttachment> & GetAttachments() const & noexcept;
-  void AddAttachment(const FramebufferAttachment & attachment);
+  void BindAttachment(uint32_t index, const FramebufferAttachment & attachment);
 
 protected:
   const Context & m_context;
