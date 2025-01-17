@@ -74,6 +74,12 @@ constexpr size_t GetSizeOfImage(const ImageExtent & extent, FormatT format)
   return extent[0] * extent[1] * extent[2] * GetSizeOfTexel<FormatT>(format);
 }
 
+template<typename FormatT>
+constexpr size_t GetSizeOfImage(const VkExtent3D & extent, FormatT format)
+{
+  return extent.width * extent.height * extent.depth * GetSizeOfTexel<FormatT>(format);
+}
+
 } // namespace RHI::vulkan::utils
 
 

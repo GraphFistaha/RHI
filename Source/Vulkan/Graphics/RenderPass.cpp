@@ -24,8 +24,10 @@ RenderPass::~RenderPass()
 
 ISubpass * RenderPass::CreateSubpass()
 {
-  return &m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()),
+  auto && subpass = m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()),
                                    m_graphicsQueueFamily);
+  m_invalidRenderPass = true;
+  return &subpass;
 }
 
 VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)

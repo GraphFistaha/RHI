@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Images/ImageGPU.hpp"
+#include "../Images/ImageBase.hpp"
 #include "BufferGPU.hpp"
 
 namespace RHI::vulkan
@@ -25,10 +25,10 @@ public: // ITransferer interface
 
 public:
   void UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer) noexcept;
-  void UploadImage(ImageGPU * dstImage, BufferGPU && stagingBuffer) noexcept;
+  void UploadImage(details::ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept;
 
 private:
-  using UploadTask = std::tuple<BufferGPU *, ImageGPU *, BufferGPU>;
+  using UploadTask = std::tuple<BufferGPU *, details::ImageBase *, BufferGPU>;
 
   const Context & m_context;
   uint32_t m_queueFamilyIndex;

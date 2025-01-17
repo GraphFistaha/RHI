@@ -33,5 +33,9 @@ public:
 
 private:
   VkBuffer m_buffer = VK_NULL_HANDLE;
+
+private:
+  BufferGPU(const BufferGPU &) = delete;
+  BufferGPU & operator=(const BufferGPU &) = delete;
 };
 } // namespace RHI::vulkan

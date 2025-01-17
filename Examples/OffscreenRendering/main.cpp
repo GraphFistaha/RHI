@@ -56,20 +56,17 @@ int main()
   // set callback on resize
   glfwSetWindowSizeCallback(window, OnResizeWindow);
 
-  // fill structure for surface with OS handles
-  RHI::SurfaceConfig surface{};
-#ifdef _WIN32
-  surface.hWnd = glfwGetWin32Window(window);
-  surface.hInstance = GetModuleHandle(nullptr);
-#elif defined(__linux__)
-  surface.hWnd = reinterpret_cast<void *>(glfwGetX11Window(window));
-  surface.hInstance = glfwGetX11Display();
-#endif
-
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(nullptr, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();
+  std::unique_ptr<RHI::ISwapchain> swapchain = ctx->CreateOffscreenSwapchain(100, 100, 3);
+  RHI::ImageCreateArguments args;
+  args.extent = {100, 100, 1};
+  args.format = RHI::ImageFormat::RGBA8;
+  args.mipLevels = 1;
+  args.samples = RHI::SamplesCount::One;
+  args.type = RHI::ImageType::Image2D;
+  swapchain->AddImageAttachment(0, args);
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))

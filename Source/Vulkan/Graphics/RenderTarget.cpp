@@ -19,14 +19,25 @@ RenderTarget::~RenderTarget()
   m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
 }
 
-void RenderTarget::SetClearColor(float r, float g, float b, float a) noexcept
+void RenderTarget::SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
+                                 float a) noexcept
 {
-  m_clearValue = VkClearValue{r, g, b, a};
+  m_clearValues[attachmentIndex].color = VkClearColorValue{r, g, b, a};
+}
+
+void RenderTarget::SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept
+{
+  m_clearValues[attachmentIndex].depthStencil = VkClearDepthStencilValue{depth, stencil};
 }
 
 std::pair<uint32_t, uint32_t> RenderTarget::GetExtent() const noexcept
 {
   return {m_extent.width, m_extent.height};
+}
+
+IImageGPU * RenderTarget::GetImage(uint32_t attachmentIndex) const
+{
+  return m_images[attachmentIndex].get();
 }
 
 void RenderTarget::Invalidate()
@@ -61,18 +72,29 @@ const std::vector<FramebufferAttachment> & RenderTarget::GetAttachments() const 
   return m_attachments;
 }
 
-void RenderTarget::BindAttachment(uint32_t index, const FramebufferAttachment & attachment)
+void RenderTarget::AddAttachment(uint32_t index, const FramebufferAttachment & description,
+                                 std::unique_ptr<IImageGPU> && image)
 {
-  while (index >= m_attachments.size())
+  while (index > m_attachments.size())
+  {
     m_attachments.emplace_back();
-  m_attachments[index] = attachment;
-  m_builder.BindAttachment(index, attachment.GetImageView());
+    m_clearValues.emplace_back();
+    m_images.emplace_back(nullptr);
+  }
+  m_attachments.emplace_back(description);
+  m_clearValues.emplace_back();
+  m_images.emplace_back(std::move(image));
+  m_builder.BindAttachment(index, description.GetImageView());
   m_invalidFramebuffer = true;
 }
 
-VkFramebuffer RenderTarget::GetHandle() const noexcept
+void RHI::vulkan::RenderTarget::ClearAttachments() noexcept
 {
-  return m_framebuffer;
+  m_images.clear();
+  m_attachments.clear();
+  m_clearValues.clear();
+  m_builder.Reset();
+  m_invalidFramebuffer = true;
 }
 
 void RenderTarget::SetExtent(const VkExtent2D & extent) noexcept
@@ -80,6 +102,7 @@ void RenderTarget::SetExtent(const VkExtent2D & extent) noexcept
   if (m_extent != extent)
   {
     m_extent = extent;
+    // TODO: rebuild all images
     m_invalidFramebuffer = true;
   }
 }

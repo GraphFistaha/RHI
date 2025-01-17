@@ -28,12 +28,14 @@ enum class QueueType : uint8_t
 struct Context final : public IContext
 {
   /// @brief constructor
-  explicit Context(const SurfaceConfig & config, LoggingFunc log);
+  explicit Context(const SurfaceConfig * config, LoggingFunc log);
   /// @brief destructor
   virtual ~Context() override;
 
 public: // IContext interface
   virtual ISwapchain * GetSurfaceSwapchain() override;
+  virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+                                                               uint32_t frames_count) override;
   virtual ITransferer * GetTransferer() override;
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,

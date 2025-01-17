@@ -105,7 +105,7 @@ int main()
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.3f, 0.3f, 0.5f, 1.0f);
+      renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
         PushConstant constant;

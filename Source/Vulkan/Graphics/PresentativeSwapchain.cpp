@@ -44,7 +44,7 @@ void Swapchain::Invalidate()
     for (auto && view : m_swapchainImageViews)
       m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(m_context.GetDevice()));
 
-    InitRenderTargets(m_swapchain->extent, m_swapchain->image_count);
+    InitSwapchain(m_swapchain->extent, m_swapchain->image_count);
 
     // add swapchain images as attachment to RenderTargets
     ForEachRenderTarget(

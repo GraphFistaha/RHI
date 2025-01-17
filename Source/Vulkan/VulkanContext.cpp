@@ -123,10 +123,13 @@ constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 struct Context::Impl final
 {
-  explicit Impl(const char * appName, const SurfaceConfig & config, LoggingFunc logFunc)
+  explicit Impl(const char * appName, const SurfaceConfig * config, LoggingFunc logFunc)
   {
     m_instance = CreateInstance("AppName", VulkanAPIVersion, logFunc);
-    m_surface = CreateSurface(m_instance, config);
+    if (config)
+      m_surface = CreateSurface(m_instance, *config);
+    else
+      m_surface = VK_NULL_HANDLE;
     m_gpu = SelectPhysicalDevice(m_instance, m_surface, VulkanAPIVersionPair);
     vkb::DeviceBuilder device_builder{m_gpu};
     auto dev_ret = device_builder.build();
@@ -180,7 +183,7 @@ private:
 };
 
 
-Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
+Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
@@ -199,6 +202,14 @@ Context::~Context()
 ISwapchain * Context::GetSurfaceSwapchain()
 {
   return m_surfaceSwapchain.get();
+}
+
+std::unique_ptr<ISwapchain> Context::CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+                                                              uint32_t frames_count)
+{
+  auto && result = std::make_unique<SwapchainBase>(*this);
+  result->InitSwapchain(VkExtent2D{width, height}, frames_count);
+  return result;
 }
 
 ITransferer * Context::GetTransferer()
@@ -283,7 +294,7 @@ const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const 
 
 namespace RHI
 {
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
+std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config = nullptr,
                                         LoggingFunc loggingFunc /* = nullptr*/)
 {
   return std::make_unique<vulkan::Context>(config, loggingFunc);

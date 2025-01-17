@@ -138,7 +138,7 @@ int main()
     auto sem = ctx->GetTransferer()->Flush();
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.1f, 1.0f, 0.4f, 1.0f);
+      renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
       swapchain->FlushFrame();
     }
   }

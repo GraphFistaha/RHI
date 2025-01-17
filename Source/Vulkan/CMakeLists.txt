@@ -49,6 +49,8 @@ PRIVATE
 	Utils/ShaderCompiler.hpp
 
 	
+	Images/ImageBase.cpp
+	Images/ImageBase.hpp
 	Images/ImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
@@ -56,6 +58,8 @@ PRIVATE
 	Images/ImageGPU.hpp
 	Images/ImageView.cpp
 	Images/ImageView.hpp
+	Images/NonOwningImageGPU.cpp
+	Images/NonOwningImageGPU.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

@@ -123,7 +123,7 @@ int main()
 
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
-      renderTarget->SetClearColor(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
+      renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
 
       // draw scene
       // ShouldInvalidateScene - assign true if you want refresh scene from client code

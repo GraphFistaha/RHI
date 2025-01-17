@@ -37,6 +37,7 @@ private:
   /// presentation data
   VkSurfaceKHR m_surface;                      ///< surface
   std::unique_ptr<vkb::Swapchain> m_swapchain; ///< swapchain
+  bool m_invalidSwapchain = false;
   std::vector<VkImage> m_swapchainImages;
   std::vector<VkImageView> m_swapchainImageViews;
   std::vector<VkSemaphore> m_imageAvailabilitySemaphores;

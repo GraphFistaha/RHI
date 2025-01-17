@@ -231,7 +231,10 @@ struct IRenderTarget : public IInvalidable
 {
   virtual ~IRenderTarget() = default;
   virtual std::pair<uint32_t, uint32_t> GetExtent() const noexcept = 0;
-  virtual void SetClearColor(float r, float g, float b, float a) noexcept = 0;
+  virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
+                             float a) noexcept = 0;
+  virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
+  virtual IImageGPU * GetImage(uint32_t attachmentIndex) const = 0;
 };
 
 struct ISubpass /* : IInvalidable*/
@@ -414,6 +417,8 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
+  virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+                                                               uint32_t frames_count) = 0;
   virtual ITransferer * GetTransferer() = 0;
   virtual void ClearResources() = 0;
 
@@ -428,7 +433,7 @@ struct IContext
 };
 
 /// @brief Factory-function to create context
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
+std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config = nullptr,
                                         LoggingFunc loggingFunc = nullptr);
 
 namespace details

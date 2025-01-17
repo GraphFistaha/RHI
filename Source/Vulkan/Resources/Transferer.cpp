@@ -1,5 +1,6 @@
 #include "Transferer.hpp"
 
+#include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
@@ -26,7 +27,7 @@ SemaphoreHandle Transferer::Flush()
     UploadTask task = std::move(m_tasks.front());
     m_tasks.pop();
     BufferGPU * dstBuffer = std::get<0>(task);
-    ImageGPU * dstImage = std::get<1>(task);
+    details::ImageBase * dstImage = std::get<1>(task);
     auto && stagingBuffer = std::get<2>(task);
 
     if (dstBuffer)
@@ -41,7 +42,7 @@ SemaphoreHandle Transferer::Flush()
     else if (dstImage)
     {
       dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-      auto && args = dstImage->GetParameters();
+      auto && args = dstImage->GetExtent();
       VkBufferImageCopy region{};
       region.bufferOffset = 0;
       region.bufferRowLength = 0;
@@ -72,7 +73,7 @@ void Transferer::UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer)
   m_tasks.emplace(UploadTask{dstBuffer, VK_NULL_HANDLE, std::move(stagingBuffer)});
 }
 
-void Transferer::UploadImage(ImageGPU * dstImage, BufferGPU && stagingBuffer) noexcept
+void Transferer::UploadImage(details::ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept
 {
   m_tasks.emplace(UploadTask{VK_NULL_HANDLE, dstImage, std::move(stagingBuffer)});
 }
