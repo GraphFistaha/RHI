@@ -4,8 +4,10 @@ PRIVATE
 	VulkanContext.hpp
 	GarbageCollector.cpp
 	GarbageCollector.hpp
-	BuffersAllocator.hpp
-	BuffersAllocator.cpp
+	Memory/BuffersAllocator.hpp
+	Memory/BuffersAllocator.cpp
+	Memory/MemoryBlock.cpp
+	Memory/MemoryBlock.hpp
 
 	Graphics/Swapchain.cpp
 	Graphics/Swapchain.hpp
@@ -23,8 +25,6 @@ PRIVATE
 	Graphics/RenderTarget.hpp
 	Graphics/Pipeline.cpp 
 	Graphics/Pipeline.hpp
-	Graphics/FramebufferAttachment.cpp
-	Graphics/FramebufferAttachment.hpp
 
 	Graphics/Uniforms/BaseUniform.hpp
 	Graphics/Uniforms/SamplerUniform.hpp
@@ -63,8 +63,7 @@ PRIVATE
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp
-	Resources/BufferBase.hpp
-	Resources/BufferBase.cpp
+	
 
 	CommandsExecution/CommandBuffer.cpp 
 	CommandsExecution/CommandBuffer.hpp 

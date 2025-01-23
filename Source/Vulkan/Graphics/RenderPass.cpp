@@ -24,32 +24,32 @@ RenderPass::~RenderPass()
 
 ISubpass * RenderPass::CreateSubpass()
 {
-  auto && subpass = m_subpasses.emplace_back(m_context, *this, static_cast<uint32_t>(m_subpasses.size()),
-                                   m_graphicsQueueFamily);
+  auto && subpass = m_subpasses.emplace_back(m_context, *this,
+                                             static_cast<uint32_t>(m_subpasses.size()),
+                                             m_graphicsQueueFamily);
   m_invalidRenderPass = true;
   return &subpass;
 }
 
-VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
+VkSemaphore RenderPass::Draw(const RenderTarget & renderTarget,
+                             VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
-  assert(m_boundRenderTarget != nullptr);
-  VkFramebuffer buf = m_boundRenderTarget ? m_boundRenderTarget->GetHandle() : VK_NULL_HANDLE;
-  VkExtent2D extent = m_boundRenderTarget->GetVkExtent();
-  VkClearValue clearValue = m_boundRenderTarget->GetClearValue();
+  VkFramebuffer buf = renderTarget.GetHandle();
+  VkExtent3D extent = renderTarget.GetVkExtent();
+  auto && clearValues = renderTarget.GetClearValues();
 
   m_submitter.WaitForSubmitCompleted();
   m_submitter.BeginWriting();
-
 
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   renderPassInfo.renderPass = m_renderPass;
   renderPassInfo.framebuffer = buf;
   renderPassInfo.renderArea.offset = {0, 0};
-  renderPassInfo.renderArea.extent = extent;
-  renderPassInfo.clearValueCount = 1;
-  renderPassInfo.pClearValues = &clearValue;
+  renderPassInfo.renderArea.extent = {extent.width, extent.height};
+  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+  renderPassInfo.pClearValues = clearValues.data();
 
   m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -76,28 +76,16 @@ VkSemaphore RenderPass::Draw(VkSemaphore imageAvailiableSemaphore)
   m_submitter.PushCommand(vkCmdEndRenderPass);
   m_submitter.EndWriting();
   auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, {imageAvailiableSemaphore});
-  m_boundRenderTarget = nullptr;
-  UpdateRenderingReadyFlag();
   return res;
 }
 
-void RenderPass::BindRenderTarget(const RenderTarget * renderTarget) noexcept
+void RenderPass::SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept
 {
-  if (!renderTarget)
+  if (m_cachedAttachments != attachments)
   {
-    m_cachedAttachments.clear();
-    m_invalidRenderPass = true;
-    return;
-  }
-
-  auto && fboAttachments = renderTarget->GetAttachments();
-  if (m_cachedAttachments != fboAttachments)
-  {
-    m_cachedAttachments = fboAttachments;
+    m_cachedAttachments = attachments;
     m_invalidRenderPass = true;
   }
-  m_boundRenderTarget = renderTarget;
-  UpdateRenderingReadyFlag();
 }
 
 void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
@@ -111,7 +99,7 @@ void RenderPass::Invalidate()
   {
     m_builder.Reset();
     for (auto && attachment : m_cachedAttachments)
-      m_builder.AddAttachment(attachment.BuildAttachmentDescription());
+      m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(m_context.GetDevice());
@@ -136,7 +124,7 @@ void RenderPass::WaitForReadyToRendering() const noexcept
 
 void RenderPass::UpdateRenderingReadyFlag() noexcept
 {
-  m_isReadyForRendering = m_renderPass && m_boundRenderTarget;
+  m_isReadyForRendering = m_renderPass;
   std::atomic_notify_all(&m_isReadyForRendering);
 }
 

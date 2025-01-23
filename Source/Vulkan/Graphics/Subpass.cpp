@@ -131,7 +131,7 @@ void Subpass::SetDirtyCacheCommands() noexcept
 
 void Subpass::SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot)
 {
-  m_layout.AddAttachment(slot, binding);
+  m_layout.SetAttachment(slot, binding);
   m_ownerPass.SetInvalid();
 }
 

@@ -19,6 +19,41 @@ RenderTarget::~RenderTarget()
   m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
 }
 
+RenderTarget::RenderTarget(RenderTarget && rhs) noexcept
+  : m_context(rhs.m_context)
+{
+  std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
+  std::swap(m_views, rhs.m_views);
+  std::swap(m_extent, rhs.m_extent);
+  std::swap(m_clearValues, rhs.m_clearValues);
+  std::swap(m_images, rhs.m_images);
+  std::swap(m_framebuffer, rhs.m_framebuffer);
+  std::swap(m_builder, rhs.m_builder);
+  // why std::swap for bool doesn't work???
+  bool tmp = m_invalidFramebuffer;
+  m_invalidFramebuffer = rhs.m_invalidFramebuffer;
+  rhs.m_invalidFramebuffer = tmp;
+}
+
+RenderTarget & RenderTarget::operator=(RenderTarget && rhs) noexcept
+{
+  if (this != &rhs && &m_context == &rhs.m_context)
+  {
+    std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
+    std::swap(m_views, rhs.m_views);
+    std::swap(m_extent, rhs.m_extent);
+    std::swap(m_clearValues, rhs.m_clearValues);
+    std::swap(m_images, rhs.m_images);
+    std::swap(m_framebuffer, rhs.m_framebuffer);
+    std::swap(m_builder, rhs.m_builder);
+    // why std::swap for bool doesn't work???
+    bool tmp = m_invalidFramebuffer;
+    m_invalidFramebuffer = rhs.m_invalidFramebuffer;
+    rhs.m_invalidFramebuffer = tmp;
+  }
+  return *this;
+}
+
 void RenderTarget::SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
                                  float a) noexcept
 {
@@ -30,9 +65,9 @@ void RenderTarget::SetClearValue(uint32_t attachmentIndex, float depth, uint32_t
   m_clearValues[attachmentIndex].depthStencil = VkClearDepthStencilValue{depth, stencil};
 }
 
-std::pair<uint32_t, uint32_t> RenderTarget::GetExtent() const noexcept
+ImageExtent RenderTarget::GetExtent() const noexcept
 {
-  return {m_extent.width, m_extent.height};
+  return {m_extent.width, m_extent.height, m_extent.depth};
 }
 
 IImageGPU * RenderTarget::GetImage(uint32_t attachmentIndex) const
@@ -53,11 +88,6 @@ void RenderTarget::Invalidate()
   }
 }
 
-void RenderTarget::SetInvalid()
-{
-  m_invalidFramebuffer = true;
-}
-
 void RenderTarget::BindRenderPass(const VkRenderPass & renderPass) noexcept
 {
   if (renderPass != m_boundRenderPass)
@@ -67,42 +97,40 @@ void RenderTarget::BindRenderPass(const VkRenderPass & renderPass) noexcept
   }
 }
 
-const std::vector<FramebufferAttachment> & RenderTarget::GetAttachments() const & noexcept
+const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcept
 {
-  return m_attachments;
+  return m_clearValues;
 }
 
-void RenderTarget::AddAttachment(uint32_t index, const FramebufferAttachment & description,
-                                 std::unique_ptr<IImageGPU> && image)
+void RenderTarget::AddAttachment(uint32_t index, ImageBase && image, ImageView && view)
 {
-  while (index > m_attachments.size())
+  while (index >= m_images.size())
   {
-    m_attachments.emplace_back();
+    m_views.emplace_back();
     m_clearValues.emplace_back();
     m_images.emplace_back(nullptr);
   }
-  m_attachments.emplace_back(description);
-  m_clearValues.emplace_back();
-  m_images.emplace_back(std::move(image));
-  m_builder.BindAttachment(index, description.GetImageView());
+  m_builder.BindAttachment(index, view.GetImageView());
   m_invalidFramebuffer = true;
+
+  m_views[index] = std::move(view);
+  m_images[index] = std::make_unique<ImageBase>(std::move(image));
 }
 
 void RHI::vulkan::RenderTarget::ClearAttachments() noexcept
 {
   m_images.clear();
-  m_attachments.clear();
+  m_views.clear();
   m_clearValues.clear();
   m_builder.Reset();
   m_invalidFramebuffer = true;
 }
 
-void RenderTarget::SetExtent(const VkExtent2D & extent) noexcept
+void RenderTarget::SetExtent(const VkExtent3D & extent) noexcept
 {
-  if (m_extent != extent)
+  if (vk::Extent3D(m_extent) != vk::Extent3D(extent))
   {
     m_extent = extent;
-    // TODO: rebuild all images
     m_invalidFramebuffer = true;
   }
 }

@@ -3,14 +3,17 @@
 #include "../CommandsExecution/CommandBuffer.hpp"
 #include "../Resources/BufferGPU.hpp"
 #include "../Resources/Transferer.hpp"
+#include "../Utils/CastHelper.hpp"
 #include "ImageFormatsConversation.hpp"
 #include "ImageTraits.hpp"
 
-namespace RHI::vulkan::details
+namespace RHI::vulkan
 {
-ImageBase::ImageBase(const Context & ctx, Transferer & transferer)
+ImageBase::ImageBase(const Context & ctx, Transferer * transferer,
+                     const ImageDescription & description)
   : m_context(ctx)
-  , m_transferer(&transferer)
+  , m_transferer(transferer)
+  , m_description(description)
 {
 }
 
@@ -20,9 +23,7 @@ ImageBase::ImageBase(ImageBase && rhs) noexcept
 {
   std::swap(m_transferer, rhs.m_transferer);
   std::swap(m_image, rhs.m_image);
-  std::swap(m_layout, rhs.m_layout);
-  std::swap(m_internalFormat, rhs.m_internalFormat);
-  std::swap(m_mipLevels, rhs.m_mipLevels);
+  std::swap(m_description, rhs.m_description);
 }
 
 ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
@@ -31,9 +32,7 @@ ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
   {
     std::swap(m_transferer, rhs.m_transferer);
     std::swap(m_image, rhs.m_image);
-    std::swap(m_layout, rhs.m_layout);
-    std::swap(m_internalFormat, rhs.m_internalFormat);
-    std::swap(m_mipLevels, rhs.m_mipLevels);
+    std::swap(m_description, rhs.m_description);
   }
   return *this;
 }
@@ -42,14 +41,12 @@ void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & arg
 {
   if (!m_transferer)
     throw std::runtime_error("Image has no transferer. Async upload is impossible");
-  BufferGPU stagingBuffer(m_context, nullptr,
-                          utils::GetSizeOfImage(args.dst.extent, m_internalFormat),
-                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  BufferGPU stagingBuffer(m_context, nullptr, Size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     utils::CopyImageFromHost(data, args.src.extent, args.src, args.hostFormat,
                              reinterpret_cast<uint8_t *>(mapped_ptr.get()), args.dst.extent,
-                             args.dst, m_internalFormat);
+                             args.dst, GetVulkanFormat());
     mapped_ptr.reset();
     stagingBuffer.Flush();
     m_transferer->UploadImage(this, std::move(stagingBuffer));
@@ -72,7 +69,7 @@ void ImageBase::SetImageLayout(details::CommandBuffer & commandBuffer,
   barrier.image = m_image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = m_mipLevels;
+  barrier.subresourceRange.levelCount = m_description.mipLevels;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
   barrier.srcAccessMask = 0; // TODO
@@ -107,5 +104,39 @@ void ImageBase::SetImageLayout(details::CommandBuffer & commandBuffer,
   m_layout = newLayout;
 }
 
+VkImageType ImageBase::GetVulkanImageType() const noexcept
+{
+  return utils::CastInterfaceEnum2Vulkan<VkImageType>(m_description.type);
+}
 
-} // namespace RHI::vulkan::details
+VkExtent3D ImageBase::GetVulkanExtent() const noexcept
+{
+  return VkExtent3D{m_description.extent[0], m_description.extent[1], m_description.extent[2]};
+}
+
+VkFormat ImageBase::GetVulkanFormat() const noexcept
+{
+  return utils::CastInterfaceEnum2Vulkan<VkFormat>(m_description.format);
+}
+
+VkSampleCountFlagBits ImageBase::GetVulkanSamplesCount() const noexcept
+{
+  return utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_description.samples);
+}
+
+size_t ImageBase::Size() const
+{
+  return utils::GetSizeOfImage(GetVulkanExtent(), GetVulkanFormat());
+}
+
+ImageDescription ImageBase::GetDescription() const noexcept
+{
+  return m_description;
+}
+
+const Context & GetContextFromImage(const ImageBase & image) noexcept
+{
+  return image.m_context;
+}
+
+} // namespace RHI::vulkan

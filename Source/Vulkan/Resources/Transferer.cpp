@@ -27,7 +27,7 @@ SemaphoreHandle Transferer::Flush()
     UploadTask task = std::move(m_tasks.front());
     m_tasks.pop();
     BufferGPU * dstBuffer = std::get<0>(task);
-    details::ImageBase * dstImage = std::get<1>(task);
+    ImageBase * dstImage = std::get<1>(task);
     auto && stagingBuffer = std::get<2>(task);
 
     if (dstBuffer)
@@ -42,13 +42,12 @@ SemaphoreHandle Transferer::Flush()
     else if (dstImage)
     {
       dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-      auto && args = dstImage->GetExtent();
       VkBufferImageCopy region{};
       region.bufferOffset = 0;
       region.bufferRowLength = 0;
       region.bufferImageHeight = 0;
 
-      region.imageExtent = *reinterpret_cast<const VkExtent3D *>(&args.extent);
+      region.imageExtent = dstImage->GetVulkanExtent();
       region.imageOffset = {0, 0, 0};
 
       region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -73,7 +72,7 @@ void Transferer::UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer)
   m_tasks.emplace(UploadTask{dstBuffer, VK_NULL_HANDLE, std::move(stagingBuffer)});
 }
 
-void Transferer::UploadImage(details::ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept
+void Transferer::UploadImage(ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept
 {
   m_tasks.emplace(UploadTask{VK_NULL_HANDLE, dstImage, std::move(stagingBuffer)});
 }

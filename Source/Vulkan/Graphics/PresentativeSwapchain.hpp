@@ -13,22 +13,21 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct Swapchain final : public SwapchainBase
+struct PresentativeSwapchain final : public Swapchain
 {
-  explicit Swapchain(const Context & ctx, const VkSurfaceKHR surface);
-  virtual ~Swapchain() override;
-
-public: // SwapchainBase interface
-  virtual std::pair<uint32_t, VkSemaphore> AcquireImage() noexcept override;
-  virtual bool PresentImage(uint32_t activeImage,
-                            VkSemaphore waitRenderingSemaphore) noexcept override;
-
-public: // IInvalidable interface
-  /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
-  virtual void Invalidate() override;
+  explicit PresentativeSwapchain(const Context & ctx, const VkSurfaceKHR surface);
+  virtual ~PresentativeSwapchain() override;
 
 public: // RHI-only API
   VkSwapchainKHR GetHandle() const noexcept;
+
+  virtual std::pair<uint32_t, VkSemaphore> AcquireImage() override;
+  virtual bool FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore) override;
+  /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
+  virtual void Invalidate() override;
+
+protected:
+  virtual void InvalidateAttachments() override;
 
 private:
   VkQueue m_presentQueue = VK_NULL_HANDLE;

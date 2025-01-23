@@ -4,69 +4,105 @@
 
 #include <VkBootstrap.h>
 
+#include "../Images/NonOwningImageGPU.hpp"
+#include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 #include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
 
-Swapchain::Swapchain(const Context & ctx, const VkSurfaceKHR surface)
-  : SwapchainBase(ctx)
+PresentativeSwapchain::PresentativeSwapchain(const Context & ctx, const VkSurfaceKHR surface)
+  : Swapchain(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
 {
   std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Present);
 }
 
-Swapchain::~Swapchain()
+PresentativeSwapchain::~PresentativeSwapchain()
 {
   DestroySwapchain();
 }
 
-void Swapchain::Invalidate()
+void PresentativeSwapchain::Invalidate()
 {
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
-    auto [presentIndex, presentQueue] = m_context.GetQueue(QueueType::Present);
     auto [renderIndex, renderQueue] = m_context.GetQueue(QueueType::Graphics);
     vkb::SwapchainBuilder swapchain_builder(m_context.GetGPU(), m_context.GetDevice(), m_surface,
-                                            renderIndex, presentIndex);
+                                            renderIndex, m_presentQueueIndex);
     auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
     if (!swap_ret)
       throw std::runtime_error("Failed to create Vulkan swapchain - " + swap_ret.error().message());
 
     DestroySwapchain();
-    m_renderPass.SetInvalid();
 
     *m_swapchain = swap_ret.value();
     m_swapchainImages = m_swapchain->get_images().value();
     m_swapchainImageViews = m_swapchain->get_image_views().value();
     for (auto && view : m_swapchainImageViews)
       m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(m_context.GetDevice()));
-
-    InitSwapchain(m_swapchain->extent, m_swapchain->image_count);
-
-    // add swapchain images as attachment to RenderTargets
-    ForEachRenderTarget(
-      [it = m_swapchainImageViews.begin(),
-       format = m_swapchain->image_format](RenderTarget & target) mutable
-      {
-        target.BindAttachment(0, FramebufferAttachment{*it, format, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                                       VK_SAMPLE_COUNT_1_BIT});
-        it++;
-      });
-
-    m_renderPass.ForEachSubpass(
-      [](Subpass & sb)
-      {
-        sb.GetLayout().ResetAttachments();
-        sb.SetImageAttachmentUsage(0, RHI::ShaderImageSlot::Color);
-      });
     m_invalidSwapchain = false;
+
+    auto new_extent = swap_ret.value().extent;
+    SetExtent({new_extent.width, new_extent.height, 1});
+    SetFramesCount(swap_ret.value().image_count);
+    Swapchain::Invalidate();
   }
 }
 
-void Swapchain::DestroySwapchain() noexcept
+void PresentativeSwapchain::InvalidateAttachments()
+{
+  constexpr uint32_t binding = 0;
+
+  VkAttachmentDescription attachmentDescription{};
+  {
+    attachmentDescription.format = m_swapchain->image_format;
+    attachmentDescription.samples =
+      utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_samplesCount);
+    attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+  }
+
+  ImageDescription imageDescription{};
+  {
+    imageDescription.samples = m_samplesCount;
+    imageDescription.extent = {m_swapchain->extent.width, m_swapchain->extent.height, 1};
+    imageDescription.mipLevels = 1;
+    imageDescription.shared = false;
+    imageDescription.type = RHI::ImageType::Image2D;
+    imageDescription.usage = RHI::ImageUsage::SHADER_OUTPUT;
+    imageDescription.format = RHI::ImageFormat::RGBA8;
+  }
+
+  RequireSwapchainHasAttachmentsCount(1);
+  m_ownedImages[binding] = false;
+  m_imageDescriptions[binding] = imageDescription;
+  m_attachmentDescriptions[binding] = attachmentDescription;
+
+  // add swapchain images as attachment to RenderTargets
+  auto imgs_it = m_swapchainImages.begin();
+  auto views_it = m_swapchainImageViews.begin();
+  for (auto && target : m_targets)
+  {
+    NonOwningImageGPU image(m_context, m_context.GetInternalTransferer(), imageDescription,
+                            *imgs_it, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    ImageView view(image, *views_it);
+    target.AddAttachment(binding, std::move(image), std::move(view));
+    imgs_it++;
+    views_it++;
+  }
+  m_attachmentsChanged = true;
+  Swapchain::InvalidateAttachments();
+}
+
+
+void PresentativeSwapchain::DestroySwapchain() noexcept
 {
   m_context.WaitForIdle();
   if (!m_swapchainImageViews.empty())
@@ -78,8 +114,9 @@ void Swapchain::DestroySwapchain() noexcept
   m_imageAvailabilitySemaphores.clear();
 }
 
-std::pair<uint32_t, VkSemaphore> Swapchain::AcquireImage() noexcept
+std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
 {
+  Invalidate();
   VkSemaphore signalSemaphore = m_imageAvailabilitySemaphores[m_activeSemaphore];
   uint32_t imageIndex = InvalidImageIndex;
   auto res = vkAcquireNextImageKHR(m_context.GetDevice(), m_swapchain->swapchain, UINT64_MAX,
@@ -91,15 +128,13 @@ std::pair<uint32_t, VkSemaphore> Swapchain::AcquireImage() noexcept
   }
   else if (res != VK_SUCCESS)
   {
-    m_context.Log(LogMessageStatus::LOG_ERROR,
-                  std::format("Failed to acquire swap chain image - {}",
-                              static_cast<uint32_t>(res)));
-    return {InvalidImageIndex, VK_NULL_HANDLE};
+    throw std::runtime_error(
+      std::format("Failed to acquire swap chain image - {}", static_cast<uint32_t>(res)));
   }
   return {imageIndex, signalSemaphore};
 }
 
-bool Swapchain::PresentImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore) noexcept
+bool PresentativeSwapchain::FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore)
 {
   const VkSwapchainKHR swapchains[] = {GetHandle()};
   VkPresentInfoKHR presentInfo{};
@@ -119,13 +154,13 @@ bool Swapchain::PresentImage(uint32_t activeImage, VkSemaphore waitRenderingSema
   }
   else if (res != VK_SUCCESS)
   {
-    m_context.Log(LogMessageStatus::LOG_ERROR,
-                  std::format("Failed to queue image in present - {}", static_cast<uint32_t>(res)));
+    throw std::runtime_error(
+      std::format("Failed to queue image in present - {}", static_cast<uint32_t>(res)));
   }
   return true;
 }
 
-VkSwapchainKHR Swapchain::GetHandle() const noexcept
+VkSwapchainKHR PresentativeSwapchain::GetHandle() const noexcept
 {
   return m_swapchain->swapchain;
 }

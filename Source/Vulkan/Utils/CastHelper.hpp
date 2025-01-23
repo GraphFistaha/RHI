@@ -95,6 +95,12 @@ constexpr inline VkImageViewType CastInterfaceEnum2Vulkan<VkImageViewType, Image
       return VK_IMAGE_VIEW_TYPE_2D;
     case ImageType::Image3D:
       return VK_IMAGE_VIEW_TYPE_3D;
+    case ImageType::Image1D_Array:
+      return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+    case ImageType::Image2D_Array:
+      return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    case ImageType::Cubemap:
+      return VK_IMAGE_VIEW_TYPE_CUBE;
     default:
       throw std::range_error("Invalid ImageType");
   }
@@ -146,6 +152,29 @@ constexpr inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, I
              VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
     default:
       return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
+  }
+}
+
+template<>
+constexpr inline VkImageLayout CastInterfaceEnum2Vulkan<VkImageLayout, ImageFormat>(
+  ImageFormat format)
+{
+  switch (format)
+  {
+    case ImageFormat::A8:
+    case ImageFormat::R8:
+    case ImageFormat::RG8:
+    case ImageFormat::RGB8:
+    case ImageFormat::RGBA8:
+    case ImageFormat::BGR8:
+    case ImageFormat::BGRA8:
+      return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case ImageFormat::DEPTH:
+      return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    case ImageFormat::DEPTH_STENCIL:
+      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    default:
+      return VK_IMAGE_LAYOUT_UNDEFINED;
   }
 }
 

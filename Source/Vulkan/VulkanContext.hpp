@@ -8,9 +8,9 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "BuffersAllocator.hpp"
 #include "GarbageCollector.hpp"
 #include "Graphics/PresentativeSwapchain.hpp"
+#include "Memory/BuffersAllocator.hpp"
 #include "Resources/Transferer.hpp"
 
 namespace RHI::vulkan
@@ -36,11 +36,11 @@ public: // IContext interface
   virtual ISwapchain * GetSurfaceSwapchain() override;
   virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) override;
-  virtual ITransferer * GetTransferer() override;
+  virtual ITransferer * GetTransferer() const noexcept override;
 
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const override;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) const override;
 
   virtual void ClearResources() override;
 
@@ -54,17 +54,18 @@ public: // RHI-only API
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
   void WaitForIdle() const noexcept;
 
-  const details::BuffersAllocator & GetBuffersAllocator() const & noexcept;
+  Transferer * GetInternalTransferer() const noexcept;
+  const memory::BuffersAllocator & GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
 private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
-  std::unique_ptr<details::BuffersAllocator> m_allocator;
+  std::unique_ptr<memory::BuffersAllocator> m_allocator;
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
-  std::unique_ptr<Transferer> m_transferer;      // TODO: potentially there is a list
-  std::unique_ptr<Swapchain> m_surfaceSwapchain; // TODO: potentially there is a list
+  std::unique_ptr<Transferer> m_transferer;                  // TODO: potentially there is a list
+  std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
   LoggingFunc m_logFunc;
 
 private:

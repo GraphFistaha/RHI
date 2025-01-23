@@ -8,8 +8,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
+#include "../Images/ImageView.hpp"
 #include "../Utils/RenderPassBuilder.hpp"
-#include "FramebufferAttachment.hpp"
 #include "Subpass.hpp"
 
 namespace RHI::vulkan
@@ -28,8 +28,8 @@ struct RenderPass : public IInvalidable
 
 public: // IRenderPass Interface
   ISubpass * CreateSubpass();
-  VkSemaphore Draw(VkSemaphore imageAvailiableSemaphore);
-  void BindRenderTarget(const RenderTarget * renderTarget) noexcept;
+  VkSemaphore Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
+  void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
 public: // IInvalidable Interface
@@ -43,11 +43,10 @@ public:
 
 private:
   const Context & m_context;
-  const RenderTarget * m_boundRenderTarget = nullptr;
 
   uint32_t m_graphicsQueueFamily;
   VkQueue m_graphicsQueue;
-  std::vector<FramebufferAttachment> m_cachedAttachments;
+  std::vector<VkAttachmentDescription> m_cachedAttachments;
 
   /// There is a lot of thread-readers, so it's must be synchronized access
   VkRenderPass m_renderPass = VK_NULL_HANDLE;

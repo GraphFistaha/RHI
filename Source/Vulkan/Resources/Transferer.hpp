@@ -25,10 +25,10 @@ public: // ITransferer interface
 
 public:
   void UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer) noexcept;
-  void UploadImage(details::ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept;
+  void UploadImage(ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept;
 
 private:
-  using UploadTask = std::tuple<BufferGPU *, details::ImageBase *, BufferGPU>;
+  using UploadTask = std::tuple<BufferGPU *, ImageBase *, BufferGPU>;
 
   const Context & m_context;
   uint32_t m_queueFamilyIndex;

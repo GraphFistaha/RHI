@@ -1,13 +1,18 @@
 #pragma once
 #include <RHI.hpp>
 
-#include "BufferBase.hpp"
+#include "../Memory/MemoryBlock.hpp"
+
+namespace RHI::vulkan
+{
+struct Context;
+struct Transferer;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct BufferGPU : public IBufferGPU,
-                   private details::BufferBase
+struct BufferGPU : public IBufferGPU
 {
   using IBufferGPU::ScopedPointer;
 
@@ -18,20 +23,20 @@ struct BufferGPU : public IBufferGPU,
   BufferGPU(BufferGPU && rhs) noexcept;
   BufferGPU & operator=(BufferGPU && rhs) noexcept;
 
-  virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override
-  {
-    return BufferBase::UploadSync(data, size, offset);
-  }
+  virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
   virtual void UploadAsync(const void * data, size_t size, size_t offset = 0) override;
-  virtual ScopedPointer Map() override { return BufferBase::Map(); }
-  virtual void Flush() const noexcept override { BufferBase::Flush(); }
-  virtual bool IsMapped() const noexcept override { return BufferBase::IsMapped(); }
-  virtual size_t Size() const noexcept override { return BufferBase::Size(); }
+  virtual ScopedPointer Map() override;
+  virtual void Flush() const noexcept override;
+  virtual bool IsMapped() const noexcept override;
+  virtual size_t Size() const noexcept override;
 
 public:
   VkBuffer GetHandle() const noexcept;
 
 private:
+  const Context & m_context;
+  Transferer * m_transferer = nullptr;
+  memory::MemoryBlock m_memBlock;
   VkBuffer m_buffer = VK_NULL_HANDLE;
 
 private:

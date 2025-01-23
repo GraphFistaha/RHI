@@ -3,6 +3,8 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "ImageBase.hpp"
+
 namespace RHI::vulkan
 {
 struct Context;
@@ -10,23 +12,31 @@ struct Context;
 
 namespace RHI::vulkan
 {
-struct ImageGPU_View final
+/// @brief reference on image
+struct ImageView final
 {
-  explicit ImageGPU_View(const Context & ctx);
-  ~ImageGPU_View();
-  ImageGPU_View(ImageGPU_View && rhs) noexcept;
-  ImageGPU_View & operator=(ImageGPU_View && rhs) noexcept;
+  ImageView() = default;
+  explicit ImageView(const ImageBase & image, VkImageView view);
+  explicit ImageView(const ImageBase & image, VkImageViewType type);
 
-  void AssignImage(const IImageGPU & image);
+  ~ImageView();
+  ImageView(ImageView && rhs) noexcept;
+  ImageView & operator=(ImageView && rhs) noexcept;
+
+  void AssignImage(const ImageBase & image, VkImageView view);
+  void AssignImage(const ImageBase & image, VkImageViewType type);
   bool IsImageAssigned() const noexcept;
-  VkImageView GetHandle() const noexcept;
+
+  VkImageView GetImageView() const noexcept { return m_view; }
 
 private:
-  const Context & m_context;
+  const ImageBase * m_imagePtr = nullptr;
+  bool m_owns = false;
   VkImageView m_view = VK_NULL_HANDLE;
 
 private:
-  ImageGPU_View(const ImageGPU_View &) = delete;
-  ImageGPU_View & operator=(const ImageGPU_View &) = delete;
+  ImageView(const ImageView &) = delete;
+  ImageView & operator=(const ImageView &) = delete;
 };
+
 } // namespace RHI::vulkan

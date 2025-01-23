@@ -5,7 +5,17 @@
 
 #include <vk_mem_alloc.h>
 
+#include "Memory/MemoryBlock.hpp"
 #include "VulkanContext.hpp"
+
+namespace
+{
+template<class... Ts>
+struct overloads : Ts...
+{
+  using Ts::operator()...;
+};
+} // namespace
 
 namespace RHI::vulkan::details
 {
@@ -45,23 +55,8 @@ VkObjectsGarbageCollector::~VkObjectsGarbageCollector()
 
 void VkObjectsGarbageCollector::ClearObjects()
 {
-  vkDeviceWaitIdle(m_context.GetDevice());
-  std::lock_guard lk{m_mutex};
-  while (!m_queue.empty())
-  {
-    VkObjectDestroyData data = m_queue.front();
-    m_queue.pop();
-    if (data.objectType == typeid(VkImage))
-    {
-      m_context.GetBuffersAllocator().FreeImage(reinterpret_cast<VkImage>(data.object),
-                                                data.allocator);
-    }
-    else if (data.objectType == typeid(VkBuffer))
-    {
-      m_context.GetBuffersAllocator().FreeBuffer(reinterpret_cast<VkBuffer>(data.object),
-                                                 data.allocator);
-    }
-    else
+  auto && visitor = overloads{
+    [device = m_context.GetDevice()](const VkObjectDestroyData & data)
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
@@ -70,9 +65,21 @@ void VkObjectsGarbageCollector::ClearObjects()
           data.object, data.objectType.name()));
 
       auto * func = reinterpret_cast<decltype(vkDestroySemaphore) *>(it->second);
-      func(m_context.GetDevice(), reinterpret_cast<VkSemaphore>(data.object),
+      func(device, reinterpret_cast<VkSemaphore>(data.object),
            reinterpret_cast<const VkAllocationCallbacks *>(data.allocator));
-    }
+    },
+    [](const memory::MemoryBlock & block)
+    {
+      //block will be destroyed later
+    }};
+
+  vkDeviceWaitIdle(m_context.GetDevice());
+  std::lock_guard lk{m_mutex};
+  while (!m_queue.empty())
+  {
+    DestroyData data = std::move(m_queue.front());
+    m_queue.pop();
+    std::visit(visitor, data);
   }
 }
 

@@ -2,20 +2,19 @@
 
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "ImageGPU.hpp"
 
 namespace RHI::vulkan
 {
 
-namespace details
+namespace utils
 {
-VkImageView CreateImageView(VkDevice device, const ImageGPU & image)
+VkImageView CreateImageView(VkDevice device, const ImageBase & image, VkImageViewType type)
 {
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   viewInfo.image = image.GetHandle();
-  viewInfo.viewType = utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetImageType());
-  viewInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(image.GetImageFormat());
+  viewInfo.viewType = type;
+  viewInfo.format = image.GetVulkanFormat();
   viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   viewInfo.subresourceRange.baseMipLevel = 0;
   viewInfo.subresourceRange.levelCount = 1;
@@ -26,54 +25,72 @@ VkImageView CreateImageView(VkDevice device, const ImageGPU & image)
   if (auto res = vkCreateImageView(device, &viewInfo, nullptr, &view); res != VK_SUCCESS)
     throw std::invalid_argument("Failed to create image view!");
 
-  return VkImageView(view);
+  return view;
 }
-} // namespace details
+} // namespace utils
 
-ImageGPU_View::ImageGPU_View(const Context & ctx)
-  : m_context(ctx)
+ImageView::ImageView(const ImageBase & image, VkImageView view)
+  : m_imagePtr(&image)
+  , m_owns(false)
+  , m_view(view)
 {
 }
 
-ImageGPU_View::~ImageGPU_View()
+ImageView::ImageView(const ImageBase & image, VkImageViewType type)
+  : m_imagePtr(&image)
+  , m_owns(true)
+  , m_view(utils::CreateImageView(GetContextFromImage(image).GetDevice(), image, type))
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
 }
 
-ImageGPU_View::ImageGPU_View(ImageGPU_View && rhs) noexcept
-  : m_context(rhs.m_context)
+ImageView::~ImageView()
+{
+  if (m_owns && m_imagePtr)
+    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+}
+
+ImageView::ImageView(ImageView && rhs) noexcept
 {
   if (this != &rhs)
   {
     std::swap(m_view, rhs.m_view);
+    std::swap(m_owns, rhs.m_owns);
+    std::swap(m_imagePtr, rhs.m_imagePtr);
   }
 }
 
-ImageGPU_View & ImageGPU_View::operator=(ImageGPU_View && rhs) noexcept
+ImageView & ImageView::operator=(ImageView && rhs) noexcept
 {
-  if (this != &rhs && &m_context == &rhs.m_context)
+  if (this != &rhs)
   {
     std::swap(m_view, rhs.m_view);
+    std::swap(m_owns, rhs.m_owns);
+    std::swap(m_imagePtr, rhs.m_imagePtr);
   }
   return *this;
 }
 
-void ImageGPU_View::AssignImage(const IImageGPU & image)
+void ImageView::AssignImage(const ImageBase & image, VkImageView view)
 {
-  auto new_view =
-    details::CreateImageView(m_context.GetDevice(),
-                             utils::CastInterfaceClass2Internal<const ImageGPU &>(image));
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  if (m_owns && m_imagePtr)
+    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  m_view = view;
+  m_imagePtr = &image;
+  m_owns = false;
+}
+
+void ImageView::AssignImage(const ImageBase & image, VkImageViewType type)
+{
+  auto new_view = utils::CreateImageView(GetContextFromImage(image).GetDevice(), image, type);
+  if (m_owns && m_imagePtr)
+    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
   m_view = new_view;
+  m_imagePtr = &image;
+  m_owns = true;
 }
 
-bool ImageGPU_View::IsImageAssigned() const noexcept
+bool ImageView::IsImageAssigned() const noexcept
 {
-  return m_view;
-}
-
-VkImageView ImageGPU_View::GetHandle() const noexcept
-{
-  return m_view;
+  return !!m_view;
 }
 } // namespace RHI::vulkan

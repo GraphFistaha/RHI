@@ -12,7 +12,7 @@ struct FramebufferBuilder final
 {
   void BindAttachment(size_t idx, VkImageView imgView);
   VkFramebuffer Make(const VkDevice & device, const VkRenderPass & renderPass,
-                     const VkExtent2D & extent) const;
+                     const VkExtent3D & extent) const;
   void Reset();
 
 private:

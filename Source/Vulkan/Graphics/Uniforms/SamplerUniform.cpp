@@ -1,5 +1,6 @@
 #include "SamplerUniform.hpp"
 
+#include "../../Utils/CastHelper.hpp"
 #include "../../VulkanContext.hpp"
 #include "../DescriptorsBuffer.hpp"
 
@@ -79,7 +80,7 @@ VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
   assert(m_sampler);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_view.GetHandle();
+  imageInfo.imageView = m_view.GetImageView();
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -102,7 +103,8 @@ void SamplerUniform::SetInvalid()
 
 void SamplerUniform::AssignImage(const IImageGPU & image)
 {
-  m_view.AssignImage(image);
+  m_view.AssignImage(utils::CastInterfaceClass2Internal<ImageBase>(image),
+                     utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetDescription().type));
   assert(m_owner);
   m_owner->OnDescriptorChanged(*this);
 }

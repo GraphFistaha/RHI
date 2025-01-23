@@ -168,8 +168,104 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
+//----------------- Images ---------------------
+
+/// @brief Defines image's layout in memory. Also defines if image can have mipmaps or not
+///        For example image1d is line of pixels, image2d is a rectangle of pixels
+enum class ImageType
+{
+  Image1D, ///< image with height = 1. has only width.Can have one mipmap for a whole image
+  Image2D, ///< generic image with width and height. Can have one mipmap for a whole image
+  Image3D, ///< layered image2d (with depth). Can have one mipmap for a whole image
+  Image1D_Array, ///< array of 1d images, layered in memory like 2d image, but each row of pixels has its own mipmap
+  Image2D_Array, ///< the same as image3d, but each layer should have own mipmap
+  Cubemap,       ///< it's image2d_array with length = 6
+};
+
+/// @brief internal image format.
+enum class ImageFormat : uint8_t
+{
+  // general formats
+  R8,
+  A8,
+  RG8,
+  BGR8,
+  RGB8,
+  RGBA8,
+  BGRA8,
+  // service formats
+  DEPTH,
+  DEPTH_STENCIL,
+  // compressed types
+  //BC1,
+  //BC5,
+  //BC7
+};
+
+enum class ImageUsage : uint8_t
+{
+  SHADER_INPUT = BIT(1),
+  SHADER_OUTPUT = BIT(2),
+  SAMPLER = BIT(3)
+};
+
+enum class SamplesCount : uint8_t
+{
+  One = 1,
+  Two = 2,
+  Four = 4,
+  Eight = 8,
+};
+
+/// For Image1D used only 0'th index
+/// For Image2D used only 0 and 1 index
+/// For Image3D used all 3 indices like width, height and layer
+/// For Image1D used 0 and 1 index as width and i-th array element
+/// For Image2D used all 3 indices as width, height and i-th array element
+/// For Cubemap used all 3 indices as width, height and i-th surface of cube
+using ImageExtent = std::array<uint32_t, 3>;
+
+struct ImageRegion
+{
+  ImageExtent offset;
+  ImageExtent extent;
+};
+
+struct ImageDescription final
+{
+  ImageExtent extent;
+  uint32_t mipLevels;
+  ImageType type;
+  ImageFormat format;
+  SamplesCount samples;
+  ImageUsage usage;
+  bool shared;
+};
+
+/// @brief Defines in what format image will be uploaded or downloaded
+enum class HostImageFormat : uint8_t
+{
+  R8,
+  A8,
+  RG8,
+  BGR8,
+  RGB8,
+  RGBA8,
+  BGRA8,
+  // compressed types
+  //BC1,
+  //BC5,
+  //BC7
+};
+
+struct CopyImageArguments
+{
+  HostImageFormat hostFormat;
+  ImageRegion src;
+  ImageRegion dst;
+};
+
 struct IBufferGPU;
-struct ImageCreateArguments;
 struct IImageGPU;
 using SemaphoreHandle = InternalObjectHandle;
 
@@ -227,10 +323,10 @@ struct IPipeline : public IInvalidable
 
 // IRenderTarget
 /// @brief Framebuffer is a set of images to render
-struct IRenderTarget : public IInvalidable
+struct IRenderTarget
 {
   virtual ~IRenderTarget() = default;
-  virtual std::pair<uint32_t, uint32_t> GetExtent() const noexcept = 0;
+  virtual ImageExtent GetExtent() const noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
                              float a) noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
@@ -268,13 +364,16 @@ struct ISubpass /* : IInvalidable*/
 
 // IFramebuffer
 /// @brief Swapchain is a queue of renderTargets. Each renderTarget is a union of renderPass and internalFramebuffer.
-struct ISwapchain : public IInvalidable
+struct ISwapchain
 {
   virtual ~ISwapchain() = default;
   virtual IRenderTarget * AcquireFrame() = 0;
   virtual void FlushFrame() = 0;
-  virtual void AddImageAttachment(uint32_t binding, const ImageCreateArguments & args) = 0;
-
+  virtual void SetFramesCount(uint32_t frames_count) noexcept = 0;
+  virtual void SetExtent(const ImageExtent & extent) noexcept = 0;
+  virtual void SetMultisampling(RHI::SamplesCount samples) noexcept = 0;
+  virtual void AddImageAttachment(uint32_t binding, const ImageDescription & args) = 0;
+  virtual void ClearImageAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
 };
 
@@ -308,106 +407,14 @@ struct IBufferGPU
 };
 
 
-//----------------- Images ---------------------
-
-/// @brief Defines image's layout in memory. Also defines if image can have mipmaps or not
-///        For example image1d is line of pixels, image2d is a rectangle of pixels
-enum class ImageType
-{
-  Image1D, ///< image with height = 1. has only width.Can have one mipmap for a whole image
-  Image2D, ///< generic image with width and height. Can have one mipmap for a whole image
-  Image3D, ///< layered image2d (with depth). Can have one mipmap for a whole image
-  Image1D_Array, ///< array of 1d images, layered in memory like 2d image, but each row of pixels has its own mipmap
-  Image2D_Array, ///< the same as image3d, but each layer should have own mipmap
-  Cubemap,       ///< it's image2d_array with length = 6
-};
-
-/// @brief internal image format.
-enum class ImageFormat : uint8_t
-{
-  // general formats
-  R8,
-  A8,
-  RG8,
-  BGR8,
-  RGB8,
-  RGBA8,
-  BGRA8,
-  // service formats
-  DEPTH,
-  DEPTH_STENCIL,
-  // compressed types
-  //BC1,
-  //BC5,
-  //BC7
-};
-
-enum class SamplesCount : uint8_t
-{
-  One = 1,
-  Two = 2,
-  Four = 4,
-  Eight = 8,
-};
-
-/// @brief Generic pointer on image's pixel.
-/// For Image1D used only 0'th index
-/// For Image2D used only 0 and 1 index
-/// For Image3D used all 3 indices like width, height and layer
-/// For Image1D used 0 and 1 index as width and i-th array element
-/// For Image2D used all 3 indices as width, height and i-th array element
-/// For Cubemap used all 3 indices as width, height and i-th surface of cube
-using ImageExtent = std::array<uint32_t, 3>;
-
-struct ImageRegion
-{
-  ImageExtent offset;
-  ImageExtent extent;
-};
-
-struct ImageCreateArguments final
-{
-  ImageType type;
-  ImageExtent extent;
-  uint32_t mipLevels;
-  ImageFormat format;
-  SamplesCount samples;
-  bool shared;
-};
-
-/// @brief Defines in what format image will be uploaded or downloaded
-enum class HostImageFormat : uint8_t
-{
-  R8,
-  A8,
-  RG8,
-  BGR8,
-  RGB8,
-  RGBA8,
-  BGRA8,
-  // compressed types
-  //BC1,
-  //BC5,
-  //BC7
-};
-
-struct CopyImageArguments
-{
-  HostImageFormat hostFormat;
-  ImageRegion src;
-  ImageRegion dst;
-};
-
 struct IImageGPU
 {
   virtual ~IImageGPU() = default;
   virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
   //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
-  virtual ImageFormat GetImageFormat() const noexcept = 0;
-  virtual ImageExtent GetExtent() const noexcept = 0;
-  virtual ImageType GetImageType() const noexcept = 0;
+  virtual ImageDescription GetDescription() const noexcept = 0;
   /// @brief Get size of image in bytes
-  virtual size_t Size() const noexcept = 0;
+  virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
 };
 
@@ -419,7 +426,7 @@ struct IContext
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
   virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) = 0;
-  virtual ITransferer * GetTransferer() = 0;
+  virtual ITransferer * GetTransferer() const noexcept = 0;
   virtual void ClearResources() = 0;
 
 
@@ -429,7 +436,7 @@ struct IContext
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const = 0;
 
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) const = 0;
 };
 
 /// @brief Factory-function to create context

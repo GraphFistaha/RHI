@@ -1,0 +1,46 @@
+#pragma once
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
+
+namespace RHI::vulkan::memory
+{
+struct MemoryBlock final
+{
+  MemoryBlock() = default;
+  ~MemoryBlock();
+  MemoryBlock(MemoryBlock && rhs) noexcept;
+  MemoryBlock & operator=(MemoryBlock && rhs) noexcept;
+
+  void UploadSync(const void * data, size_t size, size_t offset = 0);
+  IBufferGPU::ScopedPointer Map();
+  void Flush() const noexcept;
+  bool IsMapped() const noexcept;
+  size_t Size() const noexcept { return m_size; }
+  VkImage GetImage() const noexcept { return m_image; }
+  VkBuffer GetBuffer() const noexcept { return m_buffer; }
+  operator bool() const noexcept;
+
+private:
+  friend struct BuffersAllocator;
+  using AllocInfoRawMemory = std::array<uint32_t, 16>;
+
+  InternalObjectHandle m_allocator = nullptr;
+  AllocInfoRawMemory m_allocInfo;
+  InternalObjectHandle m_memBlock = nullptr;
+  VkImage m_image = VK_NULL_HANDLE;
+  VkBuffer m_buffer = VK_NULL_HANDLE;
+  size_t m_size = 0;
+  uint32_t m_flags = 0;
+
+private:
+  explicit MemoryBlock(InternalObjectHandle allocator, const ImageDescription & description,
+                       uint32_t flags, uint32_t memoryUsage);
+  explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
+                       uint32_t flags, uint32_t memoryUsage);
+
+  MemoryBlock(const MemoryBlock & rhs) = delete;
+  MemoryBlock & operator=(const MemoryBlock & rhs) = delete;
+};
+
+} // namespace RHI::vulkan::memory

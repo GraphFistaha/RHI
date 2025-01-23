@@ -39,7 +39,8 @@ bool ShouldSwitchNextImage = false;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->Invalidate();
+  ctx->GetSurfaceSwapchain()->SetExtent(
+    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
   ShouldInvalidateScene = true;
 }
 
@@ -118,7 +119,7 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
   std::list<std::unique_ptr<RHI::IImageGPU>> textures;

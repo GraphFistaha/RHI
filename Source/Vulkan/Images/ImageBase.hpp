@@ -12,22 +12,36 @@ struct CommandBuffer;
 }
 } // namespace RHI::vulkan
 
-namespace RHI::vulkan::details
+namespace RHI::vulkan
 {
-struct ImageBase
+/// @brief Base class for all images
+struct ImageBase : public IImageGPU
 {
-protected:
-  explicit ImageBase(const Context & ctx, Transferer & transferer);
   virtual ~ImageBase() = default;
   ImageBase(ImageBase && rhs) noexcept;
   ImageBase & operator=(ImageBase && rhs) noexcept;
 
-public:
-  void UploadImage(const uint8_t * data, const CopyImageArguments & args);
-  VkImage GetHandle() const noexcept { return m_image; }
-  void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
-  ImageExtent GetExtent() const noexcept;
+protected:
+  explicit ImageBase(const Context & ctx, Transferer * transferer,
+                     const ImageDescription & description);
 
+public:
+  virtual void UploadImage(const uint8_t * data, const CopyImageArguments & args) override;
+  //void DownloadImage(const CopyImageArguments & args, uint8_t * data);
+  virtual size_t Size() const override;
+  virtual ImageDescription GetDescription() const noexcept override;
+
+public:
+  friend const Context & GetContextFromImage(const ImageBase & image) noexcept;
+  void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
+
+  VkImage GetHandle() const noexcept { return m_image; }
+  VkImageLayout GetLayout() const noexcept { return m_layout; }
+
+  VkImageType GetVulkanImageType() const noexcept;
+  VkExtent3D GetVulkanExtent() const noexcept;
+  VkFormat GetVulkanFormat() const noexcept;
+  VkSampleCountFlagBits GetVulkanSamplesCount() const noexcept;
 
 protected:
   const Context & m_context;
@@ -35,11 +49,10 @@ protected:
 
   VkImage m_image = VK_NULL_HANDLE;
   VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-  VkFormat m_internalFormat = VK_FORMAT_UNDEFINED;
-  uint32_t m_mipLevels;
+  ImageDescription m_description;
 
 private:
   ImageBase(const ImageBase &) = delete;
   ImageBase & operator=(const ImageBase &) = delete;
 };
-} // namespace RHI::vulkan::details
+} // namespace RHI::vulkan

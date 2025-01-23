@@ -36,7 +36,8 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->Invalidate();
+  ctx->GetSurfaceSwapchain()->SetExtent(
+    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
 }
 
 
@@ -66,7 +67,7 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();

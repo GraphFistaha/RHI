@@ -9,8 +9,7 @@ struct SubpassLayout final
   explicit SubpassLayout(VkPipelineBindPoint bindPoint);
 
   bool UseDepthStencil() const noexcept;
-  void AddAttachment(ShaderImageSlot slot, uint32_t idx);
-  void ResetAttachments();
+  void SetAttachment(ShaderImageSlot slot, uint32_t idx);
   VkSubpassDescription BuildDescription() const noexcept;
 
 private:

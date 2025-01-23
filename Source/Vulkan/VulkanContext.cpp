@@ -169,7 +169,7 @@ struct Context::Impl final
       queue_ret = m_device.get_queue(type);
     }
     if (!queue_ret)
-      throw std::runtime_error("failed to request queue");
+      return {-1, VK_NULL_HANDLE};
     auto familly_index = m_device.get_queue_index(type);
     return std::make_pair(familly_index.value(), queue_ret.value());
   }
@@ -187,12 +187,11 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
-  m_allocator = std::make_unique<details::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
-                                                            m_impl->GetDevice(),
-                                                            GetVulkanVersion());
+  m_allocator = std::make_unique<memory::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
+                                                           m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
   m_transferer = std::make_unique<Transferer>(*this);
-  m_surfaceSwapchain = std::make_unique<Swapchain>(*this, m_impl->GetSurface());
+  m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
 }
 
 Context::~Context()
@@ -207,12 +206,13 @@ ISwapchain * Context::GetSurfaceSwapchain()
 std::unique_ptr<ISwapchain> Context::CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                               uint32_t frames_count)
 {
-  auto && result = std::make_unique<SwapchainBase>(*this);
-  result->InitSwapchain(VkExtent2D{width, height}, frames_count);
+  auto && result = std::make_unique<Swapchain>(*this);
+  result->SetExtent({width, height, 1});
+  result->SetFramesCount(frames_count);
   return result;
 }
 
-ITransferer * Context::GetTransferer()
+ITransferer * Context::GetTransferer() const noexcept
 {
   return m_transferer.get();
 }
@@ -224,9 +224,9 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
   return std::make_unique<BufferGPU>(*this, m_transferer.get(), size, vkUsage, mapped);
 }
 
-std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args) const
+std::unique_ptr<IImageGPU> Context::AllocImage(const ImageDescription & args) const
 {
-  return std::make_unique<ImageGPU>(*this, *m_transferer, args);
+  return std::make_unique<ImageGPU>(*this, m_transferer.get(), args);
 }
 
 void Context::ClearResources()
@@ -280,7 +280,12 @@ void Context::WaitForIdle() const noexcept
   vkDeviceWaitIdle(GetDevice());
 }
 
-const details::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept
+Transferer * Context::GetInternalTransferer() const noexcept
+{
+  return m_transferer.get();
+}
+
+const memory::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept
 {
   return *m_allocator;
 }
@@ -294,7 +299,7 @@ const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const 
 
 namespace RHI
 {
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config = nullptr,
+std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config /* = nullptr*/,
                                         LoggingFunc loggingFunc /* = nullptr*/)
 {
   return std::make_unique<vulkan::Context>(config, loggingFunc);

@@ -33,12 +33,12 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  VkImageView GetImageView() const noexcept { return m_view.GetHandle(); }
+  VkImageView GetImageView() const noexcept { return m_view.GetImageView(); }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  ImageGPU_View m_view{m_context};
+  ImageView m_view;
   VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };
