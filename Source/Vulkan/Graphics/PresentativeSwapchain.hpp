@@ -22,7 +22,7 @@ public: // RHI-only API
   VkSwapchainKHR GetHandle() const noexcept;
 
   virtual std::pair<uint32_t, VkSemaphore> AcquireImage() override;
-  virtual bool FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore) override;
+  virtual bool FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier) override;
   /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
   virtual void Invalidate() override;
 

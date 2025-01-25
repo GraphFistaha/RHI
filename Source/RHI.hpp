@@ -269,6 +269,7 @@ struct IBufferGPU;
 struct IImageGPU;
 using SemaphoreHandle = InternalObjectHandle;
 
+//TODO: Remove this interface
 struct IInvalidable
 {
   virtual ~IInvalidable() = default;
@@ -333,7 +334,7 @@ struct IRenderTarget
   virtual IImageGPU * GetImage(uint32_t attachmentIndex) const = 0;
 };
 
-struct ISubpass /* : IInvalidable*/
+struct ISubpass
 {
   virtual ~ISubpass() = default;
   virtual void BeginPass() = 0;
@@ -380,7 +381,8 @@ struct ISwapchain
 struct ITransferer
 {
   virtual ~ITransferer() = default;
-  virtual SemaphoreHandle Flush() = 0;
+  virtual void DoTransfer() = 0;
+  virtual void Flush() = 0;
 };
 
 // ------------------- Data ------------------

@@ -46,18 +46,11 @@ std::pair<uint32_t, VkSemaphore> Swapchain::AcquireImage()
   return {static_cast<uint32_t>((m_activeImageIdx + 1) % m_targets.size()), VK_NULL_HANDLE};
 }
 
-bool Swapchain::FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore)
+bool Swapchain::FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier)
 {
-  if (!waitRenderingSemaphore)
-    return true;
-  uint64_t waitValue = 1;
-  VkSemaphoreWaitInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-  info.pSemaphores = &waitRenderingSemaphore;
-  info.semaphoreCount = 1;
-  info.pValues = &waitValue;
-  VkResult result = vkWaitSemaphores(m_context.GetDevice(), &info, UINT64_MAX);
-  return result == VK_SUCCESS;
+  auto res =
+    vkWaitForFences(m_context.GetDevice(), 1, &waitRenderingBarrier.second, VK_FALSE, UINT64_MAX);
+  return res == VK_SUCCESS;
 }
 
 void Swapchain::Invalidate()
@@ -147,20 +140,19 @@ void Swapchain::RequireSwapchainHasAttachmentsCount(uint32_t count)
 IRenderTarget * Swapchain::AcquireFrame()
 {
   auto [imageIndex, waitSemaphore] = AcquireImage();
+  m_activeImageIdx = imageIndex;
+  m_imageAvailableSemaphore = waitSemaphore;
   if (imageIndex == InvalidImageIndex)
   {
     return nullptr;
   }
-  m_activeImageIdx = imageIndex;
-  m_imageAvailableSemaphore = waitSemaphore;
   return &m_targets[m_activeImageIdx];
 }
 
 void Swapchain::FlushFrame()
 {
-  VkSemaphore passSemaphore =
-    m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
-  FinishImage(m_activeImageIdx, passSemaphore);
+  Barrier passBarrier = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
+  FinishImage(m_activeImageIdx, passBarrier);
   m_imageAvailableSemaphore = VK_NULL_HANDLE;
 }
 

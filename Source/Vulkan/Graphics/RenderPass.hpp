@@ -28,7 +28,7 @@ struct RenderPass : public IInvalidable
 
 public: // IRenderPass Interface
   ISubpass * CreateSubpass();
-  VkSemaphore Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
+  Barrier Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
@@ -58,5 +58,6 @@ private:
 
   details::Submitter m_submitter;
   std::list<Subpass> m_subpasses;
+  uint32_t m_createSubpassCallsCounter = 0;
 };
 } // namespace RHI::vulkan

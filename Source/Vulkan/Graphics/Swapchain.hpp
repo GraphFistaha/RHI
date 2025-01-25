@@ -48,7 +48,7 @@ public: // RHI-only API
 
 protected:
   virtual std::pair<uint32_t, VkSemaphore> AcquireImage();
-  virtual bool FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore);
+  virtual bool FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier);
   virtual void InvalidateAttachments();
   void RequireSwapchainHasAttachmentsCount(uint32_t count);
 

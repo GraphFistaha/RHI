@@ -15,6 +15,9 @@ RenderPass::RenderPass(const Context & ctx)
   , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
 {
+  // —оздает начальный subpass. ” RenderPass всегда должен быть subpass,
+  // иначе VkRenderPass не создастс€ и в целом все сломаетс€.
+  auto && initialSubpass = m_subpasses.emplace_back(m_context, *this, 0, m_graphicsQueueFamily);
 }
 
 RenderPass::~RenderPass()
@@ -24,6 +27,9 @@ RenderPass::~RenderPass()
 
 ISubpass * RenderPass::CreateSubpass()
 {
+  if (m_createSubpassCallsCounter++ == 0)
+    return &m_subpasses.front();
+
   auto && subpass = m_subpasses.emplace_back(m_context, *this,
                                              static_cast<uint32_t>(m_subpasses.size()),
                                              m_graphicsQueueFamily);
@@ -31,7 +37,7 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-VkSemaphore RenderPass::Draw(const RenderTarget & renderTarget,
+Barrier RenderPass::Draw(const RenderTarget & renderTarget,
                              VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
@@ -75,7 +81,10 @@ VkSemaphore RenderPass::Draw(const RenderTarget & renderTarget,
 
   m_submitter.PushCommand(vkCmdEndRenderPass);
   m_submitter.EndWriting();
-  auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, {imageAvailiableSemaphore});
+  std::vector<VkSemaphore> waitSemaphores;
+  if (imageAvailiableSemaphore)
+    waitSemaphores.push_back(imageAvailiableSemaphore);
+  auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, std::move(waitSemaphores));
   return res;
 }
 

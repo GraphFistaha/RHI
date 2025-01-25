@@ -30,8 +30,7 @@ Submitter::~Submitter()
   }
 }
 
-VkSemaphore Submitter::Submit(bool waitPrevSubmitOnGPU,
-                              std::vector<SemaphoreHandle> && waitSemaphores)
+Barrier Submitter::Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores)
 {
   const VkSemaphore signalSem = m_newBarrier.first;
   const VkCommandBuffer buffer = GetHandle();
@@ -54,7 +53,7 @@ VkSemaphore Submitter::Submit(bool waitPrevSubmitOnGPU,
     throw std::runtime_error("failed to submit command buffer!");
   std::swap(m_oldBarrier, m_newBarrier);
   m_isFirstSubmit = false;
-  return m_oldBarrier.first;
+  return m_oldBarrier;
 }
 
 void Submitter::WaitForSubmitCompleted()

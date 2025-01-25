@@ -28,7 +28,7 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 int main()
 {
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(nullptr, ConsoleLog);
-  
+
   std::unique_ptr<RHI::ISwapchain> swapchain = ctx->CreateOffscreenSwapchain(100, 100, 3);
   RHI::ImageDescription description;
   description.extent = {100, 100, 1};

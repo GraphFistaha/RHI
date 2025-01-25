@@ -2,13 +2,21 @@
 
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
+
 #include "CommandBuffer.hpp"
 
 namespace RHI::vulkan
 {
 enum class QueueType : uint8_t;
 struct Context;
-}
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan
+{
+/// semaphore to wait for commands have been completed on gpu
+/// fence to wait for commands have been completed on cpu
+using Barrier = std::pair<VkSemaphore, VkFence>;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan::details
 {
@@ -19,7 +27,7 @@ struct Submitter : public CommandBuffer
                      VkPipelineStageFlags waitStages);
   virtual ~Submitter();
 
-  VkSemaphore Submit(bool waitPrevSubmitOnGPU, std::vector<SemaphoreHandle> && waitSemaphores);
+  Barrier Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores);
   void WaitForSubmitCompleted();
 
 protected:
@@ -27,9 +35,6 @@ protected:
   uint32_t m_queueFamily;
   VkQueue m_queue;
 
-  /// semaphore to wait for commands have been completed on gpu
-  /// fence to wait for commands have been completed on cpu
-  using Barrier = std::pair<VkSemaphore, VkFence>;
   Barrier m_oldBarrier;
   Barrier m_newBarrier;
   bool m_isFirstSubmit = true;

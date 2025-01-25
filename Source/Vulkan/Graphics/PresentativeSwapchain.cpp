@@ -45,11 +45,11 @@ void PresentativeSwapchain::Invalidate()
       m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(m_context.GetDevice()));
     m_invalidSwapchain = false;
 
-    auto new_extent = swap_ret.value().extent;
+    auto new_extent = m_swapchain->extent;
+    SetFramesCount(m_swapchain->image_count);
     SetExtent({new_extent.width, new_extent.height, 1});
-    SetFramesCount(swap_ret.value().image_count);
-    Swapchain::Invalidate();
   }
+  Swapchain::Invalidate();
 }
 
 void PresentativeSwapchain::InvalidateAttachments()
@@ -123,7 +123,7 @@ std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
                                    signalSemaphore, VK_NULL_HANDLE, &imageIndex);
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
   {
-    Invalidate();
+    m_invalidSwapchain = true;
     return {InvalidImageIndex, VK_NULL_HANDLE};
   }
   else if (res != VK_SUCCESS)
@@ -134,13 +134,13 @@ std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
   return {imageIndex, signalSemaphore};
 }
 
-bool PresentativeSwapchain::FinishImage(uint32_t activeImage, VkSemaphore waitRenderingSemaphore)
+bool PresentativeSwapchain::FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier)
 {
   const VkSwapchainKHR swapchains[] = {GetHandle()};
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &waitRenderingSemaphore;
+  presentInfo.pWaitSemaphores = &waitRenderingBarrier.first;
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapchains;
   presentInfo.pImageIndices = &activeImage;
