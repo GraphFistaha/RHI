@@ -25,7 +25,7 @@ struct Swapchain : public ISwapchain
 
 public: // ISwapchain interface
   virtual IRenderTarget * AcquireFrame() override;
-  virtual void FlushFrame() override;
+  virtual IAwaitable * RenderFrame() override;
 
   virtual ISubpass * CreateSubpass() override;
   /// @brief adds attachment to all frames
@@ -48,7 +48,7 @@ public: // RHI-only API
 
 protected:
   virtual std::pair<uint32_t, VkSemaphore> AcquireImage();
-  virtual bool FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier);
+  virtual bool FinishImage(uint32_t activeImage, AsyncTask * task);
   virtual void InvalidateAttachments();
   void RequireSwapchainHasAttachmentsCount(uint32_t count);
 
@@ -79,7 +79,8 @@ protected:
 
 
 /// @brief Compare operator for VkAttachmentDescription
-inline bool operator==(const VkAttachmentDescription & lhs, const VkAttachmentDescription & rhs) noexcept
+inline bool operator==(const VkAttachmentDescription & lhs,
+                       const VkAttachmentDescription & rhs) noexcept
 {
   return std::memcmp(&lhs, &rhs, sizeof(VkAttachmentDescription)) == 0;
 }

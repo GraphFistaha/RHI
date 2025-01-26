@@ -92,7 +92,7 @@ void PresentativeSwapchain::InvalidateAttachments()
   {
     NonOwningImageGPU image(m_context, m_context.GetInternalTransferer(), imageDescription,
                             *imgs_it, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    ImageView view(image, *views_it);
+    ImageView view(m_context, image, *views_it);
     target.AddAttachment(binding, std::move(image), std::move(view));
     imgs_it++;
     views_it++;
@@ -134,13 +134,14 @@ std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
   return {imageIndex, signalSemaphore};
 }
 
-bool PresentativeSwapchain::FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier)
+bool PresentativeSwapchain::FinishImage(uint32_t activeImage, AsyncTask * task)
 {
   const VkSwapchainKHR swapchains[] = {GetHandle()};
+  VkSemaphore sem = task->GetSemaphore();
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &waitRenderingBarrier.first;
+  presentInfo.pWaitSemaphores = &sem;
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapchains;
   presentInfo.pImageIndices = &activeImage;

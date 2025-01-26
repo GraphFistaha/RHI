@@ -29,33 +29,33 @@ VkImageView CreateImageView(VkDevice device, const ImageBase & image, VkImageVie
 }
 } // namespace utils
 
-ImageView::ImageView(const ImageBase & image, VkImageView view)
-  : m_imagePtr(&image)
+ImageView::ImageView(const Context & ctx, const ImageBase & image, VkImageView view)
+  : ContextualObject(ctx)
   , m_owns(false)
   , m_view(view)
 {
 }
 
-ImageView::ImageView(const ImageBase & image, VkImageViewType type)
-  : m_imagePtr(&image)
+ImageView::ImageView(const Context & ctx, const ImageBase & image, VkImageViewType type)
+  : ContextualObject(ctx)
   , m_owns(true)
-  , m_view(utils::CreateImageView(GetContextFromImage(image).GetDevice(), image, type))
+  , m_view(utils::CreateImageView(GetContext().GetDevice(), image, type))
 {
 }
 
 ImageView::~ImageView()
 {
-  if (m_owns && m_imagePtr)
-    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  if (m_owns)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
 }
 
 ImageView::ImageView(ImageView && rhs) noexcept
+  : ContextualObject(std::move(rhs))
 {
   if (this != &rhs)
   {
     std::swap(m_view, rhs.m_view);
     std::swap(m_owns, rhs.m_owns);
-    std::swap(m_imagePtr, rhs.m_imagePtr);
   }
 }
 
@@ -63,29 +63,27 @@ ImageView & ImageView::operator=(ImageView && rhs) noexcept
 {
   if (this != &rhs)
   {
+    ContextualObject::operator=(std::move(rhs));
     std::swap(m_view, rhs.m_view);
     std::swap(m_owns, rhs.m_owns);
-    std::swap(m_imagePtr, rhs.m_imagePtr);
   }
   return *this;
 }
 
 void ImageView::AssignImage(const ImageBase & image, VkImageView view)
 {
-  if (m_owns && m_imagePtr)
-    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  if (m_owns)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
   m_view = view;
-  m_imagePtr = &image;
   m_owns = false;
 }
 
 void ImageView::AssignImage(const ImageBase & image, VkImageViewType type)
 {
-  auto new_view = utils::CreateImageView(GetContextFromImage(image).GetDevice(), image, type);
-  if (m_owns && m_imagePtr)
-    GetContextFromImage(*m_imagePtr).GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  auto new_view = utils::CreateImageView(GetContext().GetDevice(), image, type);
+  if (m_owns)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
   m_view = new_view;
-  m_imagePtr = &image;
   m_owns = true;
 }
 

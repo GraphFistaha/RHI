@@ -14,7 +14,7 @@ Transferer::Transferer(const Context & ctx)
 {
 }
 
-SemaphoreHandle Transferer::Flush()
+IAwaitable * Transferer::DoTransfer()
 {
   if (m_tasks.empty())
     return VK_NULL_HANDLE;
@@ -41,6 +41,7 @@ SemaphoreHandle Transferer::Flush()
     }
     else if (dstImage)
     {
+      VkImageLayout oldLayout = dstImage->GetLayout();
       dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
       VkBufferImageCopy region{};
       region.bufferOffset = 0;
@@ -58,7 +59,7 @@ SemaphoreHandle Transferer::Flush()
       m_submitter.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(),
                               dstImage->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                               &region);
-      dstImage->SetImageLayout(m_submitter, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      dstImage->SetImageLayout(m_submitter, oldLayout);
     }
 
     buffers.push(std::move(stagingBuffer));

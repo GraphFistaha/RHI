@@ -46,7 +46,9 @@ int main()
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      swapchain->FlushFrame();
+      auto * awaitable = swapchain->RenderFrame();
+      awaitable->Wait();
+      renderTarget->GetImage(0)->DownloadImage();
     }
     t += 0.001f;
   }

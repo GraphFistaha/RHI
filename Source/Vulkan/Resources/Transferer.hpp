@@ -21,14 +21,15 @@ struct Transferer : public ITransferer
   explicit Transferer(const Context & ctx);
 
 public: // ITransferer interface
-  virtual SemaphoreHandle Flush() override;
+  virtual IAwaitable * DoTransfer() override;
 
 public:
   void UploadBuffer(BufferGPU * dstBuffer, BufferGPU && stagingBuffer) noexcept;
   void UploadImage(ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept;
-
+  
 private:
   using UploadTask = std::tuple<BufferGPU *, ImageBase *, BufferGPU>;
+  using DownloadTask = std::tuple<>;
 
   const Context & m_context;
   uint32_t m_queueFamilyIndex;

@@ -2,6 +2,8 @@ target_sources (${PROJECT_NAME}
 PRIVATE
 	VulkanContext.cpp
 	VulkanContext.hpp
+	ContextualObject.cpp
+	ContextualObject.hpp
 	GarbageCollector.cpp
 	GarbageCollector.hpp
 	Memory/BuffersAllocator.hpp
@@ -69,7 +71,9 @@ PRIVATE
 	CommandsExecution/CommandBuffer.hpp 
 	CommandsExecution/Submitter.cpp
 	CommandsExecution/Submitter.hpp
- )
+	CommandsExecution/AsyncTask.cpp
+	CommandsExecution/AsyncTask.hpp
+)
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)

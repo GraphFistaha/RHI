@@ -28,7 +28,7 @@ struct RenderPass : public IInvalidable
 
 public: // IRenderPass Interface
   ISubpass * CreateSubpass();
-  Barrier Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
+  AsyncTask * Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 

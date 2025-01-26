@@ -57,6 +57,10 @@ void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & arg
   }
 }
 
+void ImageBase::DownloadImage(void * srcPixelData, const CopyImageArguments & args)
+{
+}
+
 void ImageBase::SetImageLayout(details::CommandBuffer & commandBuffer,
                                VkImageLayout newLayout) noexcept
 {
@@ -132,11 +136,6 @@ size_t ImageBase::Size() const
 ImageDescription ImageBase::GetDescription() const noexcept
 {
   return m_description;
-}
-
-const Context & GetContextFromImage(const ImageBase & image) noexcept
-{
-  return image.m_context;
 }
 
 } // namespace RHI::vulkan

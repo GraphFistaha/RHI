@@ -144,7 +144,7 @@ int main()
         subpass->EndPass(); // finish drawing pass
         ShouldInvalidateScene = false;
       }
-      swapchain->FlushFrame();
+      swapchain->RenderFrame();
     }
     t += 0.001f;
   }

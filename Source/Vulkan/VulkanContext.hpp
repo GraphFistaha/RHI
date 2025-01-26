@@ -37,11 +37,9 @@ public: // IContext interface
   virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) override;
   virtual ITransferer * GetTransferer() const noexcept override;
-
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) const override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) const override;
-
   virtual void ClearResources() override;
 
 public: // RHI-only API
@@ -53,12 +51,15 @@ public: // RHI-only API
   uint32_t GetVulkanVersion() const noexcept;
   void Log(LogMessageStatus status, const std::string & message) const noexcept;
   void WaitForIdle() const noexcept;
+  bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   Transferer * GetInternalTransferer() const noexcept;
   const memory::BuffersAllocator & GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
 private:
+  static constexpr size_t kValidationMark = 0xABCDEF00ABCDEF00;
+  size_t m_validatationMark = kValidationMark;
   struct Impl;
   std::unique_ptr<Impl> m_impl;
   std::unique_ptr<memory::BuffersAllocator> m_allocator;

@@ -46,11 +46,9 @@ std::pair<uint32_t, VkSemaphore> Swapchain::AcquireImage()
   return {static_cast<uint32_t>((m_activeImageIdx + 1) % m_targets.size()), VK_NULL_HANDLE};
 }
 
-bool Swapchain::FinishImage(uint32_t activeImage, Barrier waitRenderingBarrier)
+bool Swapchain::FinishImage(uint32_t activeImage, AsyncTask * task)
 {
-  auto res =
-    vkWaitForFences(m_context.GetDevice(), 1, &waitRenderingBarrier.second, VK_FALSE, UINT64_MAX);
-  return res == VK_SUCCESS;
+  return true;
 }
 
 void Swapchain::Invalidate()
@@ -119,7 +117,8 @@ void Swapchain::InvalidateAttachments()
       if (m_ownedImages[binding])
       {
         ImageGPU image(m_context, m_context.GetInternalTransferer(), description);
-        ImageView view(image, utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
+        ImageView view(m_context, image,
+                       utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
         target.AddAttachment(binding, std::move(image), std::move(view));
       }
       binding++;
@@ -149,11 +148,12 @@ IRenderTarget * Swapchain::AcquireFrame()
   return &m_targets[m_activeImageIdx];
 }
 
-void Swapchain::FlushFrame()
+IAwaitable * Swapchain::RenderFrame()
 {
-  Barrier passBarrier = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
-  FinishImage(m_activeImageIdx, passBarrier);
+  AsyncTask * task = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
+  FinishImage(m_activeImageIdx, task);
   m_imageAvailableSemaphore = VK_NULL_HANDLE;
+  return task;
 }
 
 ISubpass * Swapchain::CreateSubpass()

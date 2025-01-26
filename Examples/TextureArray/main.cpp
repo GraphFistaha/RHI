@@ -39,8 +39,6 @@ bool ShouldSwitchNextImage = false;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->SetExtent(
-    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
   ShouldInvalidateScene = true;
 }
 
@@ -75,7 +73,7 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, co
 
   RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
 
-  RHI::ImageCreateArguments imageArgs{};
+  RHI::ImageDescription imageArgs{};
   imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;
@@ -160,7 +158,7 @@ int main()
   {
     glfwPollEvents();
 
-    ctx->GetTransferer()->Flush();
+    ctx->GetTransferer()->DoTransfer();
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
@@ -214,7 +212,7 @@ int main()
         subpass->EndPass();
         ShouldInvalidateScene = false;
       }
-      swapchain->FlushFrame();
+      swapchain->RenderFrame();
     }
   }
 

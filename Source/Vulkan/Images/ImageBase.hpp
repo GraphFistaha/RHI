@@ -27,12 +27,11 @@ protected:
 
 public:
   virtual void UploadImage(const uint8_t * data, const CopyImageArguments & args) override;
-  //void DownloadImage(const CopyImageArguments & args, uint8_t * data);
+  virtual void DownloadImage(void * srcPixelData, const CopyImageArguments & args) override;
   virtual size_t Size() const override;
   virtual ImageDescription GetDescription() const noexcept override;
 
 public:
-  friend const Context & GetContextFromImage(const ImageBase & image) noexcept;
   void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
 
   VkImage GetHandle() const noexcept { return m_image; }

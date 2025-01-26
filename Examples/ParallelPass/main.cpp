@@ -94,8 +94,6 @@ std::unique_ptr<Renderer> TriangleRenderer;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->SetExtent(
-    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
   TriangleRenderer->AsyncDrawScene();
 }
 

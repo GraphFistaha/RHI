@@ -37,7 +37,7 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-Barrier RenderPass::Draw(const RenderTarget & renderTarget,
+AsyncTask * RenderPass::Draw(const RenderTarget & renderTarget,
                              VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);

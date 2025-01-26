@@ -48,9 +48,9 @@ protected:
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
 
   VkExtent3D m_extent;
+  std::vector<std::unique_ptr<ImageBase>> m_images;
   std::vector<ImageView> m_views;
   std::vector<VkClearValue> m_clearValues;
-  std::vector<std::unique_ptr<ImageBase>> m_images;
 
 protected: // handle
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;

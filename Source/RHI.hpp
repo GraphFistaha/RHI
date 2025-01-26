@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <future>
 
 namespace RHI
 {
@@ -277,6 +278,13 @@ struct IInvalidable
   virtual void Invalidate() = 0;
 };
 
+struct IAwaitable
+{
+  virtual ~IAwaitable() = default;
+  /// @brief Wait for process completed
+  virtual bool Wait() noexcept = 0;
+};
+
 struct IUniformDescriptor : public IInvalidable
 {
   virtual ~IUniformDescriptor() = default;
@@ -369,7 +377,7 @@ struct ISwapchain
 {
   virtual ~ISwapchain() = default;
   virtual IRenderTarget * AcquireFrame() = 0;
-  virtual void FlushFrame() = 0;
+  virtual IAwaitable * RenderFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) noexcept = 0;
   virtual void SetExtent(const ImageExtent & extent) noexcept = 0;
   virtual void SetMultisampling(RHI::SamplesCount samples) noexcept = 0;
@@ -381,8 +389,7 @@ struct ISwapchain
 struct ITransferer
 {
   virtual ~ITransferer() = default;
-  virtual void DoTransfer() = 0;
-  virtual void Flush() = 0;
+  virtual IAwaitable * DoTransfer() = 0;
 };
 
 // ------------------- Data ------------------
@@ -413,7 +420,7 @@ struct IImageGPU
 {
   virtual ~IImageGPU() = default;
   virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
-  //virtual void DownloadImage(void * srcPixelData, CopyImageArguments & args) = 0;
+  virtual std::future<int> DownloadImage(const CopyImageArguments & args) = 0;
   virtual ImageDescription GetDescription() const noexcept = 0;
   /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
