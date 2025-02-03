@@ -102,7 +102,7 @@ const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcep
   return m_clearValues;
 }
 
-void RenderTarget::AddAttachment(uint32_t index, ImageBase && image, ImageView && view)
+void RenderTarget::AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image, ImageView && view)
 {
   while (index >= m_images.size())
   {
@@ -114,7 +114,7 @@ void RenderTarget::AddAttachment(uint32_t index, ImageBase && image, ImageView &
   m_invalidFramebuffer = true;
 
   m_views[index] = std::move(view);
-  m_images[index] = std::make_unique<ImageBase>(std::move(image));
+  m_images[index] = std::move(image);
 }
 
 void RHI::vulkan::RenderTarget::ClearAttachments() noexcept

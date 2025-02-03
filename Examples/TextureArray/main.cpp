@@ -61,7 +61,7 @@ struct PushConstant
 
 
 /// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path,
+std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const char * path,
                                                    bool with_alpha)
 {
   int w = 0, h = 0, channels = 3;
@@ -158,7 +158,7 @@ int main()
   {
     glfwPollEvents();
 
-    ctx->GetTransferer()->DoTransfer();
+    ctx->Flush();
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {

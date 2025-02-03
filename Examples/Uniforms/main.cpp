@@ -133,7 +133,7 @@ int main()
     transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
     x += 0.0001f;
-    ctx->GetTransferer()->Flush();
+    ctx->Flush();
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
@@ -157,7 +157,7 @@ int main()
         ShouldInvalidateScene = false;
       }
 
-      swapchain->FlushFrame();
+      swapchain->RenderFrame();
     }
 
     ctx->ClearResources();

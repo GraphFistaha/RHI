@@ -36,11 +36,11 @@ public: // IContext interface
   virtual ISwapchain * GetSurfaceSwapchain() override;
   virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) override;
-  virtual ITransferer * GetTransferer() const noexcept override;
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                  bool mapped = false) const override;
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) const override;
+                                                  bool mapped = false) override;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) override;
   virtual void ClearResources() override;
+  virtual void Flush() override;
 
 public: // RHI-only API
   VkInstance GetInstance() const noexcept;
@@ -53,7 +53,7 @@ public: // RHI-only API
   void WaitForIdle() const noexcept;
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
-  Transferer * GetInternalTransferer() const noexcept;
+  Transferer & GetTransferer() & noexcept;
   const memory::BuffersAllocator & GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
@@ -65,7 +65,7 @@ private:
   std::unique_ptr<memory::BuffersAllocator> m_allocator;
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
-  std::unique_ptr<Transferer> m_transferer;                  // TODO: potentially there is a list
+  std::unordered_map<std::thread::id, Transferer> m_transferers;
   std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
   LoggingFunc m_logFunc;
 

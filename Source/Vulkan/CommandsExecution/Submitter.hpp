@@ -20,6 +20,8 @@ struct Submitter : public CommandBuffer
   explicit Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
                      VkPipelineStageFlags waitStages);
   virtual ~Submitter() override = default;
+  Submitter(Submitter && rhs) noexcept;
+  Submitter & operator=(Submitter && rhs) noexcept;
 
   AsyncTask * Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores);
   void WaitForSubmitCompleted();

@@ -48,7 +48,7 @@ static constexpr uint32_t Indices[] = {0, 1, 2};
 // helper which incapsulated rendering code for some scene
 struct Renderer
 {
-  explicit Renderer(const RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window);
+  explicit Renderer(RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window);
 
   // draw scene in parallel
   void AsyncDrawScene()
@@ -134,11 +134,11 @@ int main()
   {
     glfwPollEvents();
     TriangleRenderer->UpdateGeometry();
-    auto sem = ctx->GetTransferer()->Flush();
+    ctx->Flush();
     if (auto * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
-      swapchain->FlushFrame();
+      swapchain->RenderFrame();
     }
   }
 
@@ -147,7 +147,7 @@ int main()
   return 0;
 }
 
-Renderer::Renderer(const RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window)
+Renderer::Renderer(RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window)
   : m_windowPtr(window)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering

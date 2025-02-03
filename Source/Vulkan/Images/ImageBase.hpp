@@ -2,32 +2,29 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan
-{
-struct Context;
-struct Transferer;
-namespace details
+#include "../ContextualObject.hpp"
+
+namespace RHI::vulkan::details
 {
 struct CommandBuffer;
-}
-} // namespace RHI::vulkan
+} // namespace RHI::vulkan::details
 
 namespace RHI::vulkan
 {
 /// @brief Base class for all images
-struct ImageBase : public IImageGPU
+struct ImageBase : public IImageGPU,
+                   public ContextualObject
 {
   virtual ~ImageBase() = default;
   ImageBase(ImageBase && rhs) noexcept;
   ImageBase & operator=(ImageBase && rhs) noexcept;
 
 protected:
-  explicit ImageBase(const Context & ctx, Transferer * transferer,
-                     const ImageDescription & description);
+  explicit ImageBase(Context & ctx, const ImageDescription & description);
 
 public:
   virtual void UploadImage(const uint8_t * data, const CopyImageArguments & args) override;
-  virtual void DownloadImage(void * srcPixelData, const CopyImageArguments & args) override;
+  virtual std::future<std::vector<uint8_t>> DownloadImage(const CopyImageArguments & args) override;
   virtual size_t Size() const override;
   virtual ImageDescription GetDescription() const noexcept override;
 
@@ -43,9 +40,6 @@ public:
   VkSampleCountFlagBits GetVulkanSamplesCount() const noexcept;
 
 protected:
-  const Context & m_context;
-  Transferer * m_transferer = nullptr;
-
   VkImage m_image = VK_NULL_HANDLE;
   VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
   ImageDescription m_description;

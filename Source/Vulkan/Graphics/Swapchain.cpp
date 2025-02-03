@@ -116,9 +116,8 @@ void Swapchain::InvalidateAttachments()
     {
       if (m_ownedImages[binding])
       {
-        ImageGPU image(m_context, m_context.GetInternalTransferer(), description);
-        ImageView view(m_context, image,
-                       utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
+        auto image = std::make_unique<ImageGPU>(const_cast<Context &>(m_context), description);
+        ImageView view(*image, utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
         target.AddAttachment(binding, std::move(image), std::move(view));
       }
       binding++;

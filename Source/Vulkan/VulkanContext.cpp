@@ -190,7 +190,6 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   m_allocator = std::make_unique<memory::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                            m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
-  m_transferer = std::make_unique<Transferer>(*this);
   m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
 }
 
@@ -212,26 +211,27 @@ std::unique_ptr<ISwapchain> Context::CreateOffscreenSwapchain(uint32_t width, ui
   return result;
 }
 
-ITransferer * Context::GetTransferer() const noexcept
-{
-  return m_transferer.get();
-}
-
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                 bool mapped /* = false*/) const
+                                                 bool mapped /* = false*/)
 {
   auto vkUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(usage);
-  return std::make_unique<BufferGPU>(*this, m_transferer.get(), size, vkUsage, mapped);
+  return std::make_unique<BufferGPU>(*this, size, vkUsage, mapped);
 }
 
-std::unique_ptr<IImageGPU> Context::AllocImage(const ImageDescription & args) const
+std::unique_ptr<IImageGPU> Context::AllocImage(const ImageDescription & args)
 {
-  return std::make_unique<ImageGPU>(*this, m_transferer.get(), args);
+  return std::make_unique<ImageGPU>(*this, args);
 }
 
 void Context::ClearResources()
 {
   m_gc->ClearObjects();
+}
+
+void Context::Flush()
+{
+  for (auto && [thread_id, transferer] : m_transferers)
+    transferer.DoTransfer();
 }
 
 VkInstance Context::GetInstance() const noexcept
@@ -280,9 +280,17 @@ void Context::WaitForIdle() const noexcept
   vkDeviceWaitIdle(GetDevice());
 }
 
-Transferer * Context::GetInternalTransferer() const noexcept
+Transferer & Context::GetTransferer() & noexcept
 {
-  return m_transferer.get();
+  auto id = std::this_thread::get_id();
+  auto it = m_transferers.find(id);
+  if (it == m_transferers.end())
+  {
+    bool inserted = false;
+    std::tie(it, inserted) = m_transferers.insert({id, Transferer(*this)});
+    assert(inserted);
+  }
+  return it->second;
 }
 
 const memory::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept

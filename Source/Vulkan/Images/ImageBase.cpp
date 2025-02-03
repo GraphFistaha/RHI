@@ -4,33 +4,31 @@
 #include "../Resources/BufferGPU.hpp"
 #include "../Resources/Transferer.hpp"
 #include "../Utils/CastHelper.hpp"
+#include "../VulkanContext.hpp"
 #include "ImageFormatsConversation.hpp"
 #include "ImageTraits.hpp"
 
 namespace RHI::vulkan
 {
-ImageBase::ImageBase(const Context & ctx, Transferer * transferer,
-                     const ImageDescription & description)
-  : m_context(ctx)
-  , m_transferer(transferer)
+ImageBase::ImageBase(Context & ctx, const ImageDescription & description)
+  : ContextualObject(ctx)
   , m_description(description)
 {
 }
 
 
 ImageBase::ImageBase(ImageBase && rhs) noexcept
-  : m_context(rhs.m_context)
+  : ContextualObject(std::move(rhs))
 {
-  std::swap(m_transferer, rhs.m_transferer);
   std::swap(m_image, rhs.m_image);
   std::swap(m_description, rhs.m_description);
 }
 
 ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
 {
-  if (this != &rhs && &m_context == &rhs.m_context)
+  if (this != &rhs)
   {
-    std::swap(m_transferer, rhs.m_transferer);
+    ContextualObject::operator=(std::move(rhs));
     std::swap(m_image, rhs.m_image);
     std::swap(m_description, rhs.m_description);
   }
@@ -39,9 +37,7 @@ ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
 
 void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & args)
 {
-  if (!m_transferer)
-    throw std::runtime_error("Image has no transferer. Async upload is impossible");
-  BufferGPU stagingBuffer(m_context, nullptr, Size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  BufferGPU stagingBuffer(GetContext(), Size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     utils::CopyImageFromHost(data, args.src.extent, args.src, args.hostFormat,
@@ -49,7 +45,7 @@ void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & arg
                              args.dst, GetVulkanFormat());
     mapped_ptr.reset();
     stagingBuffer.Flush();
-    m_transferer->UploadImage(this, std::move(stagingBuffer));
+    GetContext().GetTransferer().UploadImage(this, std::move(stagingBuffer));
   }
   else
   {
@@ -57,8 +53,9 @@ void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & arg
   }
 }
 
-void ImageBase::DownloadImage(void * srcPixelData, const CopyImageArguments & args)
+std::future<std::vector<uint8_t>> ImageBase::DownloadImage(const CopyImageArguments & args)
 {
+  return GetContext().GetTransferer().DownloadImage(this, args);
 }
 
 void ImageBase::SetImageLayout(details::CommandBuffer & commandBuffer,

@@ -15,6 +15,32 @@ Submitter::Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
 {
 }
 
+Submitter::Submitter(Submitter && rhs) noexcept
+  : CommandBuffer(std::move(rhs))
+  , m_newBarrier(std::move(rhs.m_newBarrier))
+  , m_oldBarrier(std::move(rhs.m_oldBarrier))
+{
+  std::swap(m_waitStages, rhs.m_waitStages);
+  std::swap(m_queue, rhs.m_queue);
+  std::swap(m_queueFamily, rhs.m_queueFamily);
+  std::swap(m_isFirstSubmit, rhs.m_isFirstSubmit);
+}
+
+Submitter & Submitter::operator=(Submitter && rhs) noexcept
+{
+  if (this != &rhs)
+  {
+    CommandBuffer::operator=(std::move(rhs));
+    std::swap(m_waitStages, rhs.m_waitStages);
+    std::swap(m_newBarrier, rhs.m_newBarrier);
+    std::swap(m_oldBarrier, rhs.m_oldBarrier);
+    std::swap(m_queue, rhs.m_queue);
+    std::swap(m_queueFamily, rhs.m_queueFamily);
+    std::swap(m_isFirstSubmit, rhs.m_isFirstSubmit);
+  }
+  return *this;
+}
+
 AsyncTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores)
 {
   const VkSemaphore signalSem = m_newBarrier.GetSemaphore();

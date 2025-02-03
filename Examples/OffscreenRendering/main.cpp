@@ -48,7 +48,10 @@ int main()
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       auto * awaitable = swapchain->RenderFrame();
       awaitable->Wait();
-      renderTarget->GetImage(0)->DownloadImage();
+      RHI::CopyImageArguments args;
+      auto future = renderTarget->GetImage(0)->DownloadImage(args);
+      ctx->Flush();
+      future.wait();
     }
     t += 0.001f;
   }

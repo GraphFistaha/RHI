@@ -40,7 +40,7 @@ public:
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
-  void AddAttachment(uint32_t index, ImageBase && image, ImageView && view);
+  void AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image, ImageView && view);
   void ClearAttachments() noexcept;
 
 protected:

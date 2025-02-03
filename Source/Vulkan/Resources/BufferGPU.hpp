@@ -1,23 +1,23 @@
 #pragma once
 #include <RHI.hpp>
 
+#include "../ContextualObject.hpp"
 #include "../Memory/MemoryBlock.hpp"
 
 namespace RHI::vulkan
 {
 struct Context;
-struct Transferer;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct BufferGPU : public IBufferGPU
+struct BufferGPU : public IBufferGPU,
+                   public ContextualObject
 {
   using IBufferGPU::ScopedPointer;
 
-  explicit BufferGPU(const Context & ctx, Transferer * transferer, size_t size,
-                     VkBufferUsageFlags usage, bool mapped = false);
+  explicit BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool mapped = false);
   virtual ~BufferGPU() override;
 
   BufferGPU(BufferGPU && rhs) noexcept;
@@ -34,8 +34,6 @@ public:
   VkBuffer GetHandle() const noexcept;
 
 private:
-  const Context & m_context;
-  Transferer * m_transferer = nullptr;
   memory::MemoryBlock m_memBlock;
   VkBuffer m_buffer = VK_NULL_HANDLE;
 

@@ -10,9 +10,8 @@
 namespace RHI::vulkan
 {
 
-ImageGPU::ImageGPU(const Context & ctx, Transferer * transferer,
-                   const ImageDescription & description)
-  : ImageBase(ctx, transferer, description)
+ImageGPU::ImageGPU(Context & ctx, const ImageDescription & description)
+  : ImageBase(ctx, description)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   allocation_flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
@@ -23,7 +22,7 @@ ImageGPU::ImageGPU(const Context & ctx, Transferer * transferer,
 
 ImageGPU::~ImageGPU()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
 }
 
 ImageGPU::ImageGPU(ImageGPU && rhs) noexcept

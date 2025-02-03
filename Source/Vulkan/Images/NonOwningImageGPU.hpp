@@ -6,18 +6,11 @@
 
 namespace RHI::vulkan
 {
-struct Context;
-struct Transferer;
-} // namespace RHI::vulkan
-
-namespace RHI::vulkan
-{
 
 /// @brief image which can be built from already existing image (f.e from swapchainKHR)
 struct NonOwningImageGPU : public ImageBase
 {
-  explicit NonOwningImageGPU(const Context & ctx, Transferer * transferer,
-                             const ImageDescription & description, VkImage image,
+  explicit NonOwningImageGPU(Context & ctx, const ImageDescription & description, VkImage image,
                              VkImageLayout layout);
   virtual ~NonOwningImageGPU() override = default;
 };

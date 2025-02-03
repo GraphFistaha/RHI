@@ -9,10 +9,8 @@
 namespace RHI::vulkan
 {
 
-BufferGPU::BufferGPU(const Context & ctx, Transferer * transferer, size_t size,
-                     VkBufferUsageFlags usage, bool mapped /* = false*/)
-  : m_context(ctx)
-  , m_transferer(transferer)
+BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool mapped /* = false*/)
+  : ContextualObject(ctx)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   if (mapped)
@@ -25,32 +23,31 @@ BufferGPU::BufferGPU(const Context & ctx, Transferer * transferer, size_t size,
     allocation_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
   }
 
-  m_memBlock = m_context.GetBuffersAllocator().AllocBuffer(size,
-                                                           usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                           allocation_flags, VMA_MEMORY_USAGE_AUTO);
+  m_memBlock =
+    GetContext().GetBuffersAllocator().AllocBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                   allocation_flags, VMA_MEMORY_USAGE_AUTO);
   m_buffer = m_memBlock.GetBuffer();
 }
 
 BufferGPU::~BufferGPU()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
 }
 
 BufferGPU::BufferGPU(BufferGPU && rhs) noexcept
-  : m_context(rhs.m_context)
+  : ContextualObject(std::move(rhs))
 {
   std::swap(m_buffer, rhs.m_buffer);
   std::swap(m_memBlock, rhs.m_memBlock);
-  std::swap(m_transferer, rhs.m_transferer);
 }
 
 BufferGPU & BufferGPU::operator=(BufferGPU && rhs) noexcept
 {
-  if (this != &rhs && &m_context == &rhs.m_context)
+  if (this != &rhs)
   {
+    ContextualObject::operator=(std::move(rhs));
     std::swap(m_buffer, rhs.m_buffer);
     std::swap(m_memBlock, rhs.m_memBlock);
-    std::swap(m_transferer, rhs.m_transferer);
   }
   return *this;
 }
@@ -62,9 +59,7 @@ void BufferGPU::UploadSync(const void * data, size_t size, size_t offset)
 
 void BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
 {
-  BufferGPU stagingBuffer(m_context, nullptr, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-  stagingBuffer.UploadSync(data, size, offset);
-  m_transferer->UploadBuffer(this, std::move(stagingBuffer));
+  GetContext().GetTransferer().UploadBuffer(this, std::move(stagingBuffer));
 }
 
 IBufferGPU::ScopedPointer BufferGPU::Map()

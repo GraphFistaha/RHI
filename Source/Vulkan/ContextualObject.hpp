@@ -7,16 +7,15 @@ struct Context;
 /// @brief object owned by context
 struct ContextualObject
 {
-  ContextualObject() = default;
-  explicit ContextualObject(const Context & ctx)
-    : m_context(&ctx)
-  {
-  }
+  explicit ContextualObject(Context & ctx);
   virtual ~ContextualObject() = default;
+  ContextualObject(ContextualObject && rhs) noexcept;
+  ContextualObject & operator=(ContextualObject && rhs) noexcept;
 
   const Context & GetContext() const & noexcept;
+  Context & GetContext() & noexcept;
 
-protected:
-  const Context * m_context = nullptr;
+private:
+  Context * m_context = nullptr;
 };
 } // namespace RHI::vulkan

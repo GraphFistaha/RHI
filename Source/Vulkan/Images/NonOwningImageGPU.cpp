@@ -3,10 +3,9 @@
 namespace RHI::vulkan
 {
 
-NonOwningImageGPU::NonOwningImageGPU(const Context & ctx, Transferer * transferer,
-                                     const ImageDescription & description, VkImage image,
-                                     VkImageLayout layout)
-  : ImageBase(ctx, transferer, description)
+NonOwningImageGPU::NonOwningImageGPU(Context & ctx, const ImageDescription & description,
+                                     VkImage image, VkImageLayout layout)
+  : ImageBase(ctx, description)
 {
   m_image = image;
   m_layout = layout;

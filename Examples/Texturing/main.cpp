@@ -63,7 +63,7 @@ struct PushConstant
 
 
 /// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, const char * path,
+std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const char * path,
                                                    bool with_alpha)
 {
   int w = 0, h = 0, channels = 3;
@@ -75,7 +75,7 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(const RHI::IContext & ctx, co
 
   RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
 
-  RHI::ImageCreateArguments imageArgs{};
+  RHI::ImageDescription imageArgs{};
   imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;
@@ -159,7 +159,7 @@ int main()
   {
     glfwPollEvents();
 
-    ctx->GetTransferer()->Flush();
+    ctx->Flush();
 
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
@@ -212,7 +212,7 @@ int main()
         subpass->EndPass();
         ShouldInvalidateScene = false;
       }
-      swapchain->FlushFrame();
+      swapchain->RenderFrame();
     }
   }
 

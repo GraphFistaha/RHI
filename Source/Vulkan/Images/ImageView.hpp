@@ -14,13 +14,13 @@ struct Context;
 namespace RHI::vulkan
 {
 /// @brief reference on image
-struct ImageView final : public ContextualObject
+struct ImageView final
 {
   ImageView() = default;
-  explicit ImageView(const Context & ctx, const ImageBase & image, VkImageView view);
-  explicit ImageView(const Context & ctx, const ImageBase & image, VkImageViewType type);
+  explicit ImageView(const ImageBase & image, VkImageView view);
+  explicit ImageView(const ImageBase & image, VkImageViewType type);
 
-  virtual ~ImageView() override;
+  ~ImageView();
   ImageView(ImageView && rhs) noexcept;
   ImageView & operator=(ImageView && rhs) noexcept;
 
@@ -31,6 +31,7 @@ struct ImageView final : public ContextualObject
   VkImageView GetImageView() const noexcept { return m_view; }
 
 private:
+  const ImageBase * m_imagePtr = nullptr;
   bool m_owns = false;
   VkImageView m_view = VK_NULL_HANDLE;
 

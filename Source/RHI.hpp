@@ -4,10 +4,10 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
-#include <future>
 
 namespace RHI
 {
@@ -386,12 +386,6 @@ struct ISwapchain
   virtual ISubpass * CreateSubpass() = 0;
 };
 
-struct ITransferer
-{
-  virtual ~ITransferer() = default;
-  virtual IAwaitable * DoTransfer() = 0;
-};
-
 // ------------------- Data ------------------
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
@@ -420,7 +414,7 @@ struct IImageGPU
 {
   virtual ~IImageGPU() = default;
   virtual void UploadImage(const uint8_t * srcPixelData, const CopyImageArguments & args) = 0;
-  virtual std::future<int> DownloadImage(const CopyImageArguments & args) = 0;
+  virtual std::future<std::vector<uint8_t>> DownloadImage(const CopyImageArguments & args) = 0;
   virtual ImageDescription GetDescription() const noexcept = 0;
   /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
@@ -435,17 +429,17 @@ struct IContext
   virtual ISwapchain * GetSurfaceSwapchain() = 0;
   virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) = 0;
-  virtual ITransferer * GetTransferer() const noexcept = 0;
   virtual void ClearResources() = 0;
+  virtual void Flush() = 0;
 
 
   /// @brief create offscreen framebuffer
   //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const = 0;
   /// @brief creates BufferGPU
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                  bool mapped = false) const = 0;
+                                                  bool mapped = false) = 0;
 
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) const = 0;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) = 0;
 };
 
 /// @brief Factory-function to create context

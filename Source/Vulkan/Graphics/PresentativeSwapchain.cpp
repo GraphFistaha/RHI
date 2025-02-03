@@ -90,9 +90,9 @@ void PresentativeSwapchain::InvalidateAttachments()
   auto views_it = m_swapchainImageViews.begin();
   for (auto && target : m_targets)
   {
-    NonOwningImageGPU image(m_context, m_context.GetInternalTransferer(), imageDescription,
-                            *imgs_it, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    ImageView view(m_context, image, *views_it);
+    auto image = std::make_unique<NonOwningImageGPU>(const_cast<Context &>(m_context), imageDescription, *imgs_it,
+                            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    ImageView view(*image, *views_it);
     target.AddAttachment(binding, std::move(image), std::move(view));
     imgs_it++;
     views_it++;
