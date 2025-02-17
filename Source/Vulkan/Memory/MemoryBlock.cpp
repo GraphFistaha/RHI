@@ -4,7 +4,7 @@
 
 #include "../Images/ImageInfo.hpp"
 #include "../Utils/CastHelper.hpp"
-#include "BuffersAllocator.hpp"
+#include "MemoryAllocator.hpp"
 
 namespace RHI::vulkan::memory
 {

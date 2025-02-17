@@ -36,7 +36,6 @@ public:
 
 private:
   memory::MemoryBlock m_memBlock;
-  VkBuffer m_buffer = VK_NULL_HANDLE;
 
 private:
   BufferGPU(const BufferGPU &) = delete;

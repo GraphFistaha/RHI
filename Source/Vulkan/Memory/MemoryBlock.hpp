@@ -22,7 +22,7 @@ struct MemoryBlock final
   operator bool() const noexcept;
 
 private:
-  friend struct BuffersAllocator;
+  friend struct MemoryAllocator;
   using AllocInfoRawMemory = std::array<uint32_t, 16>;
 
   InternalObjectHandle m_allocator = nullptr;

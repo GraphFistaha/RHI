@@ -10,7 +10,7 @@
 
 #include "GarbageCollector.hpp"
 #include "Graphics/PresentativeSwapchain.hpp"
-#include "Memory/BuffersAllocator.hpp"
+#include "Memory/MemoryAllocator.hpp"
 #include "Resources/Transferer.hpp"
 
 namespace RHI::vulkan
@@ -54,7 +54,7 @@ public: // RHI-only API
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   Transferer & GetTransferer() & noexcept;
-  const memory::BuffersAllocator & GetBuffersAllocator() const & noexcept;
+  const memory::MemoryAllocator& GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
 private:
@@ -62,7 +62,7 @@ private:
   size_t m_validatationMark = kValidationMark;
   struct Impl;
   std::unique_ptr<Impl> m_impl;
-  std::unique_ptr<memory::BuffersAllocator> m_allocator;
+  std::unique_ptr<memory::MemoryAllocator> m_allocator;
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
   std::unordered_map<std::thread::id, Transferer> m_transferers;

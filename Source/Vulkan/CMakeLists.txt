@@ -6,8 +6,8 @@ PRIVATE
 	ContextualObject.hpp
 	GarbageCollector.cpp
 	GarbageCollector.hpp
-	Memory/BuffersAllocator.hpp
-	Memory/BuffersAllocator.cpp
+	Memory/MemoryAllocator.hpp
+	Memory/MemoryAllocator.cpp
 	Memory/MemoryBlock.cpp
 	Memory/MemoryBlock.hpp
 

@@ -26,7 +26,6 @@ BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool 
   m_memBlock =
     GetContext().GetBuffersAllocator().AllocBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                    allocation_flags, VMA_MEMORY_USAGE_AUTO);
-  m_buffer = m_memBlock.GetBuffer();
 }
 
 BufferGPU::~BufferGPU()
@@ -37,7 +36,6 @@ BufferGPU::~BufferGPU()
 BufferGPU::BufferGPU(BufferGPU && rhs) noexcept
   : ContextualObject(std::move(rhs))
 {
-  std::swap(m_buffer, rhs.m_buffer);
   std::swap(m_memBlock, rhs.m_memBlock);
 }
 
@@ -46,7 +44,6 @@ BufferGPU & BufferGPU::operator=(BufferGPU && rhs) noexcept
   if (this != &rhs)
   {
     ContextualObject::operator=(std::move(rhs));
-    std::swap(m_buffer, rhs.m_buffer);
     std::swap(m_memBlock, rhs.m_memBlock);
   }
   return *this;
@@ -85,6 +82,6 @@ size_t BufferGPU::Size() const noexcept
 
 VkBuffer BufferGPU::GetHandle() const noexcept
 {
-  return static_cast<VkBuffer>(m_buffer);
+  return m_memBlock.GetBuffer();
 }
 } // namespace RHI::vulkan

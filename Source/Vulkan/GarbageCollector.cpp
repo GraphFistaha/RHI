@@ -25,9 +25,9 @@ static const std::unordered_map<std::type_index, void *> kDestroyFuncs =
    {typeid(VkPipeline), vkDestroyPipeline},
    {typeid(VkPipelineLayout), vkDestroyPipelineLayout},
    {typeid(VkPipelineCache), vkDestroyPipelineCache},
-   {typeid(VkBuffer), nullptr}, // because VkBuffer must be free with BuffersAllocator
+   {typeid(VkBuffer), nullptr}, // because VkBuffer must be free with MemoryAllocator
    {typeid(VkBufferView), vkDestroyBufferView},
-   {typeid(VkImage), nullptr}, // because VkImage must be free with BuffersAllocator
+   {typeid(VkImage), nullptr}, // because VkImage must be free with MemoryAllocator
    {typeid(VkImageView), vkDestroyImageView},
    {typeid(VkDescriptorPool), vkDestroyDescriptorPool},
    {typeid(VkDescriptorSetLayout), vkDestroyDescriptorSetLayout},

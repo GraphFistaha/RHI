@@ -1,4 +1,4 @@
-#include "BuffersAllocator.hpp"
+#include "MemoryAllocator.hpp"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -7,8 +7,8 @@
 
 namespace RHI::vulkan::memory
 {
-BuffersAllocator::BuffersAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
-                                   uint32_t vulkanVersion)
+MemoryAllocator::MemoryAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
+                                       uint32_t vulkanVersion)
 {
   static_assert(
     sizeof(VmaAllocationInfo) <= sizeof(MemoryBlock::AllocInfoRawMemory),
@@ -32,19 +32,19 @@ BuffersAllocator::BuffersAllocator(VkInstance instance, VkPhysicalDevice gpu, Vk
   m_allocator = allocator;
 }
 
-BuffersAllocator::~BuffersAllocator()
+MemoryAllocator::~MemoryAllocator()
 {
   vmaDestroyAllocator(reinterpret_cast<VmaAllocator>(m_allocator));
 }
 
-MemoryBlock BuffersAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage, uint32_t flags,
-                                          uint32_t memoryUsage) const
+MemoryBlock MemoryAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage, uint32_t flags,
+                                            uint32_t memoryUsage) const
 {
   return MemoryBlock(m_allocator, size, usage, flags, memoryUsage);
 }
 
-MemoryBlock BuffersAllocator::AllocImage(const ImageCreateArguments & description, uint32_t flags,
-                                         uint32_t memoryUsage) const
+MemoryBlock MemoryAllocator::AllocImage(const ImageCreateArguments & description, uint32_t flags,
+                                           uint32_t memoryUsage) const
 {
   return MemoryBlock(m_allocator, description, flags, memoryUsage);
 }

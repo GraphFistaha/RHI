@@ -2,7 +2,7 @@
 
 #include <vk_mem_alloc.h>
 
-#include "../Memory/BuffersAllocator.hpp"
+#include "../Memory/MemoryAllocator.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 

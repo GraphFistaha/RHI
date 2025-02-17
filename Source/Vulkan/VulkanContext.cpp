@@ -187,7 +187,7 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
-  m_allocator = std::make_unique<memory::BuffersAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
+  m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                            m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
   m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
@@ -293,7 +293,7 @@ Transferer & Context::GetTransferer() & noexcept
   return it->second;
 }
 
-const memory::BuffersAllocator & Context::GetBuffersAllocator() const & noexcept
+const memory::MemoryAllocator& Context::GetBuffersAllocator() const & noexcept
 {
   return *m_allocator;
 }

@@ -7,13 +7,13 @@
 namespace RHI::vulkan::memory
 {
 
-struct BuffersAllocator final
+struct MemoryAllocator final
 {
   using AllocatorHandle = void *;
 
-  explicit BuffersAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
+  explicit MemoryAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
                             uint32_t vulkanVersion);
-  ~BuffersAllocator();
+  ~MemoryAllocator();
 
   AllocatorHandle GetHandle() const noexcept { return m_allocator; }
 
