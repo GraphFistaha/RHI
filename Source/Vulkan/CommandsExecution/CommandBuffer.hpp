@@ -4,19 +4,16 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan
-{
-struct Context;
-}
+#include "../ContextualObject.hpp"
 
 namespace RHI::vulkan::details
 {
-struct CommandBuffer
+struct CommandBuffer : public ContextualObject
 {
-  explicit CommandBuffer(const Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
+  explicit CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
   virtual ~CommandBuffer();
   CommandBuffer(CommandBuffer && rhs) noexcept;
-  CommandBuffer & operator= (CommandBuffer && rhs);
+  CommandBuffer & operator=(CommandBuffer && rhs) noexcept;
 
   void BeginWriting() const;
   void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
@@ -37,9 +34,6 @@ struct CommandBuffer
 public:
   VkCommandBuffer GetHandle() const noexcept { return m_buffer; }
 
-protected:
-  const Context & m_context;
-
 private:
   VkCommandBufferLevel m_level;
   VkCommandPool m_pool = VK_NULL_HANDLE;
@@ -51,8 +45,7 @@ template<typename InIt>
 void AccumulateCommands(CommandBuffer & dst, InIt begin, InIt end)
 {
   std::vector<VkCommandBuffer> buffers;
-  std::transform(begin, end, std::back_inserter(buffers),
-                 [](const CommandBuffer & buf)
+  std::transform(begin, end, std::back_inserter(buffers), [](const CommandBuffer & buf)
                  { return static_cast<VkCommandBuffer>(buf.GetHandle()); });
   dst.AddCommands(buffers);
 }

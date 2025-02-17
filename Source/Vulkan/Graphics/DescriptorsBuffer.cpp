@@ -7,8 +7,8 @@
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "SubpassConfiguration.hpp"
 #include "Subpass.hpp"
+#include "SubpassConfiguration.hpp"
 
 
 namespace RHI::vulkan
@@ -45,7 +45,7 @@ VkDescriptorPool CreateDescriptorPool(
 }
 
 VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
-                                      VkDescriptorSetLayout layout)
+                                    VkDescriptorSetLayout layout)
 {
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -111,8 +111,8 @@ constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 } // namespace details
 
 
-DescriptorBuffer::DescriptorBuffer(const Context & ctx, SubpassConfiguration & owner)
-  : m_context(ctx)
+DescriptorBuffer::DescriptorBuffer(Context & ctx, SubpassConfiguration & owner)
+  : ContextualObject(ctx)
   , m_owner(owner)
 {
 }
@@ -120,9 +120,9 @@ DescriptorBuffer::DescriptorBuffer(const Context & ctx, SubpassConfiguration & o
 DescriptorBuffer::~DescriptorBuffer()
 {
   if (m_layout)
-    vkDestroyDescriptorSetLayout(m_context.GetDevice(), m_layout, nullptr);
+    vkDestroyDescriptorSetLayout(GetContext().GetDevice(), m_layout, nullptr);
   if (m_pool)
-    vkDestroyDescriptorPool(m_context.GetDevice(), m_pool, nullptr);
+    vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
 }
 
 void DescriptorBuffer::Invalidate()
@@ -132,8 +132,8 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder.Make(m_context.GetDevice());
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
+    auto new_layout = m_layoutBuilder.Make(GetContext().GetDevice());
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
     m_layout = new_layout;
     m_invalidLayout = false;
     m_invalidSet = true;
@@ -141,10 +141,10 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidPool || !m_pool)
   {
-    auto new_pool = details::CreateDescriptorPool(m_context, m_capacity);
+    auto new_pool = details::CreateDescriptorPool(GetContext(), m_capacity);
     if (!!m_pool)
     {
-      vkDestroyDescriptorPool(m_context.GetDevice(), m_pool, nullptr);
+      vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
       m_set = VK_NULL_HANDLE;
     }
     m_pool = new_pool;
@@ -154,12 +154,12 @@ void DescriptorBuffer::Invalidate()
 
   if (m_invalidSet || !m_set)
   {
-    auto new_set = details::CreateDescriptorSet(m_context, m_pool, m_layout);
+    auto new_set = details::CreateDescriptorSet(GetContext(), m_pool, m_layout);
 
     if (m_set)
     {
       VkDescriptorSet deleting_set = m_set;
-      vkFreeDescriptorSets(m_context.GetDevice(), m_pool, 1, &deleting_set);
+      vkFreeDescriptorSets(GetContext().GetDevice(), m_pool, 1, &deleting_set);
     }
     m_set = new_set;
     m_invalidSet = false;
@@ -168,13 +168,13 @@ void DescriptorBuffer::Invalidate()
   for (auto && [type, oneTypeDescriptors] : m_bufferUniformDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
-      details::UpdateDescriptorResource(m_context, m_set, descriptor);
+      details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
   }
 
   for (auto && [type, oneTypeDescriptors] : m_samplerDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
-      details::UpdateDescriptorResource(m_context, m_set, descriptor);
+      details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
   }
 
   m_owner.GetSubpassOwner().SetDirtyCacheCommands();
@@ -191,7 +191,7 @@ void DescriptorBuffer::DeclareUniformsArray(uint32_t binding, ShaderType shaderS
 
   for (uint32_t i = 0; i < size; ++i)
   {
-    BufferUniform new_uniform(m_context, *this, type, binding, i);
+    BufferUniform new_uniform(GetContext(), *this, type, binding, i);
     auto && uniform = descriptors.emplace_back(std::move(new_uniform));
     out_array[i] = &uniform;
   }
@@ -208,7 +208,7 @@ void DescriptorBuffer::DeclareSamplersArray(uint32_t binding, ShaderType shaderS
   m_capacity[type] += size;
   for (uint32_t i = 0; i < size; ++i)
   {
-    SamplerUniform new_uniform(m_context, *this, type, binding, i);
+    SamplerUniform new_uniform(GetContext(), *this, type, binding, i);
     auto && uniform = descriptors.emplace_back(std::move(new_uniform));
     out_array[i] = &uniform;
   }
@@ -218,7 +218,7 @@ void DescriptorBuffer::OnDescriptorChanged(const BufferUniform & descriptor) noe
 {
   if (m_set)
   {
-    details::UpdateDescriptorResource(m_context, m_set, descriptor);
+    details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
     m_owner.GetSubpassOwner().SetDirtyCacheCommands();
   }
 }
@@ -227,7 +227,7 @@ void DescriptorBuffer::OnDescriptorChanged(const SamplerUniform & descriptor) no
 {
   if (m_set)
   {
-    details::UpdateDescriptorResource(m_context, m_set, descriptor);
+    details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
     m_owner.GetSubpassOwner().SetDirtyCacheCommands();
   }
 }

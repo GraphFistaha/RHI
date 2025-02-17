@@ -4,14 +4,14 @@
 
 namespace RHI::vulkan::details
 {
-Submitter::Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
+Submitter::Submitter(Context & ctx, VkQueue queue, uint32_t queueFamily,
                      VkPipelineStageFlags waitStages)
   : CommandBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_PRIMARY)
   , m_queueFamily(queueFamily)
   , m_queue(queue)
   , m_waitStages(waitStages)
-  , m_newBarrier(m_context)
-  , m_oldBarrier(m_context)
+  , m_newBarrier(ctx)
+  , m_oldBarrier(ctx)
 {
 }
 

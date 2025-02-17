@@ -15,7 +15,7 @@ namespace RHI::vulkan
 /// @brief vulkan implementation for renderer
 struct PresentativeSwapchain final : public Swapchain
 {
-  explicit PresentativeSwapchain(const Context & ctx, const VkSurfaceKHR surface);
+  explicit PresentativeSwapchain(Context & ctx, const VkSurfaceKHR surface);
   virtual ~PresentativeSwapchain() override;
 
 public: // RHI-only API

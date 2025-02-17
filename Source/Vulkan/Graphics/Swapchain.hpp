@@ -6,25 +6,22 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../ContextualObject.hpp"
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
 
 namespace RHI::vulkan
 {
-struct Context;
-}
-
-namespace RHI::vulkan
-{
 
 /// @brief vulkan implementation for renderer
-struct Swapchain : public IRenderPass
+struct Swapchain : public IRenderPass,
+                   public ContextualObject
 {
-  explicit Swapchain(const Context & ctx);
+  explicit Swapchain(Context & ctx);
   virtual ~Swapchain() override;
 
 public: // IRenderPass interface
-  /// begins rendering 
+  /// begins rendering
   virtual IRenderTarget * BeginFrame() override;
   /// finish rendering
   virtual IAwaitable * EndFrame() override;
@@ -33,7 +30,8 @@ public: // IRenderPass interface
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
-  virtual void AddImageAttachment(uint32_t binding, const ImageCreateArguments & description) override;
+  virtual void AddImageAttachment(uint32_t binding,
+                                  const ImageCreateArguments & description) override;
   /// @brief removes all images from all frames
   virtual void ClearImageAttachments() noexcept override;
   /// @brief operation which add or remove some frames from swapchain
@@ -57,7 +55,6 @@ protected:
 protected:
   static constexpr uint32_t InvalidImageIndex = -1;
 
-  const Context & m_context;
   std::vector<RenderTarget> m_targets;
   RenderPass m_renderPass;
 

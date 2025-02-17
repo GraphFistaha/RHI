@@ -8,9 +8,9 @@
 namespace RHI::vulkan
 {
 
-SubpassConfiguration::SubpassConfiguration(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
-                   uint32_t subpassIndex)
-  : m_context(ctx)
+SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner,
+                                           const RenderPass & renderPass, uint32_t subpassIndex)
+  : ContextualObject(ctx)
   , m_owner(owner)
   , m_renderPass(renderPass)
   , m_subpassIndex(subpassIndex)
@@ -20,8 +20,8 @@ SubpassConfiguration::SubpassConfiguration(const Context & ctx, Subpass & owner,
 
 SubpassConfiguration::~SubpassConfiguration()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
 }
 
 void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::path & path)
@@ -42,28 +42,32 @@ void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, Input
 }
 
 void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
-                                 uint32_t elemsCount, InputAttributeElementType elemsType)
+                                             uint32_t elemsCount,
+                                             InputAttributeElementType elemsType)
 {
   m_pipelineBuilder.AddInputAttribute(binding, location, offset, elemsCount, elemsType);
   m_invalidPipeline = true;
 }
 
-IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(uint32_t binding, ShaderType shaderStage)
+IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(uint32_t binding,
+                                                                ShaderType shaderStage)
 {
   BufferUniform * result = nullptr;
   m_descriptors.DeclareUniformsArray(binding, shaderStage, 1, &result);
   return result;
 }
 
-ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(uint32_t binding, ShaderType shaderStage)
+ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(uint32_t binding,
+                                                                 ShaderType shaderStage)
 {
   SamplerUniform * result = nullptr;
   m_descriptors.DeclareSamplersArray(binding, shaderStage, 1, &result);
   return result;
 }
 
-void SubpassConfiguration::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
-                                    ISamplerUniformDescriptor * out_array[])
+void SubpassConfiguration::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage,
+                                                uint32_t size,
+                                                ISamplerUniformDescriptor * out_array[])
 {
   m_descriptors.DeclareSamplersArray(binding, shaderStage, size,
                                      reinterpret_cast<SamplerUniform **>(out_array));
@@ -86,11 +90,11 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipelineLayout || !m_layout)
   {
-    auto new_layout = m_layoutBuilder.Make(m_context.GetDevice(), m_descriptors.GetLayoutHandle(),
-                                           m_pushConstantRange.has_value()
-                                             ? &m_pushConstantRange.value()
-                                             : nullptr);
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
+    auto new_layout =
+      m_layoutBuilder.Make(GetContext().GetDevice(), m_descriptors.GetLayoutHandle(),
+                           m_pushConstantRange.has_value() ? &m_pushConstantRange.value()
+                                                           : nullptr);
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
     m_layout = new_layout;
     m_invalidPipelineLayout = false;
     m_invalidPipeline = true;
@@ -98,10 +102,10 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    auto new_pipeline = m_pipelineBuilder.Make(m_context.GetDevice(), m_renderPass.GetHandle(),
+    auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(), m_renderPass.GetHandle(),
                                                m_subpassIndex, m_layout);
-    m_context.Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
+    GetContext().Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
   }
@@ -115,7 +119,8 @@ void SubpassConfiguration::SetInvalid()
   m_invalidPipelineLayout = true;
 }
 
-void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint)
+void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
+                                               VkPipelineBindPoint bindPoint)
 {
   assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);

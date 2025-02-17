@@ -8,8 +8,8 @@
 namespace RHI::vulkan
 {
 
-RenderPass::RenderPass(const Context & ctx)
-  : m_context(ctx)
+RenderPass::RenderPass(Context & ctx)
+  : ContextualObject(ctx)
   , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
   , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
   , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
@@ -17,12 +17,12 @@ RenderPass::RenderPass(const Context & ctx)
 {
   // —оздает начальный subpass. ” RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастс€ и в целом все сломаетс€.
-  auto && initialSubpass = m_subpasses.emplace_back(m_context, *this, 0, m_graphicsQueueFamily);
+  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, m_graphicsQueueFamily);
 }
 
 RenderPass::~RenderPass()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
 ISubpass * RenderPass::CreateSubpass()
@@ -30,7 +30,7 @@ ISubpass * RenderPass::CreateSubpass()
   if (m_createSubpassCallsCounter++ == 0)
     return &m_subpasses.front();
 
-  auto && subpass = m_subpasses.emplace_back(m_context, *this,
+  auto && subpass = m_subpasses.emplace_back(GetContext(), *this,
                                              static_cast<uint32_t>(m_subpasses.size()),
                                              m_graphicsQueueFamily);
   m_invalidRenderPass = true;
@@ -111,9 +111,9 @@ void RenderPass::Invalidate()
       m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
-    auto new_renderpass = m_builder.Make(m_context.GetDevice());
-    m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
+    auto new_renderpass = m_builder.Make(GetContext().GetDevice());
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;
     UpdateRenderingReadyFlag();
     m_invalidRenderPass = false;

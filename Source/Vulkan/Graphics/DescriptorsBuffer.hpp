@@ -5,6 +5,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../ContextualObject.hpp"
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
 #include "Uniforms/BufferUniform.hpp"
@@ -12,16 +13,15 @@
 
 namespace RHI::vulkan
 {
-struct Context;
 struct SubpassConfiguration;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct DescriptorBuffer final
+struct DescriptorBuffer final : public ContextualObject
 {
-  explicit DescriptorBuffer(const Context & ctx, SubpassConfiguration & owner);
+  explicit DescriptorBuffer(Context & ctx, SubpassConfiguration & owner);
   ~DescriptorBuffer();
 
   void Invalidate();
@@ -46,7 +46,6 @@ private:
   using SamplerUniforms = std::deque<SamplerUniform>;
 
 private:
-  const Context & m_context;
   SubpassConfiguration & m_owner;
 
   VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;

@@ -3,13 +3,13 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../ContextualObject.hpp"
 #include "../Utils/PipelineBuilder.hpp"
 #include "../Utils/PipelineLayoutBuilder.hpp"
 #include "DescriptorsBuffer.hpp"
 
 namespace RHI::vulkan
 {
-struct Context;
 struct RenderPass;
 struct Subpass;
 } // namespace RHI::vulkan
@@ -17,10 +17,11 @@ struct Subpass;
 namespace RHI::vulkan
 {
 
-struct SubpassConfiguration final : public ISubpassConfiguration
+struct SubpassConfiguration final : public ISubpassConfiguration,
+                                    public ContextualObject
 {
-  explicit SubpassConfiguration(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
-                    uint32_t subpassIndex);
+  explicit SubpassConfiguration(Context & ctx, Subpass & owner, const RenderPass & renderPass,
+                                uint32_t subpassIndex);
   virtual ~SubpassConfiguration() override;
 
 public: // ISubpassConfiguration interface
@@ -50,7 +51,6 @@ public: // public internal API
   Subpass & GetSubpassOwner() & noexcept { return m_owner; }
 
 private:
-  const Context & m_context;
   const RenderPass & m_renderPass;
   Subpass & m_owner;
 

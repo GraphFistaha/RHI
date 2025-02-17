@@ -8,22 +8,23 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
+#include "../ContextualObject.hpp"
 #include "../Images/ImageView.hpp"
 #include "../Utils/RenderPassBuilder.hpp"
 #include "Subpass.hpp"
 
 namespace RHI::vulkan
 {
-struct Context;
 struct RenderTarget;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct RenderPass : public IInvalidable
+struct RenderPass : public IInvalidable,
+                    public ContextualObject
 {
-  explicit RenderPass(const Context & ctx);
+  explicit RenderPass(Context & ctx);
   virtual ~RenderPass() override;
 
 public: // IRenderPass Interface
@@ -42,8 +43,6 @@ public:
   void UpdateRenderingReadyFlag() noexcept;
 
 private:
-  const Context & m_context;
-
   uint32_t m_graphicsQueueFamily;
   VkQueue m_graphicsQueue;
   std::vector<VkAttachmentDescription> m_cachedAttachments;

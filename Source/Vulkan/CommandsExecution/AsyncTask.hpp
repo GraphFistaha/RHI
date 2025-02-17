@@ -2,17 +2,15 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan
-{
-struct Context;
-}
+#include "../ContextualObject.hpp"
 
 namespace RHI::vulkan
 {
 
-struct AsyncTask : public RHI::IAwaitable
+struct AsyncTask : public RHI::IAwaitable,
+                   public ContextualObject
 {
-  explicit AsyncTask(const Context & ctx);
+  explicit AsyncTask(Context & ctx);
   virtual ~AsyncTask() override;
 
   AsyncTask(AsyncTask && rhs) noexcept;
@@ -27,7 +25,6 @@ public:
   VkFence GetFence() const noexcept { return m_fence; }
 
 private:
-  const Context & m_context;
   VkSemaphore m_semaphore = VK_NULL_HANDLE;
   VkFence m_fence = VK_NULL_HANDLE;
 

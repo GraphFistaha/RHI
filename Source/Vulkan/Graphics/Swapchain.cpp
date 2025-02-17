@@ -23,8 +23,8 @@ RHI::ShaderImageSlot GetShaderImageSlotByImageDescription(
 namespace RHI::vulkan
 {
 
-Swapchain::Swapchain(const Context & ctx)
-  : m_context(ctx)
+Swapchain::Swapchain(Context & ctx)
+  : ContextualObject(ctx)
   , m_renderPass(ctx)
 {
 }
@@ -56,7 +56,7 @@ void Swapchain::Invalidate()
     std::vector<RenderTarget> new_targets;
     new_targets.reserve(m_framesCount);
     for (uint32_t i = 0; i < m_framesCount; ++i)
-      new_targets.emplace_back(m_context);
+      new_targets.emplace_back(GetContext());
     m_targets = std::move(new_targets);
     m_framesCountChanged = false;
     m_extentChanged = true;
@@ -114,7 +114,7 @@ void Swapchain::InvalidateAttachments()
     {
       if (m_ownedImages[binding])
       {
-        auto image = std::make_unique<ImageGPU>(const_cast<Context &>(m_context), description);
+        auto image = std::make_unique<ImageGPU>(GetContext(), description);
         ImageView view(*image, utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
         target.AddAttachment(binding, std::move(image), std::move(view));
       }

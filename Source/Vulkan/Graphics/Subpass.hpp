@@ -6,21 +6,22 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
+#include "../ContextualObject.hpp"
 #include "SubpassConfiguration.hpp"
 #include "SubpassLayout.hpp"
 
 namespace RHI::vulkan
 {
-struct Context;
 struct RenderPass;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
-struct Subpass : public ISubpass
+struct Subpass : public ISubpass,
+                 public ContextualObject
 {
   using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderImageSlot>;
-  explicit Subpass(const Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
+  explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
                    uint32_t familyIndex);
   virtual ~Subpass() override;
 
@@ -67,7 +68,6 @@ public:
   SubpassLayout & GetLayout() & noexcept;
 
 private:
-  const Context & m_context;
   RenderPass & m_ownerPass;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
   details::CommandBuffer m_executableBuffer;

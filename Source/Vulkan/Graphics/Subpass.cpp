@@ -8,9 +8,8 @@
 
 namespace RHI::vulkan
 {
-Subpass::Subpass(const Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
-                 uint32_t familyIndex)
-  : m_context(ctx)
+Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, uint32_t familyIndex)
+  : ContextualObject(ctx)
   , m_ownerPass(ownerPass)
   , m_executableBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writingBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)

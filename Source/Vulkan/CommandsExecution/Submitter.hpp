@@ -9,7 +9,6 @@
 namespace RHI::vulkan
 {
 enum class QueueType : uint8_t;
-struct Context;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan::details
@@ -17,7 +16,7 @@ namespace RHI::vulkan::details
 /// @brief Submits commands into queue, owns primary command buffer
 struct Submitter : public CommandBuffer
 {
-  explicit Submitter(const Context & ctx, VkQueue queue, uint32_t queueFamily,
+  explicit Submitter(Context & ctx, VkQueue queue, uint32_t queueFamily,
                      VkPipelineStageFlags waitStages);
   virtual ~Submitter() override = default;
   Submitter(Submitter && rhs) noexcept;

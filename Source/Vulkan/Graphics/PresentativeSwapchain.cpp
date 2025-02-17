@@ -12,7 +12,7 @@
 namespace RHI::vulkan
 {
 
-PresentativeSwapchain::PresentativeSwapchain(const Context & ctx, const VkSurfaceKHR surface)
+PresentativeSwapchain::PresentativeSwapchain(Context & ctx, const VkSurfaceKHR surface)
   : Swapchain(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
@@ -29,9 +29,9 @@ void PresentativeSwapchain::Invalidate()
 {
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
-    auto [renderIndex, renderQueue] = m_context.GetQueue(QueueType::Graphics);
-    vkb::SwapchainBuilder swapchain_builder(m_context.GetGPU(), m_context.GetDevice(), m_surface,
-                                            renderIndex, m_presentQueueIndex);
+    auto [renderIndex, renderQueue] = GetContext().GetQueue(QueueType::Graphics);
+    vkb::SwapchainBuilder swapchain_builder(GetContext().GetGPU(), GetContext().GetDevice(),
+                                            m_surface, renderIndex, m_presentQueueIndex);
     auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
     if (!swap_ret)
       throw std::runtime_error("Failed to create Vulkan swapchain - " + swap_ret.error().message());
@@ -42,7 +42,7 @@ void PresentativeSwapchain::Invalidate()
     m_swapchainImages = m_swapchain->get_images().value();
     m_swapchainImageViews = m_swapchain->get_image_views().value();
     for (auto && view : m_swapchainImageViews)
-      m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(m_context.GetDevice()));
+      m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(GetContext().GetDevice()));
     m_invalidSwapchain = false;
 
     auto new_extent = m_swapchain->extent;
@@ -89,8 +89,8 @@ void PresentativeSwapchain::InvalidateAttachments()
   auto views_it = m_swapchainImageViews.begin();
   for (auto && target : m_targets)
   {
-    auto image = std::make_unique<NonOwningImageGPU>(const_cast<Context &>(m_context), imageDescription, *imgs_it,
-                            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    auto image = std::make_unique<NonOwningImageGPU>(GetContext(), imageDescription, *imgs_it,
+                                                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     ImageView view(*image, *views_it);
     target.AddAttachment(binding, std::move(image), std::move(view));
     imgs_it++;
@@ -103,13 +103,13 @@ void PresentativeSwapchain::InvalidateAttachments()
 
 void PresentativeSwapchain::DestroySwapchain() noexcept
 {
-  m_context.WaitForIdle();
+  GetContext().WaitForIdle();
   if (!m_swapchainImageViews.empty())
     m_swapchain->destroy_image_views(m_swapchainImageViews);
   vkb::destroy_swapchain(*m_swapchain);
   // we can delete semaphore directly, because we have waited for gpu's idle
   for (auto sem : m_imageAvailabilitySemaphores)
-    vkDestroySemaphore(m_context.GetDevice(), sem, nullptr);
+    vkDestroySemaphore(GetContext().GetDevice(), sem, nullptr);
   m_imageAvailabilitySemaphores.clear();
 }
 
@@ -118,7 +118,7 @@ std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
   Invalidate();
   VkSemaphore signalSemaphore = m_imageAvailabilitySemaphores[m_activeSemaphore];
   uint32_t imageIndex = InvalidImageIndex;
-  auto res = vkAcquireNextImageKHR(m_context.GetDevice(), m_swapchain->swapchain, UINT64_MAX,
+  auto res = vkAcquireNextImageKHR(GetContext().GetDevice(), m_swapchain->swapchain, UINT64_MAX,
                                    signalSemaphore, VK_NULL_HANDLE, &imageIndex);
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
   {

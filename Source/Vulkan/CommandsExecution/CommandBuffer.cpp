@@ -18,8 +18,7 @@ VkCommandPool CreateCommandPool(VkDevice device, uint32_t queue_family_index)
 }
 
 
-VkCommandBuffer CreateCommandBuffer(VkDevice device, VkCommandPool pool,
-                                      VkCommandBufferLevel level)
+VkCommandBuffer CreateCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBufferLevel level)
 {
   VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
   VkCommandBufferAllocateInfo allocInfo{};
@@ -38,8 +37,8 @@ VkCommandBuffer CreateCommandBuffer(VkDevice device, VkCommandPool pool,
 namespace RHI::vulkan::details
 {
 
-CommandBuffer::CommandBuffer(const Context & ctx, uint32_t queue_family, VkCommandBufferLevel level)
-  : m_context(ctx)
+CommandBuffer::CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level)
+  : ContextualObject(ctx)
   , m_level(level)
   , m_pool(::CreateCommandPool(ctx.GetDevice(), queue_family))
   , m_buffer(::CreateCommandBuffer(ctx.GetDevice(), m_pool, level))
@@ -51,13 +50,13 @@ CommandBuffer::~CommandBuffer()
   if (!!m_buffer)
   {
     const VkCommandBuffer buf = m_buffer;
-    vkFreeCommandBuffers(m_context.GetDevice(), m_pool, 1, &buf);
+    vkFreeCommandBuffers(GetContext().GetDevice(), m_pool, 1, &buf);
   }
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept
-  : m_context(rhs.m_context)
+  : ContextualObject(std::move(rhs))
 {
   std::swap(rhs.m_pool, m_pool);
   std::swap(rhs.m_buffer, m_buffer);
@@ -65,13 +64,11 @@ CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept
   std::swap(rhs.m_level, m_level);
 }
 
-CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs)
+CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs) noexcept
 {
   if (this != &rhs)
   {
-    if (&m_context != &rhs.m_context)
-      throw std::logic_error(
-        "Move command buffer from one context to command buffer from another context");
+    ContextualObject::operator=(std::move(rhs));
     std::swap(rhs.m_pool, m_pool);
     std::swap(rhs.m_buffer, m_buffer);
     std::swap(rhs.m_commandsCount, m_commandsCount);
