@@ -117,7 +117,7 @@ void CommandBuffer::BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
   if (vkBeginCommandBuffer(m_buffer, &beginInfo) != VK_SUCCESS)
     throw std::runtime_error("failed to begin recording command buffer!");
 
-  //auto && vkPipeline = static_cast<const Pipeline &>(pipeline);
+  //auto && vkPipeline = static_cast<const SubpassConfiguration &>(pipeline);
   //vkPipeline.Bind(m_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 

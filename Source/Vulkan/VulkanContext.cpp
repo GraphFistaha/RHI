@@ -6,9 +6,9 @@
 #include <VkBootstrap.h>
 
 #include "CommandsExecution/CommandBuffer.hpp"
-#include "Graphics/Pipeline.hpp"
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
+#include "Graphics/SubpassConfiguration.hpp"
 #include "Graphics/Swapchain.hpp"
 #include "Images/ImageGPU.hpp"
 #include "Resources/BufferGPU.hpp"
@@ -197,13 +197,13 @@ Context::~Context()
 {
 }
 
-ISwapchain * Context::GetSurfaceSwapchain()
+IRenderPass * Context::GetSurfaceSwapchain()
 {
   return m_surfaceSwapchain.get();
 }
 
-std::unique_ptr<ISwapchain> Context::CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                              uint32_t frames_count)
+std::unique_ptr<IRenderPass> Context::CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+                                                               uint32_t frames_count)
 {
   auto && result = std::make_unique<Swapchain>(*this);
   result->SetExtent({width, height, 1});

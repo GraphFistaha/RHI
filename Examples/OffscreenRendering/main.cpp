@@ -29,7 +29,7 @@ int main()
 {
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(nullptr, ConsoleLog);
 
-  std::unique_ptr<RHI::ISwapchain> swapchain = ctx->CreateOffscreenSwapchain(100, 100, 3);
+  std::unique_ptr<RHI::IRenderPass> swapchain = ctx->CreateOffscreenSwapchain(100, 100, 3);
   RHI::ImageCreateArguments description;
   description.extent = {100, 100, 1};
   description.format = RHI::ImageFormat::RGBA8;
@@ -43,10 +43,10 @@ int main()
   std::vector<uint8_t> pixels;
   for (int i = 0; i < 1; ++i)
   {
-    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      auto * awaitable = swapchain->RenderFrame();
+      auto * awaitable = swapchain->EndFrame();
       awaitable->Wait(); // после этого, все прикрепления должны перейти в состояние finalLayout
 
       RHI::ImageRegion region{{0, 0, 0}, description.extent};

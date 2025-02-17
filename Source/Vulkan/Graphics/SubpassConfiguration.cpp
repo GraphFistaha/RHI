@@ -1,4 +1,4 @@
-#include "Pipeline.hpp"
+#include "SubpassConfiguration.hpp"
 
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
@@ -8,7 +8,7 @@
 namespace RHI::vulkan
 {
 
-Pipeline::Pipeline(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
+SubpassConfiguration::SubpassConfiguration(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
                    uint32_t subpassIndex)
   : m_context(ctx)
   , m_owner(owner)
@@ -18,58 +18,58 @@ Pipeline::Pipeline(const Context & ctx, Subpass & owner, const RenderPass & rend
 {
 }
 
-Pipeline::~Pipeline()
+SubpassConfiguration::~SubpassConfiguration()
 {
   m_context.GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
   m_context.GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
 }
 
-void Pipeline::AttachShader(ShaderType type, const std::filesystem::path & path)
+void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::path & path)
 {
   m_pipelineBuilder.AttachShader(type, path);
   m_invalidPipeline = true;
 }
 
-void Pipeline::SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding)
+void SubpassConfiguration::SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding)
 {
   m_owner.SetImageAttachmentUsage(binding, slot);
 }
 
-void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
+void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
 {
   m_pipelineBuilder.AddInputBinding(slot, stride, type);
   m_invalidPipeline = true;
 }
 
-void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
+void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType)
 {
   m_pipelineBuilder.AddInputAttribute(binding, location, offset, elemsCount, elemsType);
   m_invalidPipeline = true;
 }
 
-IBufferUniformDescriptor * Pipeline::DeclareUniform(uint32_t binding, ShaderType shaderStage)
+IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(uint32_t binding, ShaderType shaderStage)
 {
   BufferUniform * result = nullptr;
   m_descriptors.DeclareUniformsArray(binding, shaderStage, 1, &result);
   return result;
 }
 
-ISamplerUniformDescriptor * Pipeline::DeclareSampler(uint32_t binding, ShaderType shaderStage)
+ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(uint32_t binding, ShaderType shaderStage)
 {
   SamplerUniform * result = nullptr;
   m_descriptors.DeclareSamplersArray(binding, shaderStage, 1, &result);
   return result;
 }
 
-void Pipeline::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+void SubpassConfiguration::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * out_array[])
 {
   m_descriptors.DeclareSamplersArray(binding, shaderStage, size,
                                      reinterpret_cast<SamplerUniform **>(out_array));
 }
 
-void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
+void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderStage)
 {
   VkPushConstantRange newPushConstantRange{};
   newPushConstantRange.offset = 0;
@@ -80,7 +80,7 @@ void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
   m_invalidPipelineLayout = true;
 }
 
-void Pipeline::Invalidate()
+void SubpassConfiguration::Invalidate()
 {
   m_descriptors.Invalidate();
 
@@ -109,13 +109,13 @@ void Pipeline::Invalidate()
   m_owner.SetDirtyCacheCommands();
 }
 
-void Pipeline::SetInvalid()
+void SubpassConfiguration::SetInvalid()
 {
   m_invalidPipeline = true;
   m_invalidPipelineLayout = true;
 }
 
-void Pipeline::BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint)
+void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint)
 {
   assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);

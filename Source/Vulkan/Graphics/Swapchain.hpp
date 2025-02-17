@@ -18,16 +18,16 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct Swapchain : public ISwapchain
+struct Swapchain : public IRenderPass
 {
   explicit Swapchain(const Context & ctx);
   virtual ~Swapchain() override;
 
-public: // ISwapchain interface
+public: // IRenderPass interface
   /// begins rendering 
-  virtual IRenderTarget * AcquireFrame() override;
+  virtual IRenderTarget * BeginFrame() override;
   /// finish rendering
-  virtual IAwaitable * RenderFrame() override;
+  virtual IAwaitable * EndFrame() override;
 
   virtual ISubpass * CreateSubpass() override;
   /// @brief adds attachment to all frames

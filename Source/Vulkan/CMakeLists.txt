@@ -25,8 +25,8 @@ PRIVATE
 	Graphics/RenderPass.hpp
 	Graphics/RenderTarget.cpp 
 	Graphics/RenderTarget.hpp
-	Graphics/Pipeline.cpp 
-	Graphics/Pipeline.hpp
+	Graphics/SubpassConfiguration.cpp
+	Graphics/SubpassConfiguration.hpp
 
 	Graphics/Uniforms/BaseUniform.hpp
 	Graphics/Uniforms/SamplerUniform.hpp

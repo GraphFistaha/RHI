@@ -68,17 +68,17 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();
+  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      swapchain->RenderFrame();
+      swapchain->EndFrame();
     }
     t += 0.001f;
   }

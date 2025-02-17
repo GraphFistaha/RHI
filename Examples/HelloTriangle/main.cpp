@@ -82,7 +82,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();
+  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto subpass = swapchain->CreateSubpass();
@@ -120,7 +120,7 @@ int main()
   {
     glfwPollEvents();
 
-    if (auto * renderTarget = swapchain->AcquireFrame())
+    if (auto * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
 
@@ -144,7 +144,7 @@ int main()
         subpass->EndPass(); // finish drawing pass
         ShouldInvalidateScene = false;
       }
-      swapchain->RenderFrame();
+      swapchain->EndFrame();
     }
     t += 0.001f;
   }

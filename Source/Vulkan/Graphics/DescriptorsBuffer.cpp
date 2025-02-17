@@ -7,7 +7,7 @@
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "Pipeline.hpp"
+#include "SubpassConfiguration.hpp"
 #include "Subpass.hpp"
 
 
@@ -111,7 +111,7 @@ constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 } // namespace details
 
 
-DescriptorBuffer::DescriptorBuffer(const Context & ctx, Pipeline & owner)
+DescriptorBuffer::DescriptorBuffer(const Context & ctx, SubpassConfiguration & owner)
   : m_context(ctx)
   , m_owner(owner)
 {

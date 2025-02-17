@@ -45,7 +45,7 @@ void Subpass::EndPass()
   m_shouldBeInvalidated = false;
 }
 
-IPipeline & Subpass::GetConfiguration() & noexcept
+ISubpassConfiguration & Subpass::GetConfiguration() & noexcept
 {
   return m_pipeline;
 }

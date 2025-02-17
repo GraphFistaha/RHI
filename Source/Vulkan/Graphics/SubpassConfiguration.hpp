@@ -17,13 +17,13 @@ struct Subpass;
 namespace RHI::vulkan
 {
 
-struct Pipeline final : public IPipeline
+struct SubpassConfiguration final : public ISubpassConfiguration
 {
-  explicit Pipeline(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
+  explicit SubpassConfiguration(const Context & ctx, Subpass & owner, const RenderPass & renderPass,
                     uint32_t subpassIndex);
-  virtual ~Pipeline() override;
+  virtual ~SubpassConfiguration() override;
 
-public: // IPipeline interface
+public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
   virtual void SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;

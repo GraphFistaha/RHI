@@ -48,7 +48,7 @@ static constexpr uint32_t Indices[] = {0, 1, 2};
 // helper which incapsulated rendering code for some scene
 struct Renderer
 {
-  explicit Renderer(RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window);
+  explicit Renderer(RHI::IContext & ctx, RHI::IRenderPass & swapchain, GLFWwindow * window);
 
   // draw scene in parallel
   void AsyncDrawScene()
@@ -126,7 +126,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::ISwapchain * swapchain = ctx->GetSurfaceSwapchain();
+  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
   TriangleRenderer = std::make_unique<Renderer>(*ctx, *swapchain, window);
   TriangleRenderer->AsyncDrawScene();
 
@@ -135,10 +135,10 @@ int main()
     glfwPollEvents();
     TriangleRenderer->UpdateGeometry();
     ctx->Flush();
-    if (auto * renderTarget = swapchain->AcquireFrame())
+    if (auto * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
-      swapchain->RenderFrame();
+      swapchain->EndFrame();
     }
   }
 
@@ -147,7 +147,7 @@ int main()
   return 0;
 }
 
-Renderer::Renderer(RHI::IContext & ctx, RHI::ISwapchain & swapchain, GLFWwindow * window)
+Renderer::Renderer(RHI::IContext & ctx, RHI::IRenderPass & swapchain, GLFWwindow * window)
   : m_windowPtr(window)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering

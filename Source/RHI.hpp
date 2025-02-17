@@ -174,7 +174,6 @@ enum class IndexType : uint8_t
 
 struct IBufferGPU;
 struct IImageGPU;
-using SemaphoreHandle = InternalObjectHandle;
 
 //TODO: Remove this interface
 struct IInvalidable
@@ -210,13 +209,13 @@ struct IBufferUniformDescriptor : public IUniformDescriptor
   virtual bool IsBufferAssigned() const noexcept = 0;
 };
 
-/// @brief Pipeline is container for rendering state settings (like shaders, input attributes, uniforms, etc).
+/// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
 /// After invalidate you can bind it to CommandBuffer and draw.
-struct IPipeline : public IInvalidable
+struct ISubpassConfiguration : public IInvalidable
 {
-  virtual ~IPipeline() = default;
+  virtual ~ISubpassConfiguration() = default;
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
@@ -253,7 +252,7 @@ struct ISubpass
   virtual ~ISubpass() = default;
   virtual void BeginPass() = 0;
   virtual void EndPass() = 0;
-  virtual IPipeline & GetConfiguration() & noexcept = 0;
+  virtual ISubpassConfiguration & GetConfiguration() & noexcept = 0;
   virtual void SetEnabled(bool enabled) noexcept = 0;
   virtual bool IsEnabled() const noexcept = 0;
   virtual bool ShouldBeInvalidated() const noexcept = 0;
@@ -277,13 +276,12 @@ struct ISubpass
   virtual void PushConstant(const void * data, size_t size) = 0;
 };
 
-// IFramebuffer
-/// @brief Swapchain is a queue of renderTargets. Each renderTarget is a union of renderPass and internalFramebuffer.
-struct ISwapchain
+/// @brief RenderPass is object that can render frames.
+struct IRenderPass
 {
-  virtual ~ISwapchain() = default;
-  virtual IRenderTarget * AcquireFrame() = 0;
-  virtual IAwaitable * RenderFrame() = 0;
+  virtual ~IRenderPass() = default;
+  virtual IRenderTarget * BeginFrame() = 0;
+  virtual IAwaitable * EndFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) noexcept = 0;
   virtual void SetExtent(const ImageExtent & extent) noexcept = 0;
   virtual void SetMultisampling(RHI::SamplesCount samples) noexcept = 0;
@@ -322,7 +320,6 @@ struct IBufferGPU
 struct IImageGPU
 {
   virtual ~IImageGPU() = default;
-  //virtual void SetImageUsage(RHI::ImageUsage usage) = 0;
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
                                                 const CopyImageArguments & args) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
@@ -333,20 +330,18 @@ struct IImageGPU
   //virtual void SetSwizzle() = 0;
 };
 
+
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext
 {
   virtual ~IContext() = default;
 
-  virtual ISwapchain * GetSurfaceSwapchain() = 0;
-  virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                               uint32_t frames_count) = 0;
+  virtual IRenderPass * GetSurfaceSwapchain() = 0;
+  virtual std::unique_ptr<IRenderPass> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+                                                                uint32_t frames_count) = 0;
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-
-  /// @brief create offscreen framebuffer
-  //virtual std::unique_ptr<IFramebuffer> CreateFramebuffer() const = 0;
   /// @brief creates BufferGPU
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) = 0;

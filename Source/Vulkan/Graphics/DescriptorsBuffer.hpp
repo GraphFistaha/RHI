@@ -13,7 +13,7 @@
 namespace RHI::vulkan
 {
 struct Context;
-struct Pipeline;
+struct SubpassConfiguration;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -21,7 +21,7 @@ namespace RHI::vulkan
 
 struct DescriptorBuffer final
 {
-  explicit DescriptorBuffer(const Context & ctx, Pipeline & owner);
+  explicit DescriptorBuffer(const Context & ctx, SubpassConfiguration & owner);
   ~DescriptorBuffer();
 
   void Invalidate();
@@ -47,7 +47,7 @@ private:
 
 private:
   const Context & m_context;
-  Pipeline & m_owner;
+  SubpassConfiguration & m_owner;
 
   VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
   VkDescriptorSet m_set = VK_NULL_HANDLE;

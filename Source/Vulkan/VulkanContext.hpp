@@ -33,8 +33,8 @@ struct Context final : public IContext
   virtual ~Context() override;
 
 public: // IContext interface
-  virtual ISwapchain * GetSurfaceSwapchain() override;
-  virtual std::unique_ptr<ISwapchain> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
+  virtual IRenderPass * GetSurfaceSwapchain() override;
+  virtual std::unique_ptr<IRenderPass> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
                                                                uint32_t frames_count) override;
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) override;

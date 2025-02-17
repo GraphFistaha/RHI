@@ -160,7 +160,7 @@ int main()
 
     ctx->Flush();
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
 
@@ -212,7 +212,7 @@ int main()
         subpass->EndPass();
         ShouldInvalidateScene = false;
       }
-      swapchain->RenderFrame();
+      swapchain->EndFrame();
     }
   }
 

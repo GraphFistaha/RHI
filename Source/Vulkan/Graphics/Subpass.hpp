@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
-#include "Pipeline.hpp"
+#include "SubpassConfiguration.hpp"
 #include "SubpassLayout.hpp"
 
 namespace RHI::vulkan
@@ -27,7 +27,7 @@ struct Subpass : public ISubpass
 public: // ISubpass Interface
   virtual void BeginPass() override;
   virtual void EndPass() override;
-  virtual IPipeline & GetConfiguration() & noexcept override;
+  virtual ISubpassConfiguration & GetConfiguration() & noexcept override;
   virtual void SetEnabled(bool enabled) noexcept override;
   virtual bool IsEnabled() const noexcept override;
   virtual bool ShouldBeInvalidated() const noexcept override;
@@ -72,7 +72,7 @@ private:
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
   details::CommandBuffer m_executableBuffer;
   details::CommandBuffer m_writingBuffer;
-  Pipeline m_pipeline;
+  SubpassConfiguration m_pipeline;
   mutable std::mutex m_write_lock;
   std::atomic_bool m_enabled = true;
   std::atomic_bool m_shouldBeInvalidated = true;

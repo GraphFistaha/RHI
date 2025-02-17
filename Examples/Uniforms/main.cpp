@@ -135,7 +135,7 @@ int main()
     x += 0.0001f;
     ctx->Flush();
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
@@ -157,7 +157,7 @@ int main()
         ShouldInvalidateScene = false;
       }
 
-      swapchain->RenderFrame();
+      swapchain->EndFrame();
     }
 
     ctx->ClearResources();

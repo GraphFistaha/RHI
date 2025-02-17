@@ -133,7 +133,7 @@ void Swapchain::RequireSwapchainHasAttachmentsCount(uint32_t count)
   }
 }
 
-IRenderTarget * Swapchain::AcquireFrame()
+IRenderTarget * Swapchain::BeginFrame()
 {
   auto [imageIndex, waitSemaphore] = AcquireImage();
   m_activeImageIdx = imageIndex;
@@ -145,7 +145,7 @@ IRenderTarget * Swapchain::AcquireFrame()
   return &m_targets[m_activeImageIdx];
 }
 
-IAwaitable * Swapchain::RenderFrame()
+IAwaitable * Swapchain::EndFrame()
 {
   AsyncTask * task = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
   FinishImage(m_activeImageIdx, task);
