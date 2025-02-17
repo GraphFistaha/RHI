@@ -3,6 +3,7 @@
 #include <format>
 
 #include "../Images/ImageGPU.hpp"
+#include "../Images/ImageInfo.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 #include "RenderPass.hpp"
@@ -10,11 +11,8 @@
 namespace
 {
 RHI::ShaderImageSlot GetShaderImageSlotByImageDescription(
-  const RHI::ImageDescription & desc) noexcept
+  const RHI::ImageCreateArguments & desc) noexcept
 {
-  if (desc.usage == RHI::ImageUsage::SHADER_INPUT)
-    return RHI::ShaderImageSlot::Input;
-
   if (desc.format == RHI::ImageFormat::DEPTH_STENCIL || desc.format == RHI::ImageFormat::DEPTH)
     return RHI::ShaderImageSlot::DepthStencil;
 
@@ -160,21 +158,9 @@ ISubpass * Swapchain::CreateSubpass()
   return m_renderPass.CreateSubpass();
 }
 
-void Swapchain::AddImageAttachment(uint32_t binding, const ImageDescription & description)
+void Swapchain::AddImageAttachment(uint32_t binding, const ImageCreateArguments & description)
 {
-  VkAttachmentDescription attachmentDescription{};
-  {
-    attachmentDescription.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
-    attachmentDescription.samples =
-      utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_samplesCount);
-    attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachmentDescription.finalLayout =
-      utils::CastInterfaceEnum2Vulkan<VkImageLayout>(description.format);
-    attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-  }
+  VkAttachmentDescription attachmentDescription = BuildAttachmentDescription(description);
 
   RequireSwapchainHasAttachmentsCount(binding + 1);
 

@@ -5,6 +5,10 @@ add_library(${PROJECT_NAME})
 target_sources (${PROJECT_NAME}
 PUBLIC
 	"RHI.hpp"
+	"Headers/Images.hpp"
+PRIVATE
+	"MultibackendUtils/ImageTraits.hpp"
+	"MultibackendUtils/Types.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})
@@ -15,6 +19,7 @@ endif()
 target_include_directories(${PROJECT_NAME} 
 PUBLIC
    "./"
+   "MultibackendUtils"
 )
 
 if (MSVC)

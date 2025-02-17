@@ -5,12 +5,72 @@
 #include "../Resources/Transferer.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "ImageFormatsConversation.hpp"
-#include "ImageTraits.hpp"
+#include "InternalImageTraits.hpp"
+
+namespace
+{
+constexpr VkAccessFlags LayoutTransfer_MakeAccessFlag(VkImageLayout layout) noexcept
+{
+  switch (layout)
+  {
+    case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL:
+      return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+      return VK_ACCESS_SHADER_READ_BIT;
+
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
+    case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:
+      return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+
+    case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT:
+      return VK_ACCESS_SHADER_WRITE_BIT;
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+      return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+      return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: // пишем в картинку
+      return VK_ACCESS_TRANSFER_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: // читаем из картинки
+      return VK_ACCESS_TRANSFER_READ_BIT;
+
+    case VK_IMAGE_LAYOUT_GENERAL:
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+    default:
+      return 0;
+  }
+}
+
+constexpr VkPipelineStageFlags LayoutTransfer_MakePipelineStage(VkImageLayout layout) noexcept
+{
+  switch (layout)
+  {
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+      return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+      return VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+      return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    default:
+      return VK_PIPELINE_STAGE_NONE;
+  }
+}
+
+} // namespace
 
 namespace RHI::vulkan
 {
-ImageBase::ImageBase(Context & ctx, const ImageDescription & description)
+ImageBase::ImageBase(Context & ctx, const ImageCreateArguments & description)
   : ContextualObject(ctx)
   , m_description(description)
 {
@@ -35,73 +95,48 @@ ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
   return *this;
 }
 
-void ImageBase::UploadImage(const uint8_t * data, const CopyImageArguments & args)
+std::future<UploadResult> ImageBase::UploadImage(const uint8_t * data,
+                                                 const CopyImageArguments & args)
 {
-  BufferGPU stagingBuffer(GetContext(), Size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-  if (auto && mapped_ptr = stagingBuffer.Map())
-  {
-    utils::CopyImageFromHost(data, args.src.extent, args.src, args.hostFormat,
-                             reinterpret_cast<uint8_t *>(mapped_ptr.get()), args.dst.extent,
-                             args.dst, GetVulkanFormat());
-    mapped_ptr.reset();
-    stagingBuffer.Flush();
-    GetContext().GetTransferer().UploadImage(this, std::move(stagingBuffer));
-  }
-  else
-  {
-    throw std::runtime_error("Failed to fill staging buffer");
-  }
+  return GetContext().GetTransferer().UploadImage(*this, data, args);
 }
 
-std::future<std::vector<uint8_t>> ImageBase::DownloadImage(const CopyImageArguments & args)
+std::future<DownloadResult> ImageBase::DownloadImage(HostImageFormat format,
+                                                     const ImageRegion & region)
 {
-  return GetContext().GetTransferer().DownloadImage(this, args);
+  return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-void ImageBase::SetImageLayout(details::CommandBuffer & commandBuffer,
+void ImageBase::TransferLayout(details::CommandBuffer & commandBuffer,
                                VkImageLayout newLayout) noexcept
 {
   VkImageMemoryBarrier barrier{};
-  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  barrier.oldLayout = m_layout;
-  barrier.newLayout = newLayout;
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = m_image;
-  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = m_description.mipLevels;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
-  barrier.srcAccessMask = 0; // TODO
-  barrier.dstAccessMask = 0; // TODO
-
-  VkPipelineStageFlags sourceStage;
-  VkPipelineStageFlags destinationStage;
-
-  if (m_layout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
   {
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = m_layout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = m_image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = m_description.mipLevels;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = LayoutTransfer_MakeAccessFlag(m_layout);
+    barrier.dstAccessMask = LayoutTransfer_MakeAccessFlag(newLayout);
+  }
 
-    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  }
-  else if (m_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-           newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-  {
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  }
-  else
-  {
-  }
+  VkPipelineStageFlags sourceStage = LayoutTransfer_MakePipelineStage(m_layout);
+  VkPipelineStageFlags destinationStage = LayoutTransfer_MakePipelineStage(newLayout);
 
   commandBuffer.PushCommand(vkCmdPipelineBarrier, sourceStage, destinationStage, 0, 0, nullptr, 0,
                             nullptr, 1, &barrier);
+  m_layout = newLayout;
+}
+
+void ImageBase::SetImageLayoutByRenderPass(VkImageLayout newLayout) noexcept
+{
   m_layout = newLayout;
 }
 
@@ -127,10 +162,10 @@ VkSampleCountFlagBits ImageBase::GetVulkanSamplesCount() const noexcept
 
 size_t ImageBase::Size() const
 {
-  return utils::GetSizeOfImage(GetVulkanExtent(), GetVulkanFormat());
+  return RHI::utils::GetSizeOfImage(GetVulkanExtent(), GetVulkanFormat());
 }
 
-ImageDescription ImageBase::GetDescription() const noexcept
+ImageCreateArguments ImageBase::GetDescription() const noexcept
 {
   return m_description;
 }

@@ -20,16 +20,19 @@ struct ImageBase : public IImageGPU,
   ImageBase & operator=(ImageBase && rhs) noexcept;
 
 protected:
-  explicit ImageBase(Context & ctx, const ImageDescription & description);
+  explicit ImageBase(Context & ctx, const ImageCreateArguments & description);
 
 public:
-  virtual void UploadImage(const uint8_t * data, const CopyImageArguments & args) override;
-  virtual std::future<std::vector<uint8_t>> DownloadImage(const CopyImageArguments & args) override;
+  virtual std::future<UploadResult> UploadImage(const uint8_t * data,
+                                                const CopyImageArguments & args) override;
+  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
+                                                    const ImageRegion & args) override;
   virtual size_t Size() const override;
-  virtual ImageDescription GetDescription() const noexcept override;
+  virtual ImageCreateArguments GetDescription() const noexcept override;
 
 public:
-  void SetImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
+  void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
+  void SetImageLayoutByRenderPass(VkImageLayout newLayout) noexcept;
 
   VkImage GetHandle() const noexcept { return m_image; }
   VkImageLayout GetLayout() const noexcept { return m_layout; }
@@ -42,10 +45,11 @@ public:
 protected:
   VkImage m_image = VK_NULL_HANDLE;
   VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-  ImageDescription m_description;
+  ImageCreateArguments m_description;
 
 private:
   ImageBase(const ImageBase &) = delete;
   ImageBase & operator=(const ImageBase &) = delete;
 };
+
 } // namespace RHI::vulkan

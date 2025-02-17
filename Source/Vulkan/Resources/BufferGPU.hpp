@@ -24,7 +24,8 @@ struct BufferGPU : public IBufferGPU,
   BufferGPU & operator=(BufferGPU && rhs) noexcept;
 
   virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
-  virtual void UploadAsync(const void * data, size_t size, size_t offset = 0) override;
+  virtual std::future<UploadResult> UploadAsync(const void * data, size_t size,
+                                                size_t offset = 0) override;
   virtual ScopedPointer Map() override;
   virtual void Flush() const noexcept override;
   virtual bool IsMapped() const noexcept override;

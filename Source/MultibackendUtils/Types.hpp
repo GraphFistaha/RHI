@@ -1,8 +1,12 @@
 #pragma once
+#include <cstdint>
+#include <limits>
 
+namespace RHI::utils
+{
 struct char24_t
 {
-  static constexpr std::size_t NBITS = std::numeric_limits<unsigned char>::digits;
+  static constexpr size_t NBITS = std::numeric_limits<unsigned char>::digits;
   static_assert(NBITS == 8, "byte must be an octet");
 
   constexpr char24_t() = default;
@@ -26,3 +30,5 @@ struct char24_t
 };
 
 using uint24_t = char24_t;
+
+} // namespace RHI::utils

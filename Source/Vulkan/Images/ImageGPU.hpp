@@ -10,7 +10,7 @@ namespace RHI::vulkan
 /// @brief image with owned memory. It used for user's textures, framebuffer attachments
 struct ImageGPU : public ImageBase
 {
-  explicit ImageGPU(Context & ctx, const ImageDescription & description);
+  explicit ImageGPU(Context & ctx, const ImageCreateArguments & description);
   virtual ~ImageGPU() override;
   ImageGPU(ImageGPU && rhs) noexcept;
   ImageGPU & operator=(ImageGPU && rhs) noexcept;

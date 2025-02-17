@@ -38,7 +38,7 @@ public: // IContext interface
                                                                uint32_t frames_count) override;
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) override;
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageDescription & args) override;
+  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) override;
   virtual void ClearResources() override;
   virtual void Flush() override;
 

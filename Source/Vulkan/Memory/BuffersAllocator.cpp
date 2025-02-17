@@ -43,7 +43,7 @@ MemoryBlock BuffersAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage,
   return MemoryBlock(m_allocator, size, usage, flags, memoryUsage);
 }
 
-MemoryBlock BuffersAllocator::AllocImage(const ImageDescription & description, uint32_t flags,
+MemoryBlock BuffersAllocator::AllocImage(const ImageCreateArguments & description, uint32_t flags,
                                          uint32_t memoryUsage) const
 {
   return MemoryBlock(m_allocator, description, flags, memoryUsage);

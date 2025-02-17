@@ -69,14 +69,13 @@ void PresentativeSwapchain::InvalidateAttachments()
     attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
   }
 
-  ImageDescription imageDescription{};
+  ImageCreateArguments imageDescription{};
   {
     imageDescription.samples = m_samplesCount;
     imageDescription.extent = {m_swapchain->extent.width, m_swapchain->extent.height, 1};
     imageDescription.mipLevels = 1;
     imageDescription.shared = false;
     imageDescription.type = RHI::ImageType::Image2D;
-    imageDescription.usage = RHI::ImageUsage::SHADER_OUTPUT;
     imageDescription.format = RHI::ImageFormat::RGBA8;
   }
 

@@ -30,28 +30,30 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(nullptr, ConsoleLog);
 
   std::unique_ptr<RHI::ISwapchain> swapchain = ctx->CreateOffscreenSwapchain(100, 100, 3);
-  RHI::ImageDescription description;
+  RHI::ImageCreateArguments description;
   description.extent = {100, 100, 1};
   description.format = RHI::ImageFormat::RGBA8;
   description.mipLevels = 1;
   description.samples = RHI::SamplesCount::One;
   description.type = RHI::ImageType::Image2D;
-  description.usage = RHI::ImageUsage::SHADER_OUTPUT;
   description.shared = false;
-  swapchain->AddImageAttachment(0, description);
+  swapchain->AddImageAttachment(0, description); // Мб она должна вернуть какой-то объект, который можно будет передать в другой Swapchain и тем самым связать два Swapchain'a
 
   float t = 0.0;
-  for (int i = 0; i < 10; ++i)
+  std::vector<uint8_t> pixels;
+  for (int i = 0; i < 1; ++i)
   {
     if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       auto * awaitable = swapchain->RenderFrame();
-      awaitable->Wait();
-      RHI::CopyImageArguments args;
-      auto future = renderTarget->GetImage(0)->DownloadImage(args);
+      awaitable->Wait(); // после этого, все прикрепления должны перейти в состояние finalLayout
+
+      RHI::ImageRegion region{{0, 0, 0}, description.extent};
+      auto future = renderTarget->GetImage(0)->DownloadImage(RHI::HostImageFormat::RGBA8, region);
       ctx->Flush();
-      future.wait();
+      ctx->Flush();
+      pixels = std::move(future.get());
     }
     t += 0.001f;
   }

@@ -3,7 +3,7 @@
 namespace RHI::vulkan
 {
 
-NonOwningImageGPU::NonOwningImageGPU(Context & ctx, const ImageDescription & description,
+NonOwningImageGPU::NonOwningImageGPU(Context & ctx, const ImageCreateArguments & description,
                                      VkImage image, VkImageLayout layout)
   : ImageBase(ctx, description)
 {

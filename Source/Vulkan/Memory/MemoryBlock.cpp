@@ -2,32 +2,18 @@
 
 #include <vk_mem_alloc.h>
 
+#include "../Images/ImageInfo.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "BuffersAllocator.hpp"
 
 namespace RHI::vulkan::memory
 {
 
-MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageDescription & description,
+MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
                          uint32_t flags, uint32_t memoryUsage)
   : m_allocator(allocator)
 {
-  VkImageCreateInfo imageInfo{};
-  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(description.type);
-  imageInfo.extent.width = description.extent[0];
-  imageInfo.extent.height = description.extent[1];
-  imageInfo.extent.depth = description.extent[2];
-  imageInfo.mipLevels = description.mipLevels;
-  imageInfo.arrayLayers = 1;
-  imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
-  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  imageInfo.usage = utils::CastInterfaceEnum2Vulkan<VkImageUsageFlags>(description.format);
-  imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
-  imageInfo.sharingMode = description.shared ? VK_SHARING_MODE_CONCURRENT
-                                                : VK_SHARING_MODE_EXCLUSIVE;
-
+  VkImageCreateInfo imageInfo = BuildImageCreateInfo(description);
   VmaAllocationCreateInfo allocCreateInfo = {};
   allocCreateInfo.usage = static_cast<VmaMemoryUsage>(memoryUsage);
   allocCreateInfo.flags = flags;

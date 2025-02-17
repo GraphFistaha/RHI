@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <queue>
 
 #include <RHI.hpp>
@@ -14,8 +15,6 @@ namespace RHI::vulkan
 
 struct Transferer final : public ContextualObject
 {
-  using ByteBuffer = std::vector<uint8_t>;
-
   explicit Transferer(Context & ctx);
   Transferer(Transferer && rhs) noexcept;
   Transferer & operator=(Transferer && rhs) noexcept;
@@ -24,18 +23,20 @@ public:
   IAwaitable * DoTransfer();
 
 public:
-  void UploadBuffer(BufferGPU * dstBuffer, const uint8_t * srcData, size_t size,
-                    size_t offset = 0) noexcept;
-  std::future<ByteBuffer> DownloadBuffer(BufferGPU * srcBuffer, size_t size,
-                                         size_t offset = 0) noexcept;
+  std::future<UploadResult> UploadBuffer(BufferGPU & dstBuffer, const uint8_t * srcData,
+                                         size_t size, size_t offset = 0);
+  std::future<DownloadResult> DownloadBuffer(BufferGPU & srcBuffer, size_t size, size_t offset = 0);
 
-  void UploadImage(ImageBase * dstImage, BufferGPU && stagingBuffer) noexcept;
-  std::future<ByteBuffer> DownloadImage(ImageBase * srcImage,
-                                        const CopyImageArguments & args) noexcept;
+  std::future<UploadResult> UploadImage(ImageBase & dstImage, const uint8_t * srcData,
+                                        const CopyImageArguments & args);
+  std::future<DownloadResult> DownloadImage(ImageBase & srcImage, HostImageFormat format,
+                                            const ImageRegion & region);
 
 private:
-  using UploadData = BufferGPU;
-  using DownloadData = std::pair<BufferGPU, std::promise<ByteBuffer>>;
+  using CreateDownloadResultFunc = std::function<DownloadResult(BufferGPU &)>;
+  using UploadData = std::pair<BufferGPU /*stagingBuffer*/, std::promise<UploadResult>>;
+  using DownloadData =
+    std::tuple<BufferGPU /*stagingBuffer*/, std::promise<DownloadResult>, CreateDownloadResultFunc>;
 
   struct TransferData
   {

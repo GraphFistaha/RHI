@@ -20,7 +20,7 @@ struct BuffersAllocator final
   MemoryBlock AllocBuffer(size_t size, VkBufferUsageFlags usage, uint32_t flags,
                           uint32_t memoryUsage) const;
 
-  MemoryBlock AllocImage(const ImageDescription & description, uint32_t flags,
+  MemoryBlock AllocImage(const ImageCreateArguments & description, uint32_t flags,
                          uint32_t memoryUsage) const;
 
 private:

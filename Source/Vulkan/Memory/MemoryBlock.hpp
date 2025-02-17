@@ -34,8 +34,10 @@ private:
   uint32_t m_flags = 0;
 
 private:
-  explicit MemoryBlock(InternalObjectHandle allocator, const ImageDescription & description,
+  /// create memory block for image
+  explicit MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
                        uint32_t flags, uint32_t memoryUsage);
+  /// Create memory block for buffer
   explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
                        uint32_t flags, uint32_t memoryUsage);
 

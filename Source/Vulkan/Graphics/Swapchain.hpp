@@ -24,14 +24,16 @@ struct Swapchain : public ISwapchain
   virtual ~Swapchain() override;
 
 public: // ISwapchain interface
+  /// begins rendering 
   virtual IRenderTarget * AcquireFrame() override;
+  /// finish rendering
   virtual IAwaitable * RenderFrame() override;
 
   virtual ISubpass * CreateSubpass() override;
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
-  virtual void AddImageAttachment(uint32_t binding, const ImageDescription & description) override;
+  virtual void AddImageAttachment(uint32_t binding, const ImageCreateArguments & description) override;
   /// @brief removes all images from all frames
   virtual void ClearImageAttachments() noexcept override;
   /// @brief operation which add or remove some frames from swapchain
@@ -66,7 +68,7 @@ protected:
   RHI::SamplesCount m_samplesCount = RHI::SamplesCount::One;
   bool m_samplesCountChanged = false;
   std::vector<bool> m_ownedImages;
-  std::vector<RHI::ImageDescription> m_imageDescriptions;
+  std::vector<RHI::ImageCreateArguments> m_imageDescriptions;
   std::vector<VkAttachmentDescription> m_attachmentDescriptions;
   bool m_attachmentsChanged = false;
 

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan
 {

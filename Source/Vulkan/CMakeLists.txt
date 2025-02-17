@@ -51,9 +51,11 @@ PRIVATE
 	Utils/ShaderCompiler.hpp
 
 	
+	Images/ImageInfo.hpp
+	Images/ImageInfo.cpp
 	Images/ImageBase.cpp
 	Images/ImageBase.hpp
-	Images/ImageTraits.hpp
+	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
 	Images/ImageGPU.cpp

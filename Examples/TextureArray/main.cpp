@@ -73,7 +73,7 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const ch
 
   RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
 
-  RHI::ImageDescription imageArgs{};
+  RHI::ImageCreateArguments imageArgs{};
   imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.shared = false;

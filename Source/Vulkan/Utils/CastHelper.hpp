@@ -132,53 +132,6 @@ constexpr inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageF
 }
 
 template<>
-constexpr inline VkImageUsageFlags CastInterfaceEnum2Vulkan<VkImageUsageFlags, ImageFormat>(
-  ImageFormat format)
-{
-  switch (format)
-  {
-    case ImageFormat::A8:
-    case ImageFormat::R8:
-    case ImageFormat::RG8:
-    case ImageFormat::RGB8:
-    case ImageFormat::RGBA8:
-    case ImageFormat::BGR8:
-    case ImageFormat::BGRA8:
-      return VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    case ImageFormat::DEPTH:
-    case ImageFormat::DEPTH_STENCIL:
-      return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-             VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    default:
-      return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
-  }
-}
-
-template<>
-constexpr inline VkImageLayout CastInterfaceEnum2Vulkan<VkImageLayout, ImageFormat>(
-  ImageFormat format)
-{
-  switch (format)
-  {
-    case ImageFormat::A8:
-    case ImageFormat::R8:
-    case ImageFormat::RG8:
-    case ImageFormat::RGB8:
-    case ImageFormat::RGBA8:
-    case ImageFormat::BGR8:
-    case ImageFormat::BGRA8:
-      return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case ImageFormat::DEPTH:
-      return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    case ImageFormat::DEPTH_STENCIL:
-      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    default:
-      return VK_IMAGE_LAYOUT_UNDEFINED;
-  }
-}
-
-template<>
 constexpr inline VkSampleCountFlagBits CastInterfaceEnum2Vulkan<VkSampleCountFlagBits,
                                                                 SamplesCount>(SamplesCount count)
 {

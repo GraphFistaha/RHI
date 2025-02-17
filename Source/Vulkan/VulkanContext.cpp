@@ -218,7 +218,7 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
   return std::make_unique<BufferGPU>(*this, size, vkUsage, mapped);
 }
 
-std::unique_ptr<IImageGPU> Context::AllocImage(const ImageDescription & args)
+std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args)
 {
   return std::make_unique<ImageGPU>(*this, args);
 }

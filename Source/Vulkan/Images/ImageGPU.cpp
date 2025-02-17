@@ -10,7 +10,7 @@
 namespace RHI::vulkan
 {
 
-ImageGPU::ImageGPU(Context & ctx, const ImageDescription & description)
+ImageGPU::ImageGPU(Context & ctx, const ImageCreateArguments & description)
   : ImageBase(ctx, description)
 {
   VmaAllocationCreateFlags allocation_flags = 0;

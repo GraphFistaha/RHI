@@ -1,5 +1,8 @@
 #pragma once
+#include <ImageTraits.hpp>
 #include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
+
 // Table with all vulkan image formats and their mapping of C types
 #define FOR_EACH_VULKAN_IMAGE_FORMAT(IMAGE_FORMAT_MACRO)                                           \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8A8_SRGB, uint32_t)                                  \
@@ -9,13 +12,13 @@
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8A8_UINT, uint32_t)                                  \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8A8_SSCALED, uint32_t)                               \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8A8_USCALED, uint32_t)                               \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SRGB, char24_t)                                    \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SNORM, char24_t)                                   \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_UNORM, char24_t)                                   \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SINT, char24_t)                                    \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_UINT, char24_t)                                    \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SSCALED, char24_t)                                 \
-  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_USCALED, char24_t)                                 \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SRGB, RHI::utils::char24_t)                        \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SNORM, RHI::utils::char24_t)                       \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_UNORM, RHI::utils::char24_t)                       \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SINT, RHI::utils::char24_t)                        \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_UINT, RHI::utils::char24_t)                        \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_SSCALED, RHI::utils::char24_t)                     \
+  IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8B8_USCALED, RHI::utils::char24_t)                     \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8_SRGB, uint16_t)                                      \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8_SNORM, uint16_t)                                     \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8G8_UNORM, uint16_t)                                     \
@@ -31,12 +34,29 @@
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8_SSCALED, uint8_t)                                      \
   IMAGE_FORMAT_MACRO(VkFormat, VK_FORMAT_R8_USCALED, uint8_t)
 
-// Table with all host image formats and their mapping of C types
-#define FOR_EACH_HOST_IMAGE_FORMAT(IMAGE_FORMAT_MACRO)                                             \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::RGBA8, uint32_t)                            \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::A8, uint8_t)                                \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::R8, uint8_t)                                \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::RG8, uint16_t)                              \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::RGB8, char24_t)                             \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::BGR8, char24_t)                             \
-  IMAGE_FORMAT_MACRO(RHI::HostImageFormat, RHI::HostImageFormat::BGRA8, uint32_t)
+FOR_EACH_VULKAN_IMAGE_FORMAT(DECLARE_IMAGE_FORMAT)
+
+namespace RHI::utils
+{
+template<>
+inline uint32_t GetSizeOfTexel<VkFormat>(VkFormat format) noexcept
+{
+#define INIT_MAP_WITH_IMAGE_FORMAT(format_type, format_value, c_type)                              \
+  {format_value, static_cast<uint32_t>(sizeof(c_type))},
+  static const std::unordered_map<VkFormat, uint32_t> map = {
+    FOR_EACH_VULKAN_IMAGE_FORMAT(INIT_MAP_WITH_IMAGE_FORMAT)};
+  auto it = map.find(format);
+  if (it == map.end())
+    return 0;
+  return it->second;
+#undef INIT_MAP_WITH_IMAGE_FORMAT
+}
+
+/// Get size of image
+template<typename FormatT>
+inline size_t GetSizeOfImage(const VkExtent3D & extent, FormatT format) noexcept
+{
+  return extent.width * extent.height * extent.depth * GetSizeOfTexel<FormatT>(format);
+}
+
+} // namespace RHI::utils
