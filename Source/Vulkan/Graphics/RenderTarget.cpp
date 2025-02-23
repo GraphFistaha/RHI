@@ -9,18 +9,18 @@
 namespace RHI::vulkan
 {
 
-RenderTarget::RenderTarget(const Context & ctx)
-  : m_context(ctx)
+RenderTarget::RenderTarget(Context & ctx)
+  : OwnedBy<Context>(ctx)
 {
 }
 
 RenderTarget::~RenderTarget()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
 }
 
 RenderTarget::RenderTarget(RenderTarget && rhs) noexcept
-  : m_context(rhs.m_context)
+  : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
   std::swap(m_views, rhs.m_views);
@@ -37,8 +37,9 @@ RenderTarget::RenderTarget(RenderTarget && rhs) noexcept
 
 RenderTarget & RenderTarget::operator=(RenderTarget && rhs) noexcept
 {
-  if (this != &rhs && &m_context == &rhs.m_context)
+  if (this != &rhs)
   {
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
     std::swap(m_views, rhs.m_views);
     std::swap(m_extent, rhs.m_extent);
@@ -80,9 +81,9 @@ void RenderTarget::Invalidate()
   assert(m_boundRenderPass);
   if (m_invalidFramebuffer || !m_framebuffer)
   {
-    auto new_framebuffer = m_builder.Make(m_context.GetDevice(), m_boundRenderPass, m_extent);
-    m_context.Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkFramebuffer");
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
+    auto new_framebuffer = m_builder.Make(GetContext().GetDevice(), m_boundRenderPass, m_extent);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkFramebuffer");
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
     m_framebuffer = new_framebuffer;
     m_invalidFramebuffer = false;
   }
@@ -102,19 +103,31 @@ const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcep
   return m_clearValues;
 }
 
-void RenderTarget::AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image, ImageView && view)
+void RenderTarget::AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image,
+                                 ImageView && view)
 {
   while (index >= m_images.size())
   {
-    m_views.emplace_back();
+    m_views.emplace_back(GetContext());
     m_clearValues.emplace_back();
     m_images.emplace_back(nullptr);
   }
-  m_builder.BindAttachment(index, view.GetImageView());
+  m_builder.BindAttachment(index, view.GetHandle());
   m_invalidFramebuffer = true;
 
   m_views[index] = std::move(view);
   m_images[index] = std::move(image);
+}
+
+void RenderTarget::ForEachAttachedImage(ProcessImagesFunc && func) noexcept
+{
+  for (auto && imagePtr : m_images)
+    func(*imagePtr);
+}
+
+size_t RenderTarget::GetAttachmentsCount() const noexcept
+{
+  return m_images.size();
 }
 
 void RHI::vulkan::RenderTarget::ClearAttachments() noexcept

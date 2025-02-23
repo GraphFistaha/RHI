@@ -147,7 +147,6 @@ int main()
   for (uint32_t i = 0; i < 8; ++i)
   {
     auto * texture = trianglePipeline.DeclareSampler(i, RHI::ShaderType::Fragment);
-    texture->Invalidate();
     texture->AssignImage(*it->get());
     samplers.push_back(texture);
     it = std::next(it);

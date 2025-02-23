@@ -103,11 +103,18 @@ MemoryBlock::~MemoryBlock()
     vmaDestroyImage(allocatorHandle, m_image, reinterpret_cast<VmaAllocation>(m_memBlock));
 }
 
-void MemoryBlock::UploadSync(const void * data, size_t size, size_t offset)
+bool MemoryBlock::UploadSync(const void * data, size_t size, size_t offset)
 {
   auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
   auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
-  vmaCopyMemoryToAllocation(allocator, data, allocation, offset, size);
+  return vmaCopyMemoryToAllocation(allocator, data, allocation, offset, size) == VK_SUCCESS;
+}
+
+bool MemoryBlock::DownloadSync(size_t offset, void * data, size_t size) const
+{
+  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
+  return vmaCopyAllocationToMemory(allocator, allocation, offset, data, size) == VK_SUCCESS;
 }
 
 IBufferGPU::ScopedPointer MemoryBlock::Map()
@@ -141,7 +148,6 @@ void MemoryBlock::Flush() const noexcept
   auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
   vmaFlushAllocation(allocator, reinterpret_cast<VmaAllocation>(m_memBlock), 0, m_size);
 }
-
 
 bool MemoryBlock::IsMapped() const noexcept
 {

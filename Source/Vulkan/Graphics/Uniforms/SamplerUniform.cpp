@@ -37,21 +37,23 @@ VkSampler CreateSampler(const VkDevice & device)
 } // namespace details
 
 
-SamplerUniform::SamplerUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+SamplerUniform::SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                                uint32_t binding, uint32_t arrayIndex)
   : BaseUniform(ctx, owner, type, binding, arrayIndex)
   , ISamplerUniformDescriptor()
+  , m_view(ctx)
 {
 }
 
 SamplerUniform::~SamplerUniform()
 {
-  m_context.GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
 }
 
 SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
   : BaseUniform(std::move(rhs))
   , ISamplerUniformDescriptor()
+  , m_view(GetContext())
 {
   std::swap(rhs.m_view, m_view);
   std::swap(rhs.m_sampler, m_sampler);
@@ -60,9 +62,9 @@ SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
 
 SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
 {
-  BaseUniform::operator=(std::move(rhs));
-  if (this != &rhs && &rhs.m_context == &m_context)
+  if (this != &rhs)
   {
+    BaseUniform::operator=(std::move(rhs));
     std::swap(rhs.m_view, m_view);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);
@@ -80,7 +82,7 @@ VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
   assert(m_sampler);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_view.GetImageView();
+  imageInfo.imageView = m_view.GetHandle();
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -89,8 +91,8 @@ void SamplerUniform::Invalidate()
 {
   if (m_invalidSampler || !m_sampler)
   {
-    auto new_sampler = details::CreateSampler(m_context.GetDevice());
-    m_context.GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
+    auto new_sampler = details::CreateSampler(GetContext().GetDevice());
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
     m_sampler = new_sampler;
     m_invalidSampler = false;
   }
@@ -101,14 +103,14 @@ void SamplerUniform::SetInvalid()
   m_invalidSampler = true;
 }
 
-void SamplerUniform::AssignImage(const IImageGPU & image)
+void SamplerUniform::AssignImage(IImageGPU & image)
 {
+  Invalidate();
   auto && internalImage = utils::CastInterfaceClass2Internal<ImageBase>(image);
-  //TODO: here must be done - internalImage.SetImageLayout();
-  m_view.AssignImage(internalImage,
+
+  m_view.AssignImage(&internalImage,
                      utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetDescription().type));
-  assert(m_owner);
-  m_owner->OnDescriptorChanged(*this);
+  GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept

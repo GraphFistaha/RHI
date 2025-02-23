@@ -199,7 +199,7 @@ struct IUniformDescriptor : public IInvalidable
 
 struct ISamplerUniformDescriptor : public IUniformDescriptor
 {
-  virtual void AssignImage(const IImageGPU & image) = 0;
+  virtual void AssignImage(IImageGPU & image) = 0;
   virtual bool IsImageAssigned() const noexcept = 0;
 };
 
@@ -232,7 +232,7 @@ struct ISubpassConfiguration : public IInvalidable
                                     ISamplerUniformDescriptor * out_array[]) = 0;
 
   /// @brief Get subpass index
-  virtual uint32_t GetSubpass() const = 0;
+  virtual uint32_t GetSubpassIndex() const = 0;
 };
 
 // IRenderTarget

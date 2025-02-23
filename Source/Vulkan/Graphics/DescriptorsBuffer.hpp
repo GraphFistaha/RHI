@@ -2,10 +2,10 @@
 
 #include <deque>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../ContextualObject.hpp"
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
 #include "Uniforms/BufferUniform.hpp"
@@ -13,13 +13,15 @@
 
 namespace RHI::vulkan
 {
+struct Context;
 struct SubpassConfiguration;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct DescriptorBuffer final : public ContextualObject
+struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
+                                public OwnedBy<SubpassConfiguration>
 {
   explicit DescriptorBuffer(Context & ctx, SubpassConfiguration & owner);
   ~DescriptorBuffer();
@@ -41,13 +43,13 @@ struct DescriptorBuffer final : public ContextualObject
   VkDescriptorSetLayout GetLayoutHandle() const noexcept;
   VkDescriptorSet GetHandle() const noexcept;
 
+  void TransitLayoutForUsedImages(details::CommandBuffer& commandBuffer);
+
 private:
   using BufferUniforms = std::deque<BufferUniform>;
   using SamplerUniforms = std::deque<SamplerUniform>;
 
 private:
-  SubpassConfiguration & m_owner;
-
   VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
   VkDescriptorSet m_set = VK_NULL_HANDLE;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;
@@ -61,6 +63,10 @@ private:
   bool m_invalidLayout : 1 = false;
   bool m_invalidPool : 1 = false;
   bool m_invalidSet : 1 = false;
+
+public:
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(SubpassConfiguration, GetConfiguration);
 };
 
 } // namespace RHI::vulkan

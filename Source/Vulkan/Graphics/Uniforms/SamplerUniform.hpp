@@ -13,14 +13,14 @@ namespace RHI::vulkan
 struct SamplerUniform final : public ISamplerUniformDescriptor,
                               private details::BaseUniform
 {
-  explicit SamplerUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+  explicit SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                           uint32_t binding, uint32_t arrayIndex = 0);
   virtual ~SamplerUniform() override;
   SamplerUniform(SamplerUniform && rhs) noexcept;
   SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
 
 public: // ISamplerUniformDescriptor interface
-  virtual void AssignImage(const IImageGPU & image) override;
+  virtual void AssignImage(IImageGPU & image) override;
   virtual bool IsImageAssigned() const noexcept override;
 
 public:
@@ -33,7 +33,7 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  VkImageView GetImageView() const noexcept { return m_view.GetImageView(); }
+  const ImageView & GetImageView() const & noexcept { return m_view; }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 

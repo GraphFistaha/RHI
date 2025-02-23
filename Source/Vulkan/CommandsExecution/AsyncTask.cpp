@@ -6,7 +6,7 @@ namespace RHI::vulkan
 {
 
 AsyncTask::AsyncTask(Context & ctx)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
 {
   m_semaphore = utils::CreateVkSemaphore(ctx.GetDevice());
   m_fence = utils::CreateFence(ctx.GetDevice(), true);
@@ -19,7 +19,7 @@ AsyncTask::~AsyncTask()
 }
 
 AsyncTask::AsyncTask(AsyncTask && rhs) noexcept
-  : ContextualObject(std::move(rhs))
+  : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_fence, rhs.m_fence);
   std::swap(m_semaphore, rhs.m_semaphore);
@@ -29,7 +29,7 @@ AsyncTask & AsyncTask::operator=(AsyncTask && rhs) noexcept
 {
   if (this != &rhs)
   {
-    ContextualObject::operator=(std::move(rhs));
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_fence, rhs.m_fence);
     std::swap(m_semaphore, rhs.m_semaphore);
   }

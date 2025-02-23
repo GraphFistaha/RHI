@@ -1,14 +1,19 @@
 #pragma once
 #include <numeric>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../ContextualObject.hpp"
+namespace RHI::vulkan
+{
+struct Context;
+}
+
 
 namespace RHI::vulkan::details
 {
-struct CommandBuffer : public ContextualObject
+struct CommandBuffer : public OwnedBy<Context>
 {
   explicit CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
   virtual ~CommandBuffer();
@@ -33,6 +38,7 @@ struct CommandBuffer : public ContextualObject
 
 public:
   VkCommandBuffer GetHandle() const noexcept { return m_buffer; }
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
   VkCommandBufferLevel m_level;

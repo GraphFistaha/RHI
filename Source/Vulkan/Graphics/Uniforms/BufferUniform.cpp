@@ -6,7 +6,7 @@
 
 namespace RHI::vulkan
 {
-BufferUniform::BufferUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+BufferUniform::BufferUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                              uint32_t binding, uint32_t arrayIndex)
   : BaseUniform(ctx, owner, type, binding, arrayIndex)
 {
@@ -22,9 +22,9 @@ BufferUniform::BufferUniform(BufferUniform && rhs) noexcept
 
 BufferUniform & BufferUniform::operator=(BufferUniform && rhs) noexcept
 {
-  BaseUniform::operator=(std::move(rhs));
   if (this != &rhs)
   {
+    BaseUniform::operator=(std::move(rhs));
     std::swap(m_buffer, rhs.m_buffer);
     std::swap(m_size, rhs.m_size);
     std::swap(m_offset, rhs.m_offset);
@@ -34,12 +34,12 @@ BufferUniform & BufferUniform::operator=(BufferUniform && rhs) noexcept
 
 void BufferUniform::AssignBuffer(const IBufferGPU & buffer, size_t offset)
 {
+  Invalidate();
   auto && internalBuffer = utils::CastInterfaceClass2Internal<const BufferGPU &>(buffer);
   m_buffer = internalBuffer.GetHandle();
   m_size = internalBuffer.Size();
   m_offset = offset;
-  assert(m_owner);
-  m_owner->OnDescriptorChanged(*this);
+  GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept

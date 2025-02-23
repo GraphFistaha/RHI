@@ -9,7 +9,7 @@ namespace RHI::vulkan
 {
 
 RenderPass::RenderPass(Context & ctx)
-  : ContextualObject(ctx)
+  : OwnedBy(ctx)
   , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
   , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
   , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
@@ -37,16 +37,23 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-AsyncTask * RenderPass::Draw(const RenderTarget & renderTarget,
-                             VkSemaphore imageAvailiableSemaphore)
+AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore)
 {
   assert(m_renderPass);
+  assert(renderTarget.GetAttachmentsCount() == m_cachedAttachments.size());
   VkFramebuffer buf = renderTarget.GetHandle();
   VkExtent3D extent = renderTarget.GetVkExtent();
   auto && clearValues = renderTarget.GetClearValues();
 
   m_submitter.WaitForSubmitCompleted();
   m_submitter.BeginWriting();
+
+  // here transfer layouts  for subpasses
+  for (auto && subpass : m_subpasses)
+  {
+    subpass.TransitLayoutForUsedImages(m_submitter);
+  }
+
 
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -60,14 +67,22 @@ AsyncTask * RenderPass::Draw(const RenderTarget & renderTarget,
   m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
+  renderTarget.ForEachAttachedImage(
+    [it = m_cachedAttachments.begin()](ImageBase & img) mutable
+    {
+      img.SetImageLayoutBeforeRenderPass(it->initialLayout);
+      ++it;
+    });
+
   // execute commands for subpasses
   {
     std::vector<VkCommandBuffer> subpassBuffers;
+    subpassBuffers.reserve(m_subpasses.size());
     for (auto && subpass : m_subpasses)
     {
       subpass.LockWriting(true);
       if (subpass.IsEnabled())
-        subpassBuffers.push_back(subpass.GetCommandBuffer().GetHandle());
+        subpassBuffers.push_back(subpass.GetCommandBufferForExecution().GetHandle());
     }
     if (!subpassBuffers.empty())
       m_submitter.AddCommands(subpassBuffers);
@@ -80,6 +95,14 @@ AsyncTask * RenderPass::Draw(const RenderTarget & renderTarget,
 
 
   m_submitter.PushCommand(vkCmdEndRenderPass);
+
+  renderTarget.ForEachAttachedImage(
+    [it = m_cachedAttachments.begin()](ImageBase & img) mutable
+    {
+      img.SetImageLayoutAfterRenderPass(it->finalLayout);
+      ++it;
+    });
+
   m_submitter.EndWriting();
   std::vector<VkSemaphore> waitSemaphores;
   if (imageAvailiableSemaphore)

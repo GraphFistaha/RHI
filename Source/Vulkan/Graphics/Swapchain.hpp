@@ -6,7 +6,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../ContextualObject.hpp"
+#include <OwnedBy.hpp>
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
 
@@ -15,7 +15,7 @@ namespace RHI::vulkan
 
 /// @brief vulkan implementation for renderer
 struct Swapchain : public IRenderPass,
-                   public ContextualObject
+                   public OwnedBy<Context>
 {
   explicit Swapchain(Context & ctx);
   virtual ~Swapchain() override;
@@ -72,6 +72,9 @@ protected:
   std::atomic_bool m_frameStarted = false;
   uint32_t m_activeImageIdx = InvalidImageIndex;
   VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
+
+public:
+    MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 };
 
 } // namespace RHI::vulkan

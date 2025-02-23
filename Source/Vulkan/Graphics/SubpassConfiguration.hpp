@@ -1,15 +1,16 @@
 #pragma once
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../ContextualObject.hpp"
 #include "../Utils/PipelineBuilder.hpp"
 #include "../Utils/PipelineLayoutBuilder.hpp"
 #include "DescriptorsBuffer.hpp"
 
 namespace RHI::vulkan
 {
+struct Context;
 struct RenderPass;
 struct Subpass;
 } // namespace RHI::vulkan
@@ -18,10 +19,10 @@ namespace RHI::vulkan
 {
 
 struct SubpassConfiguration final : public ISubpassConfiguration,
-                                    public ContextualObject
+                                    public OwnedBy<Context>,
+                                    public OwnedBy<Subpass>
 {
-  explicit SubpassConfiguration(Context & ctx, Subpass & owner, const RenderPass & renderPass,
-                                uint32_t subpassIndex);
+  explicit SubpassConfiguration(Context & ctx, Subpass & owner, uint32_t subpassIndex);
   virtual ~SubpassConfiguration() override;
 
 public: // ISubpassConfiguration interface
@@ -38,7 +39,7 @@ public: // ISubpassConfiguration interface
   virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * out_array[]) override;
 
-  virtual uint32_t GetSubpass() const noexcept override { return m_subpassIndex; }
+  virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
@@ -48,12 +49,9 @@ public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_layout; }
   void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint);
-  Subpass & GetSubpassOwner() & noexcept { return m_owner; }
+  void TransitLayoutForUsedImages(details::CommandBuffer& commandBuffer);
 
 private:
-  const RenderPass & m_renderPass;
-  Subpass & m_owner;
-
   uint32_t m_subpassIndex;
 
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
@@ -65,6 +63,10 @@ private:
   utils::PipelineBuilder m_pipelineBuilder;
   bool m_invalidPipeline : 1 = false;
   bool m_invalidPipelineLayout : 1 = false;
+
+public:
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(Subpass, GetSubpass);
 };
 
 } // namespace RHI::vulkan

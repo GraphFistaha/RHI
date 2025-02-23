@@ -13,7 +13,7 @@ namespace RHI::vulkan
 struct BufferUniform final : public IBufferUniformDescriptor,
                              private details::BaseUniform
 {
-  explicit BufferUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+  explicit BufferUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                          uint32_t binding, uint32_t arrayIndex = 0);
   virtual ~BufferUniform() override = default;
   BufferUniform(BufferUniform && rhs) noexcept;

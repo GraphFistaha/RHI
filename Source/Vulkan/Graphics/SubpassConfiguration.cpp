@@ -8,11 +8,9 @@
 namespace RHI::vulkan
 {
 
-SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner,
-                                           const RenderPass & renderPass, uint32_t subpassIndex)
-  : ContextualObject(ctx)
-  , m_owner(owner)
-  , m_renderPass(renderPass)
+SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner, uint32_t subpassIndex)
+  : OwnedBy<Context>(ctx)
+  , OwnedBy<Subpass>(owner)
   , m_subpassIndex(subpassIndex)
   , m_descriptors(ctx, *this)
 {
@@ -32,7 +30,7 @@ void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::
 
 void SubpassConfiguration::SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding)
 {
-  m_owner.SetImageAttachmentUsage(binding, slot);
+  GetSubpass().SetImageAttachmentUsage(binding, slot);
 }
 
 void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
@@ -102,7 +100,8 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(), m_renderPass.GetHandle(),
+    auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(),
+                                               GetSubpass().GetRenderPass().GetHandle(),
                                                m_subpassIndex, m_layout);
     GetContext().Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
@@ -110,7 +109,7 @@ void SubpassConfiguration::Invalidate()
     m_invalidPipeline = false;
   }
 
-  m_owner.SetDirtyCacheCommands();
+  GetSubpass().SetDirtyCacheCommands();
 }
 
 void SubpassConfiguration::SetInvalid()
@@ -125,6 +124,11 @@ void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
   assert(m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
   m_descriptors.BindToCommandBuffer(buffer, m_layout, bindPoint);
+}
+
+void SubpassConfiguration::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
+{
+  m_descriptors.TransitLayoutForUsedImages(commandBuffer);
 }
 
 } // namespace RHI::vulkan

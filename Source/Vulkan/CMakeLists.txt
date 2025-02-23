@@ -2,8 +2,6 @@ target_sources (${PROJECT_NAME}
 PRIVATE
 	VulkanContext.cpp
 	VulkanContext.hpp
-	ContextualObject.cpp
-	ContextualObject.hpp
 	GarbageCollector.cpp
 	GarbageCollector.hpp
 	Memory/MemoryAllocator.hpp

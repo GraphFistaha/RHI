@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -16,9 +17,10 @@ struct Context;
 namespace RHI::vulkan
 {
 
-struct RenderTarget : public IRenderTarget
+struct RenderTarget : public IRenderTarget,
+                      public OwnedBy<Context>
 {
-  explicit RenderTarget(const Context & ctx);
+  explicit RenderTarget(Context & ctx);
   virtual ~RenderTarget() override;
   RenderTarget(RenderTarget && rhs) noexcept;
   RenderTarget & operator=(RenderTarget && rhs) noexcept;
@@ -41,10 +43,13 @@ public:
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
   void AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image, ImageView && view);
+  using ProcessImagesFunc = std::function<void(ImageBase &)>;
+  void ForEachAttachedImage(ProcessImagesFunc && func) noexcept;
+  size_t GetAttachmentsCount() const noexcept;
   void ClearAttachments() noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 protected:
-  const Context & m_context;
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
 
   VkExtent3D m_extent;

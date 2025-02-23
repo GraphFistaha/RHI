@@ -12,7 +12,8 @@ struct MemoryBlock final
   MemoryBlock(MemoryBlock && rhs) noexcept;
   MemoryBlock & operator=(MemoryBlock && rhs) noexcept;
 
-  void UploadSync(const void * data, size_t size, size_t offset = 0);
+  bool UploadSync(const void * data, size_t size, size_t offset = 0);
+  bool DownloadSync(size_t offset, void * data, size_t size) const;
   IBufferGPU::ScopedPointer Map();
   void Flush() const noexcept;
   bool IsMapped() const noexcept;

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../ContextualObject.hpp"
 #include "ImageBase.hpp"
 
 namespace RHI::vulkan
@@ -14,24 +14,23 @@ struct Context;
 namespace RHI::vulkan
 {
 /// @brief reference on image
-struct ImageView final
+struct ImageView final : public OwnedBy<Context>
 {
-  ImageView() = default;
-  explicit ImageView(const ImageBase & image, VkImageView view);
-  explicit ImageView(const ImageBase & image, VkImageViewType type);
-
+  explicit ImageView(Context & ctx);
   ~ImageView();
   ImageView(ImageView && rhs) noexcept;
   ImageView & operator=(ImageView && rhs) noexcept;
 
-  void AssignImage(const ImageBase & image, VkImageView view);
-  void AssignImage(const ImageBase & image, VkImageViewType type);
+  void AssignImage(ImageBase * image, VkImageView view);
+  void AssignImage(ImageBase * image, VkImageViewType type);
   bool IsImageAssigned() const noexcept;
 
-  VkImageView GetImageView() const noexcept { return m_view; }
+  VkImageView GetHandle() const noexcept { return m_view; }
+  ImageBase * GetImagePtr() const noexcept { return m_imagePtr; }
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
-  const ImageBase * m_imagePtr = nullptr;
+  ImageBase * m_imagePtr = nullptr;
   bool m_owns = false;
   VkImageView m_view = VK_NULL_HANDLE;
 

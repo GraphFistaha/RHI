@@ -24,7 +24,7 @@ namespace RHI::vulkan
 {
 
 Swapchain::Swapchain(Context & ctx)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
   , m_renderPass(ctx)
 {
 }
@@ -115,7 +115,9 @@ void Swapchain::InvalidateAttachments()
       if (m_ownedImages[binding])
       {
         auto image = std::make_unique<ImageGPU>(GetContext(), description);
-        ImageView view(*image, utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
+        ImageView view(GetContext());
+        view.AssignImage(image.get(),
+                         utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
         target.AddAttachment(binding, std::move(image), std::move(view));
       }
       binding++;

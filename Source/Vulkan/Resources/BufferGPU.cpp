@@ -10,7 +10,7 @@ namespace RHI::vulkan
 {
 
 BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool mapped /* = false*/)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
 {
   VmaAllocationCreateFlags allocation_flags = 0;
   if (mapped)
@@ -34,7 +34,7 @@ BufferGPU::~BufferGPU()
 }
 
 BufferGPU::BufferGPU(BufferGPU && rhs) noexcept
-  : ContextualObject(std::move(rhs))
+  : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_memBlock, rhs.m_memBlock);
 }
@@ -43,7 +43,7 @@ BufferGPU & BufferGPU::operator=(BufferGPU && rhs) noexcept
 {
   if (this != &rhs)
   {
-    ContextualObject::operator=(std::move(rhs));
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_memBlock, rhs.m_memBlock);
   }
   return *this;

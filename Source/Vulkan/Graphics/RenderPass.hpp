@@ -4,17 +4,18 @@
 #include <list>
 #include <shared_mutex>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
-#include "../ContextualObject.hpp"
 #include "../Images/ImageView.hpp"
 #include "../Utils/RenderPassBuilder.hpp"
 #include "Subpass.hpp"
 
 namespace RHI::vulkan
 {
+struct Context;
 struct RenderTarget;
 } // namespace RHI::vulkan
 
@@ -22,14 +23,14 @@ namespace RHI::vulkan
 {
 
 struct RenderPass : public IInvalidable,
-                    public ContextualObject
+                    public OwnedBy<Context>
 {
   explicit RenderPass(Context & ctx);
   virtual ~RenderPass() override;
 
 public: // IRenderPass Interface
   ISubpass * CreateSubpass();
-  AsyncTask * Draw(const RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
+  AsyncTask * Draw(RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
@@ -58,5 +59,10 @@ private:
   details::Submitter m_submitter;
   std::list<Subpass> m_subpasses;
   uint32_t m_createSubpassCallsCounter = 0;
+
+public:
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 };
+
+
 } // namespace RHI::vulkan

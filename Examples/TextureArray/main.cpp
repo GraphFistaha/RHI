@@ -144,49 +144,49 @@ int main()
   trianglePipeline.DeclareSamplersArray(0, RHI::ShaderType::Fragment, samplersCount,
                                         samplers.data());
 
-  auto it = textures.begin();
-  for (auto && sampler : samplers)
   {
-    sampler->Invalidate();
-    sampler->AssignImage(*it->get());
-    it = std::next(it);
-    if (it == textures.end())
-      it = textures.begin();
+    auto it = image_it;
+    for (auto && sampler : samplers)
+    {
+      sampler->AssignImage(*it->get());
+      it = std::next(it);
+      if (it == textures.end())
+        it = textures.begin();
+    }
   }
 
+  ShouldSwitchNextImage = true;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
     ctx->Flush();
 
+    if (ShouldSwitchNextImage)
+    {
+      image_it = std::next(image_it);
+      if (image_it == textures.end())
+        image_it = textures.begin();
+      auto it = image_it;
+      for (auto && sampler : samplers)
+      {
+        sampler->AssignImage(*it->get());
+        it = std::next(it);
+        if (it == textures.end())
+          it = textures.begin();
+      }
+      ShouldSwitchNextImage = false;
+    }
+
     if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
-
-      // change textures at realtime
-      if (ShouldSwitchNextImage)
-      {
-        image_it = std::next(image_it);
-        if (image_it == textures.end())
-          image_it = textures.begin();
-        auto it = image_it;
-        for (auto && sampler : samplers)
-        {
-
-          sampler->AssignImage(*it->get());
-          it = std::next(it);
-          if (it == textures.end())
-            it = textures.begin();
-        }
-        ShouldSwitchNextImage = false;
-      }
-
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
+        subpass->BeginPass();
+
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        subpass->BeginPass();
         subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
         subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
         constexpr int cells_count_in_row = 8;
@@ -208,10 +208,10 @@ int main()
             subpass->DrawVertices(6, 1);
           }
         }
-
-        subpass->EndPass();
         ShouldInvalidateScene = false;
+        subpass->EndPass();
       }
+
       swapchain->EndFrame();
     }
   }

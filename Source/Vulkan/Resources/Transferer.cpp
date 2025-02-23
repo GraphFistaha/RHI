@@ -9,7 +9,7 @@ namespace RHI::vulkan
 {
 
 Transferer::Transferer(Context & ctx)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
   , m_queueFamilyIndex(ctx.GetQueue(QueueType::Transfer).first)
   , m_queue(ctx.GetQueue(QueueType::Transfer).second)
   , m_writingTransferData(ctx, m_queue, m_queueFamilyIndex)
@@ -19,7 +19,7 @@ Transferer::Transferer(Context & ctx)
 }
 
 Transferer::Transferer(Transferer && rhs) noexcept
-  : ContextualObject(std::move(rhs))
+  : OwnedBy<Context>(std::move(rhs))
   , m_writingTransferData(std::move(rhs.m_writingTransferData))
   , m_executingTransferData(std::move(rhs.m_executingTransferData))
 {
@@ -31,7 +31,7 @@ Transferer & Transferer::operator=(Transferer && rhs) noexcept
 {
   if (this != &rhs)
   {
-    ContextualObject::operator=(std::move(rhs));
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_queue, rhs.m_queue);
     std::swap(m_queueFamilyIndex, rhs.m_queueFamilyIndex);
     std::swap(m_writingTransferData, rhs.m_writingTransferData);

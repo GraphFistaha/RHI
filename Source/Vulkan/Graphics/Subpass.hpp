@@ -2,23 +2,25 @@
 #include <atomic>
 #include <mutex>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
-#include "../ContextualObject.hpp"
 #include "SubpassConfiguration.hpp"
 #include "SubpassLayout.hpp"
 
 namespace RHI::vulkan
 {
+struct Context;
 struct RenderPass;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 struct Subpass : public ISubpass,
-                 public ContextualObject
+                 public OwnedBy<Context>,
+                 public OwnedBy<RenderPass>
 {
   using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderImageSlot>;
   explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
@@ -60,15 +62,20 @@ public: // Commands
   void PushConstant(const void * data, size_t size) override;
 
 public:
-  const details::CommandBuffer & GetCommandBuffer() const & noexcept { return m_executableBuffer; }
-  void LockWriting(bool lock) const noexcept;
-  void SetDirtyCacheCommands() noexcept;
-  void SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot);
+  const details::CommandBuffer & GetCommandBufferForExecution() const & noexcept
+  {
+    return m_executableBuffer;
+  }
+  details::CommandBuffer & GetCommandBufferForWriting() & noexcept { return m_writingBuffer; }
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
 
+  void LockWriting(bool lock) const noexcept;
+  void SetDirtyCacheCommands() noexcept;
+  void SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot);
+  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
+
 private:
-  RenderPass & m_ownerPass;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
   details::CommandBuffer m_executableBuffer;
   details::CommandBuffer m_writingBuffer;
@@ -78,5 +85,9 @@ private:
   std::atomic_bool m_shouldBeInvalidated = true;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
+
+public:
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 };
 } // namespace RHI::vulkan

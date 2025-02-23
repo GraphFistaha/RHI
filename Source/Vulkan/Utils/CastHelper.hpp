@@ -1,6 +1,7 @@
 #pragma once
 
 #include <RHI.hpp>
+#include <Types.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan::utils
@@ -8,7 +9,8 @@ namespace RHI::vulkan::utils
 template<typename InternalClassT, typename InterfaceClassT>
 constexpr decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
 {
-  return dynamic_cast<const InternalClassT &>(std::forward<InterfaceClassT>(obj));
+    using ResultType = RHI::utils::copy_cv_reference_t<InterfaceClassT, InternalClassT>;
+  return dynamic_cast<ResultType>(std::forward<InterfaceClassT>(obj));
 }
 
 template<typename VulkanEnumT, typename InterfaceEnumT>

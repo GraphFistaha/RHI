@@ -38,7 +38,7 @@ namespace RHI::vulkan::details
 {
 
 CommandBuffer::CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
   , m_level(level)
   , m_pool(::CreateCommandPool(ctx.GetDevice(), queue_family))
   , m_buffer(::CreateCommandBuffer(ctx.GetDevice(), m_pool, level))
@@ -56,7 +56,7 @@ CommandBuffer::~CommandBuffer()
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept
-  : ContextualObject(std::move(rhs))
+  : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(rhs.m_pool, m_pool);
   std::swap(rhs.m_buffer, m_buffer);
@@ -68,7 +68,7 @@ CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs) noexcept
 {
   if (this != &rhs)
   {
-    ContextualObject::operator=(std::move(rhs));
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(rhs.m_pool, m_pool);
     std::swap(rhs.m_buffer, m_buffer);
     std::swap(rhs.m_commandsCount, m_commandsCount);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <OwnedBy.hpp>
+#include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan
@@ -10,12 +12,13 @@ struct DescriptorBuffer;
 
 namespace RHI::vulkan::details
 {
-struct BaseUniform
+struct BaseUniform : public OwnedBy<Context>,
+                     public OwnedBy<DescriptorBuffer>
 {
-  explicit BaseUniform(const Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
+  explicit BaseUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                        uint32_t binding, uint32_t arrayIndex = 0)
-    : m_context(ctx)
-    , m_owner(&owner)
+    : OwnedBy<Context>(ctx)
+    , OwnedBy<DescriptorBuffer>(owner)
     , m_type(type)
     , m_arrayIndex(arrayIndex)
     , m_binding(binding)
@@ -24,9 +27,9 @@ struct BaseUniform
   virtual ~BaseUniform() = default;
 
   BaseUniform(BaseUniform && rhs) noexcept
-    : m_context(rhs.m_context)
+    : OwnedBy<Context>(std::move(rhs))
+    , OwnedBy<DescriptorBuffer>(std::move(rhs))
   {
-    std::swap(m_owner, rhs.m_owner);
     std::swap(m_type, rhs.m_type);
     std::swap(m_arrayIndex, rhs.m_arrayIndex);
     std::swap(m_binding, rhs.m_binding);
@@ -34,9 +37,10 @@ struct BaseUniform
 
   BaseUniform & operator=(BaseUniform && rhs) noexcept
   {
-    if (this != &rhs && &m_context == &rhs.m_context)
+    if (this != &rhs)
     {
-      std::swap(m_owner, rhs.m_owner);
+      OwnedBy<Context>::operator=(std::move(rhs));
+      OwnedBy<DescriptorBuffer>::operator=(std::move(rhs));
       std::swap(m_type, rhs.m_type);
       std::swap(m_arrayIndex, rhs.m_arrayIndex);
       std::swap(m_binding, rhs.m_binding);
@@ -47,9 +51,8 @@ struct BaseUniform
   VkDescriptorType GetDescriptorType() const noexcept { return m_type; }
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
   uint32_t GetBinding() const noexcept { return m_binding; }
-
-  const Context & m_context;
-  DescriptorBuffer * m_owner;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(DescriptorBuffer, GetDescriptorsBuffer);
 
 protected:
   VkDescriptorType m_type;

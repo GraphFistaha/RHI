@@ -112,8 +112,8 @@ constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 
 
 DescriptorBuffer::DescriptorBuffer(Context & ctx, SubpassConfiguration & owner)
-  : ContextualObject(ctx)
-  , m_owner(owner)
+  : OwnedBy<Context>(ctx)
+  , OwnedBy<SubpassConfiguration>(owner)
 {
 }
 
@@ -168,16 +168,18 @@ void DescriptorBuffer::Invalidate()
   for (auto && [type, oneTypeDescriptors] : m_bufferUniformDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
-      details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
+      if (descriptor.IsBufferAssigned())
+        details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
   }
 
   for (auto && [type, oneTypeDescriptors] : m_samplerDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
-      details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
+      if (descriptor.IsImageAssigned())
+        details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
   }
 
-  m_owner.GetSubpassOwner().SetDirtyCacheCommands();
+  GetConfiguration().GetSubpass().SetDirtyCacheCommands();
 }
 
 void DescriptorBuffer::DeclareUniformsArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
@@ -219,7 +221,7 @@ void DescriptorBuffer::OnDescriptorChanged(const BufferUniform & descriptor) noe
   if (m_set)
   {
     details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
-    m_owner.GetSubpassOwner().SetDirtyCacheCommands();
+    GetConfiguration().GetSubpass().SetDirtyCacheCommands();
   }
 }
 
@@ -228,7 +230,7 @@ void DescriptorBuffer::OnDescriptorChanged(const SamplerUniform & descriptor) no
   if (m_set)
   {
     details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
-    m_owner.GetSubpassOwner().SetDirtyCacheCommands();
+    GetConfiguration().GetSubpass().SetDirtyCacheCommands();
   }
 }
 
@@ -251,6 +253,20 @@ VkDescriptorSetLayout DescriptorBuffer::GetLayoutHandle() const noexcept
 VkDescriptorSet DescriptorBuffer::GetHandle() const noexcept
 {
   return m_set;
+}
+
+void DescriptorBuffer::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
+{
+  for (auto && [descriprorType, samplers] : m_samplerDescriptors)
+  {
+    VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    for (auto && sampler : samplers)
+    {
+      auto && imagePtr = sampler.GetImageView().GetImagePtr();
+      if (imagePtr)
+        imagePtr->TransferLayout(commandBuffer, layout);
+    }
+  }
 }
 
 } // namespace RHI::vulkan

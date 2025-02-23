@@ -1,7 +1,7 @@
 #pragma once
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 
-#include "../ContextualObject.hpp"
 #include "../Memory/MemoryBlock.hpp"
 
 namespace RHI::vulkan
@@ -13,7 +13,7 @@ namespace RHI::vulkan
 {
 
 struct BufferGPU : public IBufferGPU,
-                   public ContextualObject
+                   public OwnedBy<Context>
 {
   using IBufferGPU::ScopedPointer;
 
@@ -33,6 +33,7 @@ struct BufferGPU : public IBufferGPU,
 
 public:
   VkBuffer GetHandle() const noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
   memory::MemoryBlock m_memBlock;

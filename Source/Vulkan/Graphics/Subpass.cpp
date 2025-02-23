@@ -9,11 +9,11 @@
 namespace RHI::vulkan
 {
 Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, uint32_t familyIndex)
-  : ContextualObject(ctx)
-  , m_ownerPass(ownerPass)
+  : OwnedBy<Context>(ctx)
+  , OwnedBy<RenderPass>(ownerPass)
   , m_executableBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writingBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_pipeline(ctx, *this, ownerPass, subpassIndex)
+  , m_pipeline(ctx, *this, subpassIndex)
 {
 }
 
@@ -24,12 +24,12 @@ Subpass::~Subpass()
 
 void Subpass::BeginPass()
 {
-  m_ownerPass.WaitForReadyToRendering();
-  assert(m_ownerPass.GetHandle());
-  m_cachedRenderPass = m_ownerPass.GetHandle();
+  GetRenderPass().WaitForReadyToRendering();
+  assert(GetRenderPass().GetHandle());
+  m_cachedRenderPass = GetRenderPass().GetHandle();
   m_pipeline.Invalidate();
   m_writingBuffer.Reset();
-  m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpass());
+  m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
   m_pipeline.BindToCommandBuffer(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
@@ -131,7 +131,12 @@ void Subpass::SetDirtyCacheCommands() noexcept
 void Subpass::SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot)
 {
   m_layout.SetAttachment(slot, binding);
-  m_ownerPass.SetInvalid();
+  GetRenderPass().SetInvalid();
+}
+
+void Subpass::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
+{
+  m_pipeline.TransitLayoutForUsedImages(commandBuffer);
 }
 
 const SubpassLayout & Subpass::GetLayout() const & noexcept

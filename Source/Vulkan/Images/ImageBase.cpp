@@ -71,14 +71,14 @@ constexpr VkPipelineStageFlags LayoutTransfer_MakePipelineStage(VkImageLayout la
 namespace RHI::vulkan
 {
 ImageBase::ImageBase(Context & ctx, const ImageCreateArguments & description)
-  : ContextualObject(ctx)
+  : OwnedBy<Context>(ctx)
   , m_description(description)
 {
 }
 
 
 ImageBase::ImageBase(ImageBase && rhs) noexcept
-  : ContextualObject(std::move(rhs))
+  : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_image, rhs.m_image);
   std::swap(m_description, rhs.m_description);
@@ -88,7 +88,7 @@ ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
 {
   if (this != &rhs)
   {
-    ContextualObject::operator=(std::move(rhs));
+    OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_image, rhs.m_image);
     std::swap(m_description, rhs.m_description);
   }
@@ -110,6 +110,9 @@ std::future<DownloadResult> ImageBase::DownloadImage(HostImageFormat format,
 void ImageBase::TransferLayout(details::CommandBuffer & commandBuffer,
                                VkImageLayout newLayout) noexcept
 {
+  if (newLayout == VK_IMAGE_LAYOUT_UNDEFINED || newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED ||
+      newLayout == m_layout)
+    return;
   VkImageMemoryBarrier barrier{};
   {
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -130,14 +133,23 @@ void ImageBase::TransferLayout(details::CommandBuffer & commandBuffer,
   VkPipelineStageFlags sourceStage = LayoutTransfer_MakePipelineStage(m_layout);
   VkPipelineStageFlags destinationStage = LayoutTransfer_MakePipelineStage(newLayout);
 
+  std::lock_guard lk{m_layoutLock};
   commandBuffer.PushCommand(vkCmdPipelineBarrier, sourceStage, destinationStage, 0, 0, nullptr, 0,
                             nullptr, 1, &barrier);
   m_layout = newLayout;
 }
 
-void ImageBase::SetImageLayoutByRenderPass(VkImageLayout newLayout) noexcept
+void ImageBase::SetImageLayoutBeforeRenderPass(VkImageLayout newLayout) noexcept
+{
+  m_layoutLock.lock();
+  if (newLayout != VK_IMAGE_LAYOUT_UNDEFINED && newLayout != VK_IMAGE_LAYOUT_PREINITIALIZED)
+    m_layout = newLayout;
+}
+
+void ImageBase::SetImageLayoutAfterRenderPass(VkImageLayout newLayout) noexcept
 {
   m_layout = newLayout;
+  m_layoutLock.unlock();
 }
 
 VkImageType ImageBase::GetVulkanImageType() const noexcept
