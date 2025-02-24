@@ -73,6 +73,8 @@ PRIVATE
 	CommandsExecution/Submitter.hpp
 	CommandsExecution/AsyncTask.cpp
 	CommandsExecution/AsyncTask.hpp
+	CommandsExecution/CompositeAsyncTask.cpp
+	CommandsExecution/CompositeAsyncTask.hpp
 )
 
 #---------------- Link third-party libraries ---------------

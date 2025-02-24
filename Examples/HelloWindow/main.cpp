@@ -66,6 +66,12 @@ int main()
 #endif
 
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
+  if (!ctx)
+  {
+      assert(false);
+      glfwTerminate();
+      return -1;
+  }
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();

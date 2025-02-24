@@ -20,7 +20,8 @@ enum class QueueType : uint8_t
   Present,
   Graphics,
   Compute,
-  Transfer
+  Transfer,
+  Total
 };
 
 /// @brief context is object contains vulkan logical device. Also it provides access to vulkan functions
@@ -35,7 +36,7 @@ struct Context final : public IContext
 public: // IContext interface
   virtual IRenderPass * GetSurfaceSwapchain() override;
   virtual std::unique_ptr<IRenderPass> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                               uint32_t frames_count) override;
+                                                                uint32_t frames_count) override;
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) override;
@@ -54,7 +55,7 @@ public: // RHI-only API
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   Transferer & GetTransferer() & noexcept;
-  const memory::MemoryAllocator& GetBuffersAllocator() const & noexcept;
+  const memory::MemoryAllocator & GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
 private:

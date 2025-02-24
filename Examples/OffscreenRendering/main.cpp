@@ -41,13 +41,12 @@ int main()
 
   float t = 0.0;
   std::vector<uint8_t> pixels;
-  for (int i = 0; i < 1; ++i)
+  for (int i = 0; i < 10; ++i)
   {
     if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       auto * awaitable = swapchain->EndFrame();
-      awaitable->Wait(); // после этого, все прикрепления должны перейти в состояние finalLayout
 
       RHI::ImageRegion region{{0, 0, 0}, description.extent};
       auto future = renderTarget->GetImage(0)->DownloadImage(RHI::HostImageFormat::RGBA8, region);
@@ -56,6 +55,7 @@ int main()
       pixels = std::move(future.get());
     }
     t += 0.001f;
+    ctx->ClearResources();
   }
   return 0;
 }

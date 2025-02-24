@@ -101,7 +101,7 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
   vkb::PhysicalDeviceSelector selector{inst};
   auto phys_ret = selector.set_surface(surface)
                     .require_present(surface != VK_NULL_HANDLE)
-                    .set_minimum_version(apiVersion.first, apiVersion.second)
+                    //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
                     .select();
 
   if (!phys_ret)
@@ -126,13 +126,23 @@ struct Context::Impl final
   explicit Impl(const char * appName, const SurfaceConfig * config, LoggingFunc logFunc)
   {
     m_instance = CreateInstance("AppName", VulkanAPIVersion, logFunc);
+    logFunc(LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
     if (config)
+    {
       m_surface = CreateSurface(m_instance, *config);
+      logFunc(LogMessageStatus::LOG_DEBUG, "VkSurfaceKHR has been created successfully");
+    }
     else
+    {
       m_surface = VK_NULL_HANDLE;
+      logFunc(LogMessageStatus::LOG_DEBUG, "Context doesn't have VkSurvaceKHR");
+    }
     m_gpu = SelectPhysicalDevice(m_instance, m_surface, VulkanAPIVersionPair);
+    logFunc(LogMessageStatus::LOG_DEBUG,
+            "VkPhysicalDevice has been selected successfully" + m_gpu.name);
     vkb::DeviceBuilder device_builder{m_gpu};
     auto dev_ret = device_builder.build();
+    logFunc(LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
     if (!dev_ret)
     {
       std::string msg =
@@ -188,7 +198,7 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
   m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
-                                                           m_impl->GetDevice(), GetVulkanVersion());
+                                                          m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
   m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
 }
@@ -293,7 +303,7 @@ Transferer & Context::GetTransferer() & noexcept
   return it->second;
 }
 
-const memory::MemoryAllocator& Context::GetBuffersAllocator() const & noexcept
+const memory::MemoryAllocator & Context::GetBuffersAllocator() const & noexcept
 {
   return *m_allocator;
 }
@@ -310,7 +320,20 @@ namespace RHI
 std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config /* = nullptr*/,
                                         LoggingFunc loggingFunc /* = nullptr*/)
 {
-  return std::make_unique<vulkan::Context>(config, loggingFunc);
+  try
+  {
+    return std::make_unique<vulkan::Context>(config, loggingFunc);
+  }
+  catch (const std::exception & e)
+  {
+    loggingFunc(LogMessageStatus::LOG_ERROR, e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    loggingFunc(LogMessageStatus::LOG_ERROR, "Unknown error happend while creating VulkanContext");
+    return nullptr;
+  }
 }
 } // namespace RHI
 
