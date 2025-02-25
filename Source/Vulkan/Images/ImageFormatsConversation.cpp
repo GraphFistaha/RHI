@@ -7,10 +7,7 @@ namespace RHI::vulkan::utils
 template<typename SrcFormatT, typename DstFormatT, SrcFormatT srcFormat, DstFormatT dstFormat,
          typename srcTexel = RHI::utils::texel_type_t<SrcFormatT, srcFormat>,
          typename dstTexel = RHI::utils::texel_type_t<DstFormatT, dstFormat>>
-void CopyTexelsArray(const srcTexel * src, dstTexel * dst, uint32_t texelsCount) noexcept
-{
-    assert(false);
-}
+void CopyTexelsArray(const srcTexel * src, dstTexel * dst, uint32_t texelsCount) noexcept = delete;
 
 template<typename SrcFormatT, typename DstFormatT, SrcFormatT srcFormat, DstFormatT dstFormat,
          typename srcTexel = RHI::utils::texel_type_t<SrcFormatT, srcFormat>,
@@ -109,10 +106,10 @@ void CopyImageToHost(const uint8_t * srcPixelData, const ImageExtent & srcExtent
       if (srcFormat == VK_FORMAT_R8G8B8A8_SRGB)
       {
         utils::CopyImage<VkFormat, HostImageFormat, VK_FORMAT_R8G8B8A8_SRGB,
-                         HostImageFormat::RGB8>(reinterpret_cast<const RHI::utils::uint24_t *>(
-                                                  srcPixelData),
+                         HostImageFormat::RGB8>(reinterpret_cast<const uint32_t *>(srcPixelData),
                                                 srcExtent, srcRegion,
-                                                reinterpret_cast<uint32_t *>(dstPixelData),
+                                                reinterpret_cast<RHI::utils::uint24_t *>(
+                                                  dstPixelData),
                                                 dstExtent, dstRegion);
       }
       else
@@ -124,13 +121,17 @@ void CopyImageToHost(const uint8_t * srcPixelData, const ImageExtent & srcExtent
     case HostImageFormat::RGBA8:
     {
       if (srcFormat == VK_FORMAT_R8G8B8A8_SRGB)
+      {
         utils::CopyImage<VkFormat, HostImageFormat, VK_FORMAT_R8G8B8A8_SRGB,
                          HostImageFormat::RGBA8>(reinterpret_cast<const uint32_t *>(srcPixelData),
                                                  srcExtent, srcRegion,
                                                  reinterpret_cast<uint32_t *>(dstPixelData),
                                                  dstExtent, dstRegion);
+      }
       else
+      {
         throw std::runtime_error("Image formats are not compatible");
+      }
     }
     break;
   }
