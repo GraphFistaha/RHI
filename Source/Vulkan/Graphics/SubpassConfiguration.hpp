@@ -40,7 +40,7 @@ public: // ISubpassConfiguration interface
                                     ISamplerUniformDescriptor * out_array[]) override;
 
   virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
-
+  virtual void SetMeshTopology(MeshTopology topology) noexcept override;
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;

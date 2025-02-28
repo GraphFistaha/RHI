@@ -82,6 +82,12 @@ void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderSt
   m_invalidPipelineLayout = true;
 }
 
+void SubpassConfiguration::SetMeshTopology(MeshTopology topology) noexcept
+{
+  m_pipelineBuilder.SetMeshTopology(topology);
+  m_invalidPipeline = true;
+}
+
 void SubpassConfiguration::Invalidate()
 {
   m_descriptors.Invalidate();
