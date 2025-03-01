@@ -85,15 +85,8 @@ PRIVATE
 	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
 
-message(STATUS "Fetch vkBootstrap")
-FetchContent_Declare(
-    vk_bootstrap
-    GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        c710f245ffd55a49ac698f3dbf41aababfd51f12 # 16.09.2024 update
-)
-FetchContent_MakeAvailable(vk_bootstrap)
-
 add_subdirectory(ThirdParty/VulkanMemoryAllocator)
+add_subdirectory(ThirdParty/VkBootstrap)
 #find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
