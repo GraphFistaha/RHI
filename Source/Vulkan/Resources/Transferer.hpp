@@ -21,11 +21,11 @@ namespace RHI::vulkan
 
 namespace details
 {
-struct TransferSwapchain final : public OwnedBy<Context>
+struct Transferer final : public OwnedBy<Context>
 {
-  TransferSwapchain(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex);
-  TransferSwapchain(TransferSwapchain && rhs) noexcept;
-  TransferSwapchain & operator=(TransferSwapchain && rhs) noexcept;
+  Transferer(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex);
+  Transferer(Transferer && rhs) noexcept;
+  Transferer & operator=(Transferer && rhs) noexcept;
   IAwaitable * DoTransfer();
 
   std::future<UploadResult> UploadBuffer(BufferGPU & dstBuffer, const uint8_t * srcData,
@@ -76,8 +76,8 @@ struct Transferer final : public OwnedBy<Context>
                                             const ImageRegion & region);
 
 private:
-  details::TransferSwapchain m_genericSwapchain;
-  details::TransferSwapchain m_graphicsSwapchain;
+  details::Transferer m_genericSwapchain;
+  details::Transferer m_graphicsSwapchain;
   CompositeAsyncTask m_awaitable;
 };
 

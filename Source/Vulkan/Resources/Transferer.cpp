@@ -10,7 +10,7 @@ namespace RHI::vulkan
 
 namespace details
 {
-TransferSwapchain::TransferSwapchain(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex)
+Transferer::Transferer(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex)
   : OwnedBy<Context>(ctx)
   , m_queueFamilyIndex(queueFamilyIndex)
   , m_queue(queue)
@@ -20,7 +20,7 @@ TransferSwapchain::TransferSwapchain(Context & ctx, VkQueue queue, uint32_t queu
   m_writingTransferBuffer.submitter.BeginWriting();
 }
 
-TransferSwapchain::TransferSwapchain(TransferSwapchain && rhs) noexcept
+Transferer::Transferer(Transferer && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
   , m_writingTransferBuffer(std::move(rhs.m_writingTransferBuffer))
   , m_executingTransferBuffer(std::move(rhs.m_executingTransferBuffer))
@@ -29,7 +29,7 @@ TransferSwapchain::TransferSwapchain(TransferSwapchain && rhs) noexcept
   std::swap(m_queueFamilyIndex, rhs.m_queueFamilyIndex);
 }
 
-TransferSwapchain & TransferSwapchain::operator=(TransferSwapchain && rhs) noexcept
+Transferer & Transferer::operator=(Transferer && rhs) noexcept
 {
   if (this != &rhs)
   {
@@ -42,7 +42,7 @@ TransferSwapchain & TransferSwapchain::operator=(TransferSwapchain && rhs) noexc
   return *this;
 }
 
-IAwaitable * TransferSwapchain::DoTransfer()
+IAwaitable * Transferer::DoTransfer()
 {
   m_writingTransferBuffer.submitter.EndWriting();
   std::swap(m_executingTransferBuffer, m_writingTransferBuffer);
@@ -71,7 +71,7 @@ IAwaitable * TransferSwapchain::DoTransfer()
   return awaitable;
 }
 
-std::future<UploadResult> TransferSwapchain::UploadBuffer(BufferGPU & dstBuffer,
+std::future<UploadResult> Transferer::UploadBuffer(BufferGPU & dstBuffer,
                                                           const uint8_t * srcData, size_t size,
                                                           size_t offset)
 {
@@ -90,7 +90,7 @@ std::future<UploadResult> TransferSwapchain::UploadBuffer(BufferGPU & dstBuffer,
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSwapchain::DownloadBuffer(BufferGPU & srcBuffer, size_t size,
+std::future<DownloadResult> Transferer::DownloadBuffer(BufferGPU & srcBuffer, size_t size,
                                                               size_t offset)
 {
   std::promise<DownloadResult> promise;
@@ -114,7 +114,7 @@ std::future<DownloadResult> TransferSwapchain::DownloadBuffer(BufferGPU & srcBuf
   return std::get<1>(data).get_future();
 }
 
-std::future<UploadResult> TransferSwapchain::UploadImage(Image & dstImage,
+std::future<UploadResult> Transferer::UploadImage(Image & dstImage,
                                                          const uint8_t * srcData,
                                                          const CopyImageArguments & args)
 {
@@ -159,7 +159,7 @@ std::future<UploadResult> TransferSwapchain::UploadImage(Image & dstImage,
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSwapchain::DownloadImage(Image & srcImage,
+std::future<DownloadResult> Transferer::DownloadImage(Image & srcImage,
                                                              HostImageFormat format,
                                                              const ImageRegion & imgRegion)
 {
@@ -207,7 +207,7 @@ std::future<DownloadResult> TransferSwapchain::DownloadImage(Image & srcImage,
   return std::get<1>(data).get_future();
 }
 
-TransferSwapchain::TransferBuffer::TransferBuffer(Context & ctx, VkQueue queue,
+Transferer::TransferBuffer::TransferBuffer(Context & ctx, VkQueue queue,
                                                   uint32_t queueFamilyIndex)
   : submitter(ctx, queue, queueFamilyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT)
 {
