@@ -1,31 +1,30 @@
-#include "PresentativeSwapchain.hpp"
+#include "PresentativeSwapchainImage.hpp"
 
 #include <format>
 
 #include <VkBootstrap.h>
 
-#include "../Images/NonOwningImageGPU.hpp"
+#include "../Graphics/RenderPass.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "RenderPass.hpp"
 
 namespace RHI::vulkan
 {
 
-PresentativeSwapchain::PresentativeSwapchain(Context & ctx, const VkSurfaceKHR surface)
-  : Swapchain(ctx)
+PresentativeSwapchainImage::PresentativeSwapchainImage(Context & ctx, const VkSurfaceKHR surface)
+  : SwapchainImage(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
 {
   std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Present);
 }
 
-PresentativeSwapchain::~PresentativeSwapchain()
+PresentativeSwapchainImage::~PresentativeSwapchainImage()
 {
   DestroySwapchain();
 }
 
-void PresentativeSwapchain::Invalidate()
+void PresentativeSwapchainImage::Invalidate()
 {
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
@@ -44,15 +43,11 @@ void PresentativeSwapchain::Invalidate()
     for (auto && view : m_swapchainImageViews)
       m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(GetContext().GetDevice()));
     m_invalidSwapchain = false;
-
-    auto new_extent = m_swapchain->extent;
-    SetFramesCount(m_swapchain->image_count);
-    SetExtent({new_extent.width, new_extent.height, 1});
   }
-  Swapchain::Invalidate();
+  SwapchainImage::Invalidate();
 }
 
-void PresentativeSwapchain::InvalidateAttachments()
+void PresentativeSwapchainImage::InvalidateAttachments()
 {
   constexpr uint32_t binding = 0;
 
@@ -101,8 +96,7 @@ void PresentativeSwapchain::InvalidateAttachments()
   Swapchain::InvalidateAttachments();
 }
 
-
-void PresentativeSwapchain::DestroySwapchain() noexcept
+void PresentativeSwapchainImage::DestroySwapchain() noexcept
 {
   GetContext().WaitForIdle();
   if (!m_swapchainImageViews.empty())
@@ -114,7 +108,7 @@ void PresentativeSwapchain::DestroySwapchain() noexcept
   m_imageAvailabilitySemaphores.clear();
 }
 
-std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
+std::pair<uint32_t, VkSemaphore> PresentativeSwapchainImage::AcquireImage()
 {
   Invalidate();
   VkSemaphore signalSemaphore = m_imageAvailabilitySemaphores[m_activeSemaphore];
@@ -134,14 +128,13 @@ std::pair<uint32_t, VkSemaphore> PresentativeSwapchain::AcquireImage()
   return {imageIndex, signalSemaphore};
 }
 
-bool PresentativeSwapchain::FinishImage(uint32_t activeImage, AsyncTask * task)
+bool PresentativeSwapchainImage::FinishImage(uint32_t activeImage, VkSemaphore waitSemaphore)
 {
   const VkSwapchainKHR swapchains[] = {GetHandle()};
-  VkSemaphore sem = task->GetSemaphore();
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &sem;
+  presentInfo.pWaitSemaphores = &waitSemaphore;
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapchains;
   presentInfo.pImageIndices = &activeImage;
@@ -161,7 +154,7 @@ bool PresentativeSwapchain::FinishImage(uint32_t activeImage, AsyncTask * task)
   return true;
 }
 
-VkSwapchainKHR PresentativeSwapchain::GetHandle() const noexcept
+VkSwapchainKHR PresentativeSwapchainImage::GetHandle() const noexcept
 {
   return m_swapchain->swapchain;
 }

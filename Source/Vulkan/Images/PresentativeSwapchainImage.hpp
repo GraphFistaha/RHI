@@ -2,7 +2,8 @@
 #include <deque>
 #include <vector>
 
-#include "Swapchain.hpp"
+#include "../CommandsExecution/AsyncTask.hpp"
+#include "SwapchainImage.hpp"
 
 namespace vkb
 {
@@ -13,21 +14,24 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct PresentativeSwapchain final : public Swapchain
+struct PresentativeSwapchainImage final : public SwapchainImage
 {
-  explicit PresentativeSwapchain(Context & ctx, const VkSurfaceKHR surface);
-  virtual ~PresentativeSwapchain() override;
+  explicit PresentativeSwapchainImage(Context & ctx, const VkSurfaceKHR surface);
+  virtual ~PresentativeSwapchainImage() override;
 
 public: // RHI-only API
   VkSwapchainKHR GetHandle() const noexcept;
 
-  virtual std::pair<uint32_t, VkSemaphore> AcquireImage() override;
-  virtual bool FinishImage(uint32_t activeImage, AsyncTask * task) override;
+  // attachment interface
+  std::pair<uint32_t, VkSemaphore> AcquireImage();
+  bool FinishImage(uint32_t activeImage, VkSemaphore waitSemaphore);
+
   /// @brief destroys old surface data like framebuffers, images, images_views, ets and creates new
-  virtual void Invalidate() override;
+  void Invalidate();
 
 protected:
-  virtual void InvalidateAttachments() override;
+  void InvalidateAttachments();
+  void DestroySwapchain() noexcept;
 
 private:
   VkQueue m_presentQueue = VK_NULL_HANDLE;
@@ -41,9 +45,6 @@ private:
   std::vector<VkImageView> m_swapchainImageViews;
   std::vector<VkSemaphore> m_imageAvailabilitySemaphores;
   uint32_t m_activeSemaphore = 0;
-
-private:
-  void DestroySwapchain() noexcept;
 };
 
 } // namespace RHI::vulkan

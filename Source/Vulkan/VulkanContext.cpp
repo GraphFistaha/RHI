@@ -210,13 +210,13 @@ Context::~Context()
 
 IImageGPU * Context::GetSurfaceImage()
 {
-    //TODO: rewrite
+  //TODO: rewrite
   return nullptr; //m_surfaceSwapchain.get();
 }
 
 std::unique_ptr<IFramebuffer> Context::CreateFramebuffer(uint32_t frames_count)
 {
-  auto&& result = std::make_unique<Framebuffer>(*this);
+  auto && result = std::make_unique<Framebuffer>(*this);
   result->SetFramesCount(frames_count);
   return result;
 }
@@ -230,7 +230,7 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
 
 std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args)
 {
-    return nullptr;//std::make_unique<ImageGPU>(*this, args);
+  return nullptr; //std::make_unique<ImageGPU>(*this, args);
 }
 
 void Context::ClearResources()

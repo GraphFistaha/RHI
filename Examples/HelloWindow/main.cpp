@@ -75,9 +75,9 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   std::unique_ptr<RHI::IFramebuffer> framebuffer = ctx->CreateFramebuffer(3);
-  if (RHI::IImageGPU* surfaceImage = ctx->GetSurfaceImage())
-    framebuffer->AddImageAttachment(0, *surfaceImage);
-
+  if (std::shared_ptr<RHI::IImageGPU> surfaceImage = ctx->GetSurfaceImage())
+    framebuffer->AddImageAttachment(0, surfaceImage);
+  
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {

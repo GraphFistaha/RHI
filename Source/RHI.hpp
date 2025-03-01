@@ -244,7 +244,6 @@ struct IRenderTarget
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
                              float a) noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
-  virtual IImageGPU * GetImage(uint32_t attachmentIndex) const = 0;
 };
 
 struct ISubpass
@@ -282,10 +281,8 @@ struct IFramebuffer
   virtual ~IFramebuffer() = default;
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
-  virtual void SetFramesCount(uint32_t frames_count) noexcept = 0;
-  virtual void SetExtent(const ImageExtent & extent) noexcept = 0;
-  virtual void SetMultisampling(RHI::SamplesCount samples) noexcept = 0;
-  virtual void AddImageAttachment(uint32_t binding, const IImageGPU & image) = 0;
+  virtual void SetFramesCount(uint32_t frames_count) = 0;
+  virtual void AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image) = 0;
   virtual void ClearImageAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
 };
@@ -336,7 +333,7 @@ struct IContext
 {
   virtual ~IContext() = default;
 
-  virtual IImageGPU * GetSurfaceImage() = 0;
+  virtual std::shared_ptr<IImageGPU> GetSurfaceImage() = 0;
   virtual std::unique_ptr<IFramebuffer> CreateFramebuffer(uint32_t frames_count) = 0;
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
@@ -345,7 +342,7 @@ struct IContext
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) = 0;
 
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) = 0;
+  virtual std::shared_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) = 0;
 };
 
 /// @brief Factory-function to create context

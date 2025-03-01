@@ -37,50 +37,18 @@ size_t Framebuffer::GetImagesCount() const noexcept
   return m_framesCount;
 }
 
-std::pair<uint32_t, VkSemaphore> Framebuffer::AcquireImage()
-{
-  Invalidate();
-  return {static_cast<uint32_t>((m_activeImageIdx + 1) % m_targets.size()), VK_NULL_HANDLE};
-}
-
-bool Framebuffer::FinishImage(uint32_t activeImage, AsyncTask * task)
-{
-  return true;
-}
-
 void Framebuffer::Invalidate()
 {
-  if (m_framesCountChanged)
-  {
-    std::vector<RenderTarget> new_targets;
-    new_targets.reserve(m_framesCount);
-    for (uint32_t i = 0; i < m_framesCount; ++i)
-      new_targets.emplace_back(GetContext());
-    m_targets = std::move(new_targets);
-    m_framesCountChanged = false;
-    m_extentChanged = true;
-    m_attachmentsChanged = true;
-  }
-
-  // edit image desciptions that they include user settings
-  if (m_extentChanged || m_samplesCountChanged)
-  {
-    for (auto && description : m_imageDescriptions)
-    {
-      description.extent = m_extent;
-      description.samples = m_samplesCount;
-    }
-    const VkExtent3D extent{m_extent[0], m_extent[1], m_extent[2]};
-    for (auto && target : m_targets)
-      target.SetExtent(extent);
-    m_extentChanged = false;
-    m_samplesCountChanged = false;
-    m_attachmentsChanged = true;
-  }
-
   if (m_attachmentsChanged)
   {
-    InvalidateAttachments();
+    std::vector<VkAttachmentDescription> newAttachmentsDescription;
+    for (auto && attachment : m_attachments)
+    {
+      newAttachmentsDescription.push_back(attachment ? attachment->BuildDescription()
+                                                     : VkAttachmentDescription{});
+    }
+    m_attachmentDescriptions = std::move(newAttachmentsDescription);
+
     // build render pass
     m_renderPass.SetAttachments(m_attachmentDescriptions);
     m_renderPass.ForEachSubpass(
@@ -104,9 +72,9 @@ void Framebuffer::Invalidate()
   }
 }
 
-void Framebuffer::InvalidateAttachments()
-{
-    //TODO: Rewrite
+//void Framebuffer::InvalidateAttachments()
+//{
+  //TODO: Rewrite
   /*for (auto&& target : m_targets)
   {
     uint32_t binding = 0;
@@ -123,35 +91,30 @@ void Framebuffer::InvalidateAttachments()
       binding++;
     }
   }*/
-}
-
-void Framebuffer::RequireSwapchainHasAttachmentsCount(uint32_t count)
-{
-  while (m_imageDescriptions.size() < count)
-  {
-    m_imageDescriptions.emplace_back();
-    m_attachmentDescriptions.emplace_back();
-    m_ownedImages.emplace_back();
-  }
-}
+//}
 
 IRenderTarget * Framebuffer::BeginFrame()
 {
-  auto [imageIndex, waitSemaphore] = AcquireImage();
-  m_activeImageIdx = imageIndex;
-  m_imageAvailableSemaphore = waitSemaphore;
-  if (imageIndex == InvalidImageIndex)
+  for (auto && attachment : m_attachments)
   {
-    return nullptr;
+    auto [imageIndex, imgAvailSemaphore] = attachment->AcquireNextImage();
+    m_selectedImageIndices.push_back(imageIndex);
+    m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
   }
-  return &m_targets[m_activeImageIdx];
+  m_targets[m_activeTarget].SetAttachments();
+  return &m_targets[m_activeTarget];
 }
 
 IAwaitable * Framebuffer::EndFrame()
 {
-  AsyncTask * task = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
-  FinishImage(m_activeImageIdx, task);
-  m_imageAvailableSemaphore = VK_NULL_HANDLE;
+  AsyncTask * task =
+    m_renderPass.Draw(m_targets[m_activeTarget], std::move(m_imagesAvailabilitySemaphores));
+  for (auto && attachment : m_attachments)
+    attachment->FinishImage(task->GetSemaphore());
+
+  m_activeTarget = (m_activeTarget + 1) % m_targets.size();
+  m_imagesAvailabilitySemaphores.clear();
+  m_selectedImageIndices.clear();
   return task;
 }
 
@@ -160,52 +123,27 @@ ISubpass * Framebuffer::CreateSubpass()
   return m_renderPass.CreateSubpass();
 }
 
-void Framebuffer::AddImageAttachment(uint32_t binding, const RHI::IImageGPU & image)
+void Framebuffer::AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image)
 {
-    //TODO: rewrite
-  /*VkAttachmentDescription attachmentDescription = BuildAttachmentDescription(description);
-
-  RequireSwapchainHasAttachmentsCount(binding + 1);
-
-  m_ownedImages[binding] = true;
-  m_imageDescriptions[binding] = description;
-  m_imageDescriptions[binding].extent = m_extent;
-  m_imageDescriptions[binding].samples = m_samplesCount;
-  m_attachmentDescriptions[binding] = attachmentDescription;
-  m_attachmentsChanged = true;*/
+  assert(dynamic_cast<IAttachment *>(image.get()) != nullptr);
+  if (std::shared_ptr<IAttachment> ptr = std::dynamic_pointer_cast<IAttachment>(std::move(image)))
+  {
+    ptr->SetFramesCount(m_framesCount);
+    m_attachments[binding] = std::move(ptr);
+    m_attachmentsChanged = true;
+  }
 }
 
 void Framebuffer::ClearImageAttachments() noexcept
 {
-  m_imageDescriptions.clear();
+  m_attachments.clear();
   m_attachmentsChanged = true;
 }
 
-void Framebuffer::SetExtent(const ImageExtent & extent) noexcept
+void Framebuffer::SetFramesCount(uint32_t framesCount)
 {
-  if (extent != m_extent)
-  {
-    m_extent = extent;
-    m_extentChanged = true;
-  }
-}
-
-void Framebuffer::SetMultisampling(RHI::SamplesCount samples) noexcept
-{
-  if (m_samplesCount != samples)
-  {
-    m_samplesCount = samples;
-    m_samplesCountChanged;
-  }
-}
-
-void Framebuffer::SetFramesCount(uint32_t framesCount) noexcept
-{
-  if (m_framesCount != framesCount)
-  {
-    m_framesCount = framesCount;
-    m_framesCountChanged = true;
-  }
+  for (auto && attachment : m_attachments)
+    attachment->SetFramesCount(framesCount);
 }
 
 } // namespace RHI::vulkan

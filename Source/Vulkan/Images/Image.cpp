@@ -86,12 +86,17 @@ Image::Image(Context & ctx, const ImageCreateArguments & description)
 {
 }
 
+Image::~Image()
+{
+}
+
 
 Image::Image(Image && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_image, rhs.m_image);
   std::swap(m_description, rhs.m_description);
+  std::swap(m_memBlock, rhs.m_memBlock);
 }
 
 Image & Image::operator=(Image && rhs) noexcept
@@ -101,6 +106,7 @@ Image & Image::operator=(Image && rhs) noexcept
     OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_image, rhs.m_image);
     std::swap(m_description, rhs.m_description);
+    std::swap(m_memBlock, rhs.m_memBlock);
   }
   return *this;
 }

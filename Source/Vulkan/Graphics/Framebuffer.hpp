@@ -7,73 +7,66 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../Images/SwapchainImage.hpp"
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
 
 namespace RHI::vulkan
 {
 
+struct IAttachment
+{
+  virtual ~IAttachment() = default;
+  virtual std::pair<VkImage, VkSemaphore> AcquireNextImage() = 0;
+  virtual bool FinishImage(VkSemaphore waitSemaphore) = 0;
+  virtual void SetFramesCount(uint32_t framesCount) = 0;
+  virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
+};
+
+
 /// @brief vulkan implementation for renderer
 struct Framebuffer : public IFramebuffer,
-                   public OwnedBy<Context>
+                     public OwnedBy<Context>
 {
   explicit Framebuffer(Context & ctx);
   virtual ~Framebuffer() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IFramebuffer interface
   /// begins rendering
   virtual IRenderTarget * BeginFrame() override;
   /// finish rendering
   virtual IAwaitable * EndFrame() override;
-
+  ///
   virtual ISubpass * CreateSubpass() override;
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
-  virtual void AddImageAttachment(uint32_t binding, const IImageGPU & image) override;
+  virtual void AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image) override;
   /// @brief removes all images from all frames
   virtual void ClearImageAttachments() noexcept override;
   /// @brief operation which add or remove some frames from swapchain
   /// @param frames_count
-  virtual void SetFramesCount(uint32_t frames_count) noexcept override;
-  /// @brief expensive operation, which will rebuild swapchain fully
-  /// @param extent - size of renderable image
-  virtual void SetExtent(const ImageExtent & extent) noexcept override;
-  virtual void SetMultisampling(RHI::SamplesCount samples) noexcept override;
+  virtual void SetFramesCount(uint32_t frames_count) override;
 
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
-  virtual void Invalidate();
+  void Invalidate();
 
 protected:
-  virtual std::pair<uint32_t, VkSemaphore> AcquireImage();
-  virtual bool FinishImage(uint32_t activeImage, AsyncTask * task);
-  virtual void InvalidateAttachments();
-  void RequireSwapchainHasAttachmentsCount(uint32_t count);
-
-protected:
-  static constexpr uint32_t InvalidImageIndex = -1;
-
   std::vector<RenderTarget> m_targets;
+  uint32_t m_activeTarget = 0;
   RenderPass m_renderPass;
 
-  RHI::ImageExtent m_extent = {0, 0, 0};
-  bool m_extentChanged = false;
-  uint32_t m_framesCount = 0;
-  bool m_framesCountChanged = false;
-  RHI::SamplesCount m_samplesCount = RHI::SamplesCount::One;
-  bool m_samplesCountChanged = false;
-  std::vector<bool> m_ownedImages;
-  std::vector<RHI::ImageCreateArguments> m_imageDescriptions;
-  std::vector<VkAttachmentDescription> m_attachmentDescriptions;
+  std::vector<std::shared_ptr<IAttachment>> m_attachments;
   bool m_attachmentsChanged = false;
+  std::vector<VkAttachmentDescription> m_attachmentDescriptions;
+  std::vector<VkSemaphore> m_imagesAvailabilitySemaphores;
+  std::vector<uint32_t> m_selectedImageIndices;
+
+  uint32_t m_framesCount = 0;
 
   std::atomic_bool m_frameStarted = false;
-  uint32_t m_activeImageIdx = InvalidImageIndex;
-  VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
-
-public:
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 };
 
 } // namespace RHI::vulkan

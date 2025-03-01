@@ -38,7 +38,7 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore)
+AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphore> && waitSemaphores)
 {
   assert(m_renderPass);
   assert(renderTarget.GetAttachmentsCount() == m_cachedAttachments.size());
@@ -105,9 +105,6 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, VkSemaphore imageAvail
     });
 
   m_submitter.EndWriting();
-  std::vector<VkSemaphore> waitSemaphores;
-  if (imageAvailiableSemaphore)
-    waitSemaphores.push_back(imageAvailiableSemaphore);
   auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, std::move(waitSemaphores));
   return res;
 }

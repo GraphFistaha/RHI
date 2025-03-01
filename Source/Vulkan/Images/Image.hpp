@@ -17,24 +17,19 @@ struct CommandBuffer;
 namespace RHI::vulkan
 {
 /// @brief Base class for all images
-struct Image : public OwnedBy<Context>
+struct Image final : public OwnedBy<Context>
 {
-  virtual ~Image() = default;
+  explicit Image(Context & ctx, const ImageCreateArguments & description);
+  ~Image();
   Image(Image && rhs) noexcept;
   Image & operator=(Image && rhs) noexcept;
 
-protected:
-  explicit Image(Context & ctx, const ImageCreateArguments & description);
-
 public:
-  std::future<UploadResult> UploadImage(const uint8_t * data,
-                                                const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & args);
+  std::future<UploadResult> UploadImage(const uint8_t * data, const CopyImageArguments & args);
+  std::future<DownloadResult> DownloadImage(HostImageFormat format, const ImageRegion & args);
   size_t Size() const;
   ImageCreateArguments GetDescription() const noexcept;
 
-public:
   void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
   void SetImageLayoutBeforeRenderPass(VkImageLayout newLayout) noexcept;
   void SetImageLayoutAfterRenderPass(VkImageLayout newLayout) noexcept;
@@ -49,10 +44,11 @@ public:
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 protected:
-  std::mutex m_layoutLock;
-  VkImage m_image = VK_NULL_HANDLE;
-  VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-  ImageCreateArguments m_description;
+  std::mutex m_layoutLock;                            ///< mutex used to sync m_layout setting
+  VkImage m_image = VK_NULL_HANDLE;                   ///< handle of vulkan image
+  VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED; ///< image layout
+  ImageCreateArguments m_description;                 ///< description of image
+  /// memory block for image. If none then Image doesn't own m_image
   memory::MemoryBlock m_memBlock;
 
 private:

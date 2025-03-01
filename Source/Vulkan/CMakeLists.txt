@@ -11,8 +11,6 @@ PRIVATE
 
 	Graphics/Framebuffer.cpp
 	Graphics/Framebuffer.hpp
-	#Graphics/PresentativeSwapchain.cpp
-	#Graphics/PresentativeSwapchain.hpp
 	Graphics/DescriptorsBuffer.cpp
 	Graphics/DescriptorsBuffer.hpp
 	Graphics/Subpass.cpp
@@ -56,12 +54,12 @@ PRIVATE
 	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
-	
-	#Images/ImageGPU.hpp
+	Images/SwapchainImage.cpp
+	Images/SwapchainImage.hpp
+	Images/PresentativeSwapchainImage.cpp
+	Images/PresentativeSwapchainImage.hpp
 	Images/ImageView.cpp
 	Images/ImageView.hpp
-	#Images/NonOwningImageGPU.cpp
-	#Images/NonOwningImageGPU.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

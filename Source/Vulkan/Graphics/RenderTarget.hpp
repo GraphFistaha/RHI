@@ -5,7 +5,6 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/Image.hpp"
 #include "../Images/ImageView.hpp"
 #include "../Utils/FramebufferBuilder.hpp"
 
@@ -24,6 +23,7 @@ struct RenderTarget : public IRenderTarget,
   virtual ~RenderTarget() override;
   RenderTarget(RenderTarget && rhs) noexcept;
   RenderTarget & operator=(RenderTarget && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IRenderTarget interface
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
@@ -31,36 +31,38 @@ public: // IRenderTarget interface
   virtual void SetClearValue(uint32_t attachmentIndex, float depth,
                              uint32_t stencil) noexcept override;
   virtual ImageExtent GetExtent() const noexcept override;
-  virtual IImageGPU * GetImage(uint32_t attachmentIndex) const override;
 
 public:
   void Invalidate();
-  void SetExtent(const VkExtent3D & extent) noexcept;
   void BindRenderPass(const VkRenderPass & renderPass) noexcept;
 
   VkFramebuffer GetHandle() const noexcept { return m_framebuffer; }
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
-  void AddAttachment(uint32_t index, std::unique_ptr<Image> && image, ImageView && view);
+  void SetAttachments(std::vector<ImageView> && views) noexcept;
+  void AddAttachment(uint32_t index, ImageView && view);
+  void ClearAttachments() noexcept;
+
   using ProcessImagesFunc = std::function<void(Image &)>;
+  /// iterates over attached images and calls func for each of them. Used to transfer layout of images
   void ForEachAttachedImage(ProcessImagesFunc && func) noexcept;
   size_t GetAttachmentsCount() const noexcept;
-  void ClearAttachments() noexcept;
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 protected:
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
 
+  /// cached size of all image attachments. ALl sizes of all images must be equal
   VkExtent3D m_extent;
-  std::vector<std::unique_ptr<Image>> m_images;
-  std::vector<ImageView> m_views;
+  /// ImageViews
+  std::vector<ImageView> m_attachedImages;
+  /// clear values for each attachment
   std::vector<VkClearValue> m_clearValues;
 
 protected: // handle
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
   utils::FramebufferBuilder m_builder;
-  bool m_invalidFramebuffer : 1 = false;
+  bool m_invalidFramebuffer = false;
 
 private:
   RenderTarget(const RenderTarget &) = delete;
