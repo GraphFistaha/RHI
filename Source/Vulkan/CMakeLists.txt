@@ -9,10 +9,10 @@ PRIVATE
 	Memory/MemoryBlock.cpp
 	Memory/MemoryBlock.hpp
 
-	Graphics/Swapchain.cpp
-	Graphics/Swapchain.hpp
-	Graphics/PresentativeSwapchain.cpp
-	Graphics/PresentativeSwapchain.hpp
+	Graphics/Framebuffer.cpp
+	Graphics/Framebuffer.hpp
+	#Graphics/PresentativeSwapchain.cpp
+	#Graphics/PresentativeSwapchain.hpp
 	Graphics/DescriptorsBuffer.cpp
 	Graphics/DescriptorsBuffer.hpp
 	Graphics/Subpass.cpp

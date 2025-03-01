@@ -3,10 +3,10 @@
 #include <bitset>
 #include <vector>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include <OwnedBy.hpp>
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
 
@@ -14,13 +14,13 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct Swapchain : public IRenderPass,
+struct Framebuffer : public IFramebuffer,
                    public OwnedBy<Context>
 {
-  explicit Swapchain(Context & ctx);
-  virtual ~Swapchain() override;
+  explicit Framebuffer(Context & ctx);
+  virtual ~Framebuffer() override;
 
-public: // IRenderPass interface
+public: // IFramebuffer interface
   /// begins rendering
   virtual IRenderTarget * BeginFrame() override;
   /// finish rendering
@@ -30,8 +30,7 @@ public: // IRenderPass interface
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
-  virtual void AddImageAttachment(uint32_t binding,
-                                  const ImageCreateArguments & description) override;
+  virtual void AddImageAttachment(uint32_t binding, const IImageGPU & image) override;
   /// @brief removes all images from all frames
   virtual void ClearImageAttachments() noexcept override;
   /// @brief operation which add or remove some frames from swapchain
@@ -74,7 +73,7 @@ protected:
   VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
 
 public:
-    MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 };
 
 } // namespace RHI::vulkan

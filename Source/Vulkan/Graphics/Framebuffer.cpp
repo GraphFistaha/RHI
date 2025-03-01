@@ -1,4 +1,4 @@
-#include "Swapchain.hpp"
+#include "Framebuffer.hpp"
 
 #include <format>
 
@@ -23,33 +23,33 @@ RHI::ShaderImageSlot GetShaderImageSlotByImageDescription(
 namespace RHI::vulkan
 {
 
-Swapchain::Swapchain(Context & ctx)
+Framebuffer::Framebuffer(Context & ctx)
   : OwnedBy<Context>(ctx)
   , m_renderPass(ctx)
 {
 }
 
-Swapchain::~Swapchain()
+Framebuffer::~Framebuffer()
 {
 }
 
-size_t Swapchain::GetImagesCount() const noexcept
+size_t Framebuffer::GetImagesCount() const noexcept
 {
   return m_framesCount;
 }
 
-std::pair<uint32_t, VkSemaphore> Swapchain::AcquireImage()
+std::pair<uint32_t, VkSemaphore> Framebuffer::AcquireImage()
 {
   Invalidate();
   return {static_cast<uint32_t>((m_activeImageIdx + 1) % m_targets.size()), VK_NULL_HANDLE};
 }
 
-bool Swapchain::FinishImage(uint32_t activeImage, AsyncTask * task)
+bool Framebuffer::FinishImage(uint32_t activeImage, AsyncTask * task)
 {
   return true;
 }
 
-void Swapchain::Invalidate()
+void Framebuffer::Invalidate()
 {
   if (m_framesCountChanged)
   {
@@ -105,7 +105,7 @@ void Swapchain::Invalidate()
   }
 }
 
-void Swapchain::InvalidateAttachments()
+void Framebuffer::InvalidateAttachments()
 {
   for (auto && target : m_targets)
   {
@@ -125,7 +125,7 @@ void Swapchain::InvalidateAttachments()
   }
 }
 
-void Swapchain::RequireSwapchainHasAttachmentsCount(uint32_t count)
+void Framebuffer::RequireSwapchainHasAttachmentsCount(uint32_t count)
 {
   while (m_imageDescriptions.size() < count)
   {
@@ -135,7 +135,7 @@ void Swapchain::RequireSwapchainHasAttachmentsCount(uint32_t count)
   }
 }
 
-IRenderTarget * Swapchain::BeginFrame()
+IRenderTarget * Framebuffer::BeginFrame()
 {
   auto [imageIndex, waitSemaphore] = AcquireImage();
   m_activeImageIdx = imageIndex;
@@ -147,7 +147,7 @@ IRenderTarget * Swapchain::BeginFrame()
   return &m_targets[m_activeImageIdx];
 }
 
-IAwaitable * Swapchain::EndFrame()
+IAwaitable * Framebuffer::EndFrame()
 {
   AsyncTask * task = m_renderPass.Draw(m_targets[m_activeImageIdx], m_imageAvailableSemaphore);
   FinishImage(m_activeImageIdx, task);
@@ -155,14 +155,15 @@ IAwaitable * Swapchain::EndFrame()
   return task;
 }
 
-ISubpass * Swapchain::CreateSubpass()
+ISubpass * Framebuffer::CreateSubpass()
 {
   return m_renderPass.CreateSubpass();
 }
 
-void Swapchain::AddImageAttachment(uint32_t binding, const ImageCreateArguments & description)
+void Framebuffer::AddImageAttachment(uint32_t binding, const RHI::IImageGPU & image)
 {
-  VkAttachmentDescription attachmentDescription = BuildAttachmentDescription(description);
+    //TODO: rewrite
+  /*VkAttachmentDescription attachmentDescription = BuildAttachmentDescription(description);
 
   RequireSwapchainHasAttachmentsCount(binding + 1);
 
@@ -171,16 +172,16 @@ void Swapchain::AddImageAttachment(uint32_t binding, const ImageCreateArguments 
   m_imageDescriptions[binding].extent = m_extent;
   m_imageDescriptions[binding].samples = m_samplesCount;
   m_attachmentDescriptions[binding] = attachmentDescription;
-  m_attachmentsChanged = true;
+  m_attachmentsChanged = true;*/
 }
 
-void Swapchain::ClearImageAttachments() noexcept
+void Framebuffer::ClearImageAttachments() noexcept
 {
   m_imageDescriptions.clear();
   m_attachmentsChanged = true;
 }
 
-void Swapchain::SetExtent(const ImageExtent & extent) noexcept
+void Framebuffer::SetExtent(const ImageExtent & extent) noexcept
 {
   if (extent != m_extent)
   {
@@ -189,7 +190,7 @@ void Swapchain::SetExtent(const ImageExtent & extent) noexcept
   }
 }
 
-void Swapchain::SetMultisampling(RHI::SamplesCount samples) noexcept
+void Framebuffer::SetMultisampling(RHI::SamplesCount samples) noexcept
 {
   if (m_samplesCount != samples)
   {
@@ -198,7 +199,7 @@ void Swapchain::SetMultisampling(RHI::SamplesCount samples) noexcept
   }
 }
 
-void Swapchain::SetFramesCount(uint32_t framesCount) noexcept
+void Framebuffer::SetFramesCount(uint32_t framesCount) noexcept
 {
   if (m_framesCount != framesCount)
   {

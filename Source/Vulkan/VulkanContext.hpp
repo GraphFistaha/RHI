@@ -9,7 +9,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include "GarbageCollector.hpp"
-#include "Graphics/PresentativeSwapchain.hpp"
 #include "Memory/MemoryAllocator.hpp"
 #include "Resources/Transferer.hpp"
 
@@ -34,9 +33,8 @@ struct Context final : public IContext
   virtual ~Context() override;
 
 public: // IContext interface
-  virtual IRenderPass * GetSurfaceSwapchain() override;
-  virtual std::unique_ptr<IRenderPass> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                                uint32_t frames_count) override;
+  virtual IImageGPU * GetSurfaceImage() override;
+  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer(uint32_t frames_count) override;
   virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
                                                   bool mapped = false) override;
   virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) override;
@@ -67,7 +65,7 @@ private:
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
   std::unordered_map<std::thread::id, Transferer> m_transferers;
-  std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
+  //std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
   LoggingFunc m_logFunc;
 
 private:

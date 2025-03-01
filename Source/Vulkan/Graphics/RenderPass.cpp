@@ -3,6 +3,7 @@
 #include "../CommandsExecution/Submitter.hpp"
 #include "../VulkanContext.hpp"
 #include "RenderTarget.hpp"
+#include "Framebuffer.hpp"
 #include "Subpass.hpp"
 
 namespace RHI::vulkan

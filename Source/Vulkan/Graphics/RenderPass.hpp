@@ -28,7 +28,7 @@ struct RenderPass : public IInvalidable,
   explicit RenderPass(Context & ctx);
   virtual ~RenderPass() override;
 
-public: // IRenderPass Interface
+public: // IFramebuffer Interface
   ISubpass * CreateSubpass();
   AsyncTask * Draw(RenderTarget & renderTarget, VkSemaphore imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;

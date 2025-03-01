@@ -230,7 +230,7 @@ struct ISubpassConfiguration : public IInvalidable
   virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
   virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * out_array[]) = 0;
-
+  virtual void SetMeshTopology(MeshTopology topology) noexcept = 0;
   /// @brief Get subpass index
   virtual uint32_t GetSubpassIndex() const = 0;
 };
@@ -277,15 +277,15 @@ struct ISubpass
 };
 
 /// @brief RenderPass is object that can render frames.
-struct IRenderPass
+struct IFramebuffer
 {
-  virtual ~IRenderPass() = default;
+  virtual ~IFramebuffer() = default;
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) noexcept = 0;
   virtual void SetExtent(const ImageExtent & extent) noexcept = 0;
   virtual void SetMultisampling(RHI::SamplesCount samples) noexcept = 0;
-  virtual void AddImageAttachment(uint32_t binding, const ImageCreateArguments & args) = 0;
+  virtual void AddImageAttachment(uint32_t binding, const IImageGPU & image) = 0;
   virtual void ClearImageAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
 };
@@ -336,9 +336,8 @@ struct IContext
 {
   virtual ~IContext() = default;
 
-  virtual IRenderPass * GetSurfaceSwapchain() = 0;
-  virtual std::unique_ptr<IRenderPass> CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                                uint32_t frames_count) = 0;
+  virtual IImageGPU * GetSurfaceImage() = 0;
+  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer(uint32_t frames_count) = 0;
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 

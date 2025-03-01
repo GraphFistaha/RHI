@@ -6,10 +6,10 @@
 #include <VkBootstrap.h>
 
 #include "CommandsExecution/CommandBuffer.hpp"
+#include "Graphics/Framebuffer.hpp"
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/SubpassConfiguration.hpp"
-#include "Graphics/Swapchain.hpp"
 #include "Images/ImageGPU.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
@@ -99,10 +99,11 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
-  auto phys_ret = selector.set_surface(surface)
-                    .require_present(surface != VK_NULL_HANDLE)
-                    //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
-                    .select();
+  auto phys_ret =
+    selector.set_surface(surface)
+      .require_present(surface != VK_NULL_HANDLE)
+      //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
+      .select();
 
   if (!phys_ret)
   {
@@ -200,25 +201,28 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                           m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
-  m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
+  //TODO: rewrite
+  //m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
 }
 
 Context::~Context()
 {
 }
 
-IRenderPass * Context::GetSurfaceSwapchain()
+IImageGPU * Context::GetSurfaceImage()
 {
-  return m_surfaceSwapchain.get();
+    //TODO: rewrite
+  return nullptr; //m_surfaceSwapchain.get();
 }
 
-std::unique_ptr<IRenderPass> Context::CreateOffscreenSwapchain(uint32_t width, uint32_t height,
-                                                               uint32_t frames_count)
+std::unique_ptr<IFramebuffer> Context::CreateFramebuffer(uint32_t frames_count)
 {
-  auto && result = std::make_unique<Swapchain>(*this);
+    //TODO: rewrite
+  /*auto&& result = std::make_unique<Framebuffer>(*this);
   result->SetExtent({width, height, 1});
   result->SetFramesCount(frames_count);
-  return result;
+  return result;*/
+  return nullptr;
 }
 
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,

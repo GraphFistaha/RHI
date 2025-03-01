@@ -74,17 +74,19 @@ int main()
   }
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
+  std::unique_ptr<RHI::IFramebuffer> framebuffer = ctx->CreateFramebuffer(3);
+  if (RHI::IImageGPU* surfaceImage = ctx->GetSurfaceImage())
+    framebuffer->AddImageAttachment(0, *surfaceImage);
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
+    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      swapchain->EndFrame();
+      framebuffer->EndFrame();
     }
     t += 0.001f;
   }
