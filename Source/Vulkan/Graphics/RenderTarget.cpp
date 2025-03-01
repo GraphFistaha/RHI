@@ -73,7 +73,8 @@ ImageExtent RenderTarget::GetExtent() const noexcept
 
 IImageGPU * RenderTarget::GetImage(uint32_t attachmentIndex) const
 {
-  return m_images[attachmentIndex].get();
+    //TODO: rewrite
+    return nullptr;//m_images[attachmentIndex].get();
 }
 
 void RenderTarget::Invalidate()
@@ -103,7 +104,7 @@ const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcep
   return m_clearValues;
 }
 
-void RenderTarget::AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image,
+void RenderTarget::AddAttachment(uint32_t index, std::unique_ptr<Image> && image,
                                  ImageView && view)
 {
   while (index >= m_images.size())

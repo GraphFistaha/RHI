@@ -1,4 +1,4 @@
-#include "ImageBase.hpp"
+#include "Image.hpp"
 
 #include "../CommandsExecution/CommandBuffer.hpp"
 #include "../Resources/BufferGPU.hpp"
@@ -80,21 +80,21 @@ constexpr VkPipelineStageFlags LayoutTransfer_MakePipelineStage(VkImageLayout la
 
 namespace RHI::vulkan
 {
-ImageBase::ImageBase(Context & ctx, const ImageCreateArguments & description)
+Image::Image(Context & ctx, const ImageCreateArguments & description)
   : OwnedBy<Context>(ctx)
   , m_description(description)
 {
 }
 
 
-ImageBase::ImageBase(ImageBase && rhs) noexcept
+Image::Image(Image && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_image, rhs.m_image);
   std::swap(m_description, rhs.m_description);
 }
 
-ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
+Image & Image::operator=(Image && rhs) noexcept
 {
   if (this != &rhs)
   {
@@ -105,19 +105,19 @@ ImageBase & ImageBase::operator=(ImageBase && rhs) noexcept
   return *this;
 }
 
-std::future<UploadResult> ImageBase::UploadImage(const uint8_t * data,
+std::future<UploadResult> Image::UploadImage(const uint8_t * data,
                                                  const CopyImageArguments & args)
 {
   return GetContext().GetTransferer().UploadImage(*this, data, args);
 }
 
-std::future<DownloadResult> ImageBase::DownloadImage(HostImageFormat format,
+std::future<DownloadResult> Image::DownloadImage(HostImageFormat format,
                                                      const ImageRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-void ImageBase::TransferLayout(details::CommandBuffer & commandBuffer,
+void Image::TransferLayout(details::CommandBuffer & commandBuffer,
                                VkImageLayout newLayout) noexcept
 {
   if (newLayout == VK_IMAGE_LAYOUT_UNDEFINED || newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED ||
@@ -149,45 +149,45 @@ void ImageBase::TransferLayout(details::CommandBuffer & commandBuffer,
   m_layout = newLayout;
 }
 
-void ImageBase::SetImageLayoutBeforeRenderPass(VkImageLayout newLayout) noexcept
+void Image::SetImageLayoutBeforeRenderPass(VkImageLayout newLayout) noexcept
 {
   m_layoutLock.lock();
   if (newLayout != VK_IMAGE_LAYOUT_UNDEFINED && newLayout != VK_IMAGE_LAYOUT_PREINITIALIZED)
     m_layout = newLayout;
 }
 
-void ImageBase::SetImageLayoutAfterRenderPass(VkImageLayout newLayout) noexcept
+void Image::SetImageLayoutAfterRenderPass(VkImageLayout newLayout) noexcept
 {
   m_layout = newLayout;
   m_layoutLock.unlock();
 }
 
-VkImageType ImageBase::GetVulkanImageType() const noexcept
+VkImageType Image::GetVulkanImageType() const noexcept
 {
   return utils::CastInterfaceEnum2Vulkan<VkImageType>(m_description.type);
 }
 
-VkExtent3D ImageBase::GetVulkanExtent() const noexcept
+VkExtent3D Image::GetVulkanExtent() const noexcept
 {
   return VkExtent3D{m_description.extent[0], m_description.extent[1], m_description.extent[2]};
 }
 
-VkFormat ImageBase::GetVulkanFormat() const noexcept
+VkFormat Image::GetVulkanFormat() const noexcept
 {
   return utils::CastInterfaceEnum2Vulkan<VkFormat>(m_description.format);
 }
 
-VkSampleCountFlagBits ImageBase::GetVulkanSamplesCount() const noexcept
+VkSampleCountFlagBits Image::GetVulkanSamplesCount() const noexcept
 {
   return utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_description.samples);
 }
 
-size_t ImageBase::Size() const
+size_t Image::Size() const
 {
   return RHI::utils::GetSizeOfImage(GetVulkanExtent(), GetVulkanFormat());
 }
 
-ImageCreateArguments ImageBase::GetDescription() const noexcept
+ImageCreateArguments Image::GetDescription() const noexcept
 {
   return m_description;
 }

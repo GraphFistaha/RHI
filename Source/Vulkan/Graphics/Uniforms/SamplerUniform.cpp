@@ -106,7 +106,7 @@ void SamplerUniform::SetInvalid()
 void SamplerUniform::AssignImage(IImageGPU & image)
 {
   Invalidate();
-  auto && internalImage = utils::CastInterfaceClass2Internal<ImageBase>(image);
+  auto && internalImage = utils::CastInterfaceClass2Internal<Image>(image);
 
   m_view.AssignImage(&internalImage,
                      utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetDescription().type));

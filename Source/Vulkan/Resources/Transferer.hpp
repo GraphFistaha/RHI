@@ -8,7 +8,7 @@
 
 #include "../CommandsExecution/CompositeAsyncTask.hpp"
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Images/ImageBase.hpp"
+#include "../Images/Image.hpp"
 #include "BufferGPU.hpp"
 
 namespace RHI::vulkan
@@ -32,9 +32,9 @@ struct TransferSwapchain final : public OwnedBy<Context>
                                          size_t size, size_t offset = 0);
   std::future<DownloadResult> DownloadBuffer(BufferGPU & srcBuffer, size_t size, size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(ImageBase & dstImage, const uint8_t * srcData,
+  std::future<UploadResult> UploadImage(Image & dstImage, const uint8_t * srcData,
                                         const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(ImageBase & srcImage, HostImageFormat format,
+  std::future<DownloadResult> DownloadImage(Image & srcImage, HostImageFormat format,
                                             const ImageRegion & region);
 
 private:
@@ -70,9 +70,9 @@ struct Transferer final : public OwnedBy<Context>
                                          size_t size, size_t offset = 0);
   std::future<DownloadResult> DownloadBuffer(BufferGPU & srcBuffer, size_t size, size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(ImageBase & dstImage, const uint8_t * srcData,
+  std::future<UploadResult> UploadImage(Image & dstImage, const uint8_t * srcData,
                                         const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(ImageBase & srcImage, HostImageFormat format,
+  std::future<DownloadResult> DownloadImage(Image & srcImage, HostImageFormat format,
                                             const ImageRegion & region);
 
 private:

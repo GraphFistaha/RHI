@@ -2,7 +2,6 @@
 
 #include <format>
 
-#include "../Images/ImageGPU.hpp"
 #include "../Images/ImageInfo.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
@@ -107,7 +106,8 @@ void Framebuffer::Invalidate()
 
 void Framebuffer::InvalidateAttachments()
 {
-  for (auto && target : m_targets)
+    //TODO: Rewrite
+  /*for (auto&& target : m_targets)
   {
     uint32_t binding = 0;
     for (auto && description : m_imageDescriptions)
@@ -122,7 +122,7 @@ void Framebuffer::InvalidateAttachments()
       }
       binding++;
     }
-  }
+  }*/
 }
 
 void Framebuffer::RequireSwapchainHasAttachmentsCount(uint32_t count)

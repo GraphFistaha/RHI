@@ -8,7 +8,7 @@ namespace RHI::vulkan
 
 namespace utils
 {
-VkImageView CreateImageView(VkDevice device, const ImageBase & image, VkImageViewType type)
+VkImageView CreateImageView(VkDevice device, const Image & image, VkImageViewType type)
 {
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -60,7 +60,7 @@ ImageView & ImageView::operator=(ImageView && rhs) noexcept
   return *this;
 }
 
-void ImageView::AssignImage(ImageBase * image, VkImageView view)
+void ImageView::AssignImage(Image * image, VkImageView view)
 {
   if (image)
   {
@@ -80,7 +80,7 @@ void ImageView::AssignImage(ImageBase * image, VkImageView view)
   }
 }
 
-void ImageView::AssignImage(ImageBase * image, VkImageViewType type)
+void ImageView::AssignImage(Image * image, VkImageViewType type)
 {
   if (image)
   {

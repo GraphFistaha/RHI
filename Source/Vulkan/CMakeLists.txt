@@ -51,17 +51,17 @@ PRIVATE
 	
 	Images/ImageInfo.hpp
 	Images/ImageInfo.cpp
-	Images/ImageBase.cpp
-	Images/ImageBase.hpp
+	Images/Image.cpp
+	Images/Image.hpp
 	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
-	Images/ImageGPU.cpp
-	Images/ImageGPU.hpp
+	
+	#Images/ImageGPU.hpp
 	Images/ImageView.cpp
 	Images/ImageView.hpp
-	Images/NonOwningImageGPU.cpp
-	Images/NonOwningImageGPU.hpp
+	#Images/NonOwningImageGPU.cpp
+	#Images/NonOwningImageGPU.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

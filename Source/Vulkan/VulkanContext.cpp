@@ -10,7 +10,6 @@
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/SubpassConfiguration.hpp"
-#include "Images/ImageGPU.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
 #include "Utils/CastHelper.hpp"
@@ -217,12 +216,9 @@ IImageGPU * Context::GetSurfaceImage()
 
 std::unique_ptr<IFramebuffer> Context::CreateFramebuffer(uint32_t frames_count)
 {
-    //TODO: rewrite
-  /*auto&& result = std::make_unique<Framebuffer>(*this);
-  result->SetExtent({width, height, 1});
+  auto&& result = std::make_unique<Framebuffer>(*this);
   result->SetFramesCount(frames_count);
-  return result;*/
-  return nullptr;
+  return result;
 }
 
 std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
@@ -234,7 +230,7 @@ std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usa
 
 std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args)
 {
-  return std::make_unique<ImageGPU>(*this, args);
+    return nullptr;//std::make_unique<ImageGPU>(*this, args);
 }
 
 void Context::ClearResources()

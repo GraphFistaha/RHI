@@ -69,7 +69,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, VkSemaphore imageAvail
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   renderTarget.ForEachAttachedImage(
-    [it = m_cachedAttachments.begin()](ImageBase & img) mutable
+    [it = m_cachedAttachments.begin()](Image & img) mutable
     {
       img.SetImageLayoutBeforeRenderPass(it->initialLayout);
       ++it;
@@ -98,7 +98,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, VkSemaphore imageAvail
   m_submitter.PushCommand(vkCmdEndRenderPass);
 
   renderTarget.ForEachAttachedImage(
-    [it = m_cachedAttachments.begin()](ImageBase & img) mutable
+    [it = m_cachedAttachments.begin()](Image & img) mutable
     {
       img.SetImageLayoutAfterRenderPass(it->finalLayout);
       ++it;

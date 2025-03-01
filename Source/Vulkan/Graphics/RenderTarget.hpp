@@ -5,7 +5,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/ImageBase.hpp"
+#include "../Images/Image.hpp"
 #include "../Images/ImageView.hpp"
 #include "../Utils/FramebufferBuilder.hpp"
 
@@ -42,8 +42,8 @@ public:
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
-  void AddAttachment(uint32_t index, std::unique_ptr<ImageBase> && image, ImageView && view);
-  using ProcessImagesFunc = std::function<void(ImageBase &)>;
+  void AddAttachment(uint32_t index, std::unique_ptr<Image> && image, ImageView && view);
+  using ProcessImagesFunc = std::function<void(Image &)>;
   void ForEachAttachedImage(ProcessImagesFunc && func) noexcept;
   size_t GetAttachmentsCount() const noexcept;
   void ClearAttachments() noexcept;
@@ -53,7 +53,7 @@ protected:
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
 
   VkExtent3D m_extent;
-  std::vector<std::unique_ptr<ImageBase>> m_images;
+  std::vector<std::unique_ptr<Image>> m_images;
   std::vector<ImageView> m_views;
   std::vector<VkClearValue> m_clearValues;
 

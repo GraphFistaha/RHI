@@ -114,7 +114,7 @@ std::future<DownloadResult> TransferSwapchain::DownloadBuffer(BufferGPU & srcBuf
   return std::get<1>(data).get_future();
 }
 
-std::future<UploadResult> TransferSwapchain::UploadImage(ImageBase & dstImage,
+std::future<UploadResult> TransferSwapchain::UploadImage(Image & dstImage,
                                                          const uint8_t * srcData,
                                                          const CopyImageArguments & args)
 {
@@ -159,7 +159,7 @@ std::future<UploadResult> TransferSwapchain::UploadImage(ImageBase & dstImage,
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSwapchain::DownloadImage(ImageBase & srcImage,
+std::future<DownloadResult> TransferSwapchain::DownloadImage(Image & srcImage,
                                                              HostImageFormat format,
                                                              const ImageRegion & imgRegion)
 {
@@ -245,13 +245,13 @@ std::future<DownloadResult> Transferer::DownloadBuffer(BufferGPU & srcBuffer, si
   return m_genericSwapchain.DownloadBuffer(srcBuffer, size, offset);
 }
 
-std::future<UploadResult> Transferer::UploadImage(ImageBase & dstImage, const uint8_t * srcData,
+std::future<UploadResult> Transferer::UploadImage(Image & dstImage, const uint8_t * srcData,
                                                   const CopyImageArguments & args)
 {
   return m_genericSwapchain.UploadImage(dstImage, srcData, args);
 }
 
-std::future<DownloadResult> Transferer::DownloadImage(ImageBase & srcImage, HostImageFormat format,
+std::future<DownloadResult> Transferer::DownloadImage(Image & srcImage, HostImageFormat format,
                                                       const ImageRegion & region)
 {
   return m_graphicsSwapchain.DownloadImage(srcImage, format, region);
