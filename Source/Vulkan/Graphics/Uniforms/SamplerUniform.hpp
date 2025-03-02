@@ -10,6 +10,11 @@
 namespace RHI::vulkan
 {
 
+struct SamplerAttachment
+{
+
+};
+
 struct SamplerUniform final : public ISamplerUniformDescriptor,
                               private details::BaseUniform
 {

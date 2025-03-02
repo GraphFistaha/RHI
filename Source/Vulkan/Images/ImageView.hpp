@@ -20,19 +20,20 @@ struct ImageView final : public OwnedBy<Context>
   ~ImageView();
   ImageView(ImageView && rhs) noexcept;
   ImageView & operator=(ImageView && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
+public:
   void AssignImage(Image * image, VkImageView view);
   void AssignImage(Image * image, VkImageViewType type);
   bool IsImageAssigned() const noexcept;
 
   VkImageView GetHandle() const noexcept { return m_view; }
   Image * GetImagePtr() const noexcept { return m_imagePtr; }
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
   Image * m_imagePtr = nullptr;
-  bool m_owns = false;
   VkImageView m_view = VK_NULL_HANDLE;
+  bool m_owns = false;
 
 private:
   ImageView(const ImageView &) = delete;

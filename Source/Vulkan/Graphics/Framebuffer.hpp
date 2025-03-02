@@ -14,11 +14,21 @@
 namespace RHI::vulkan
 {
 
+enum class ImageUsage
+{
+  Transfer = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+  FramebufferAttachment = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                          VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+  Sampler = VK_IMAGE_USAGE_SAMPLED_BIT
+};
+
 struct IAttachment
 {
   virtual ~IAttachment() = default;
-  virtual std::pair<VkImage, VkSemaphore> AcquireNextImage() = 0;
-  virtual bool FinishImage(VkSemaphore waitSemaphore) = 0;
+  virtual std::pair<uint32_t, VkSemaphore> AcquireNextImage() = 0;
+  virtual const ImageView & GetImage(uint32_t frameIndex, ImageUsage imageUsage) const & = 0;
+  virtual bool FinishImage(VkSemaphore waitSemaphore) = 0; // not sure. Only presentation requires
   virtual void SetFramesCount(uint32_t framesCount) = 0;
   virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
 };

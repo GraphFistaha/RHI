@@ -105,6 +105,8 @@ void RenderTarget::SetAttachments(std::vector<ImageView> && views) noexcept
 
 void RenderTarget::AddAttachment(uint32_t index, ImageView && view)
 {
+  while (m_attachedImages.size() < index + 1)
+    m_attachedImages.emplace_back(GetContext());
   m_attachedImages[index] = std::move(view);
   m_invalidFramebuffer = true;
 }

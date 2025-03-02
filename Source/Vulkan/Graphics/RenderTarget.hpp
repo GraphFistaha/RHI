@@ -51,7 +51,6 @@ public:
 
 protected:
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
-
   /// cached size of all image attachments. ALl sizes of all images must be equal
   VkExtent3D m_extent;
   /// ImageViews

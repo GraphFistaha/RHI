@@ -74,8 +74,8 @@ void Framebuffer::Invalidate()
 
 //void Framebuffer::InvalidateAttachments()
 //{
-  //TODO: Rewrite
-  /*for (auto&& target : m_targets)
+//TODO: Rewrite
+/*for (auto&& target : m_targets)
   {
     uint32_t binding = 0;
     for (auto && description : m_imageDescriptions)
@@ -100,7 +100,10 @@ IRenderTarget * Framebuffer::BeginFrame()
     auto [imageIndex, imgAvailSemaphore] = attachment->AcquireNextImage();
     m_selectedImageIndices.push_back(imageIndex);
     m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
+    attachment->GetImage(imageIndex, ImageUsage::FramebufferAttachment);
   }
+  // How to build std::vector<ImageView>? Who is owner of ImageView
+  // how to find appropriate RenderTarget by these attachments? to reuse its recreation
   m_targets[m_activeTarget].SetAttachments();
   return &m_targets[m_activeTarget];
 }
