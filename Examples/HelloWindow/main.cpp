@@ -68,16 +68,15 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   if (!ctx)
   {
-      assert(false);
-      glfwTerminate();
-      return -1;
+    assert(false);
+    glfwTerminate();
+    return -1;
   }
   glfwSetWindowUserPointer(window, ctx.get());
 
-  std::unique_ptr<RHI::IFramebuffer> framebuffer = ctx->CreateFramebuffer(3);
-  if (std::shared_ptr<RHI::IImageGPU> surfaceImage = ctx->GetSurfaceImage())
-    framebuffer->AddImageAttachment(0, surfaceImage);
-  
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddImageAttachment(0, surfaceImage);
+
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
   {

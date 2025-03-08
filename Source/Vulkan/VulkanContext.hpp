@@ -9,7 +9,9 @@
 #include <vulkan/vulkan.hpp>
 
 #include "GarbageCollector.hpp"
+#include "Graphics/Framebuffer.hpp"
 #include "Memory/MemoryAllocator.hpp"
+#include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
 
 namespace RHI::vulkan
@@ -34,10 +36,9 @@ struct Context final : public IContext
 
 public: // IContext interface
   virtual IImageGPU * GetSurfaceImage() override;
-  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer(uint32_t frames_count) override;
-  virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                  bool mapped = false) override;
-  virtual std::unique_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) override;
+  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) override;
+  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped = false) override;
+  virtual IImageGPU * AllocImage(const ImageCreateArguments & args) override;
   virtual void ClearResources() override;
   virtual void Flush() override;
 
@@ -65,6 +66,8 @@ private:
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
   std::unordered_map<std::thread::id, Transferer> m_transferers;
+  std::vector<Framebuffer> m_framebuffers;
+  std::vector<BufferGPU> m_buffers;
   //std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
   LoggingFunc m_logFunc;
 

@@ -14,7 +14,7 @@
 namespace RHI::vulkan
 {
 
-enum class ImageUsage
+enum ImageUsage
 {
   Transfer = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
   FramebufferAttachment = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
@@ -27,7 +27,7 @@ struct IAttachment
 {
   virtual ~IAttachment() = default;
   virtual std::pair<uint32_t, VkSemaphore> AcquireNextImage() = 0;
-  virtual const ImageView & GetImage(uint32_t frameIndex, ImageUsage imageUsage) const & = 0;
+  virtual Image * GetImage(uint32_t frameIndex) const noexcept = 0;
   virtual bool FinishImage(VkSemaphore waitSemaphore) = 0; // not sure. Only presentation requires
   virtual void SetFramesCount(uint32_t framesCount) = 0;
   virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
@@ -52,7 +52,7 @@ public: // IFramebuffer interface
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
-  virtual void AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image) override;
+  virtual void AddImageAttachment(uint32_t binding, IImageGPU * image) override;
   /// @brief removes all images from all frames
   virtual void ClearImageAttachments() noexcept override;
   /// @brief operation which add or remove some frames from swapchain
@@ -68,7 +68,7 @@ protected:
   uint32_t m_activeTarget = 0;
   RenderPass m_renderPass;
 
-  std::vector<std::shared_ptr<IAttachment>> m_attachments;
+  std::vector<IAttachment *> m_attachments;
   bool m_attachmentsChanged = false;
   std::vector<VkAttachmentDescription> m_attachmentDescriptions;
   std::vector<VkSemaphore> m_imagesAvailabilitySemaphores;

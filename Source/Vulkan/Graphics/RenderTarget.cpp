@@ -72,7 +72,9 @@ void RenderTarget::Invalidate()
   {
     m_builder.Reset();
     for (uint32_t i = 0; i < m_attachedImages.size(); ++i)
-      m_builder.BindAttachment(i, m_attachedImages[i].GetHandle());
+      m_builder.BindAttachment(i, m_attachedImages[i]
+                                    ->GetView(ImageUsage::FramebufferAttachment)
+                                    .GetHandle());
     // TODO: init m_extent
 
     auto new_framebuffer = m_builder.Make(GetContext().GetDevice(), m_boundRenderPass, m_extent);
@@ -97,13 +99,13 @@ const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcep
   return m_clearValues;
 }
 
-void RenderTarget::SetAttachments(std::vector<ImageView> && views) noexcept
+void RenderTarget::SetAttachments(std::vector<Image *> && views) noexcept
 {
   m_attachedImages = std::move(views);
   m_invalidFramebuffer = true;
 }
 
-void RenderTarget::AddAttachment(uint32_t index, ImageView && view)
+void RenderTarget::AddAttachment(uint32_t index, Image * view)
 {
   while (m_attachedImages.size() < index + 1)
     m_attachedImages.emplace_back(GetContext());
@@ -113,8 +115,8 @@ void RenderTarget::AddAttachment(uint32_t index, ImageView && view)
 
 void RenderTarget::ForEachAttachedImage(ProcessImagesFunc && func) noexcept
 {
-  for (auto && view : m_attachedImages)
-    func(*view.GetImagePtr());
+  for (auto && image : m_attachedImages)
+    func(*image);
 }
 
 size_t RenderTarget::GetAttachmentsCount() const noexcept

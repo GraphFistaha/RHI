@@ -199,7 +199,7 @@ struct IUniformDescriptor : public IInvalidable
 
 struct ISamplerUniformDescriptor : public IUniformDescriptor
 {
-  virtual void AssignImage(IImageGPU & image) = 0;
+  virtual void AssignImage(IImageGPU * image) = 0;
   virtual bool IsImageAssigned() const noexcept = 0;
 };
 
@@ -282,7 +282,7 @@ struct IFramebuffer
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) = 0;
-  virtual void AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image) = 0;
+  virtual void AddImageAttachment(uint32_t binding, IImageGPU * image) = 0;
   virtual void ClearImageAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
 };
@@ -333,16 +333,14 @@ struct IContext
 {
   virtual ~IContext() = default;
 
-  virtual std::shared_ptr<IImageGPU> GetSurfaceImage() = 0;
-  virtual std::unique_ptr<IFramebuffer> CreateFramebuffer(uint32_t frames_count) = 0;
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
+  virtual IImageGPU * GetSurfaceImage() = 0;
+  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
   /// @brief creates BufferGPU
-  virtual std::unique_ptr<IBufferGPU> AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                  bool mapped = false) = 0;
-
-  virtual std::shared_ptr<IImageGPU> AllocImage(const ImageCreateArguments & args) = 0;
+  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped = false) = 0;
+  virtual IImageGPU * AllocImage(const ImageCreateArguments & args) = 0;
 };
 
 /// @brief Factory-function to create context

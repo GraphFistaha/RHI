@@ -214,21 +214,21 @@ IImageGPU * Context::GetSurfaceImage()
   return nullptr; //m_surfaceSwapchain.get();
 }
 
-std::unique_ptr<IFramebuffer> Context::CreateFramebuffer(uint32_t frames_count)
+IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
 {
-  auto && result = std::make_unique<Framebuffer>(*this);
-  result->SetFramesCount(frames_count);
-  return result;
+  auto & result = m_framebuffers.emplace_back(*this);
+  result.SetFramesCount(frames_count);
+  return &result;
 }
 
-std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                 bool mapped /* = false*/)
+IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped /* = false*/)
 {
   auto vkUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(usage);
-  return std::make_unique<BufferGPU>(*this, size, vkUsage, mapped);
+  auto && result = m_buffers.emplace_back(*this, size, vkUsage, mapped);
+  return &result;
 }
 
-std::unique_ptr<IImageGPU> Context::AllocImage(const ImageCreateArguments & args)
+IImageGPU * Context::AllocImage(const ImageCreateArguments & args)
 {
   return nullptr; //std::make_unique<ImageGPU>(*this, args);
 }

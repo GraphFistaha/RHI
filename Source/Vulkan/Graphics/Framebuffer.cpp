@@ -95,16 +95,16 @@ void Framebuffer::Invalidate()
 
 IRenderTarget * Framebuffer::BeginFrame()
 {
+  std::vector<Image *> selectedAttachments;
   for (auto && attachment : m_attachments)
   {
     auto [imageIndex, imgAvailSemaphore] = attachment->AcquireNextImage();
     m_selectedImageIndices.push_back(imageIndex);
     m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
-    attachment->GetImage(imageIndex, ImageUsage::FramebufferAttachment);
+    selectedAttachments.push_back(attachment->GetImage(imageIndex));
   }
-  // How to build std::vector<ImageView>? Who is owner of ImageView
   // how to find appropriate RenderTarget by these attachments? to reuse its recreation
-  m_targets[m_activeTarget].SetAttachments();
+  m_targets[m_activeTarget].SetAttachments(std::move(selectedAttachments));
   return &m_targets[m_activeTarget];
 }
 
@@ -126,15 +126,16 @@ ISubpass * Framebuffer::CreateSubpass()
   return m_renderPass.CreateSubpass();
 }
 
-void Framebuffer::AddImageAttachment(uint32_t binding, std::shared_ptr<IImageGPU> image)
+void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
 {
-  assert(dynamic_cast<IAttachment *>(image.get()) != nullptr);
-  if (std::shared_ptr<IAttachment> ptr = std::dynamic_pointer_cast<IAttachment>(std::move(image)))
+  if (IAttachment * ptr = dynamic_cast<IAttachment *>(image))
   {
     ptr->SetFramesCount(m_framesCount);
-    m_attachments[binding] = std::move(ptr);
+    m_attachments[binding] = ptr;
     m_attachmentsChanged = true;
   }
+  else
+    assert(false);
 }
 
 void Framebuffer::ClearImageAttachments() noexcept

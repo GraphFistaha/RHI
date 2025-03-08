@@ -41,7 +41,6 @@ SamplerUniform::SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescri
                                uint32_t binding, uint32_t arrayIndex)
   : BaseUniform(ctx, owner, type, binding, arrayIndex)
   , ISamplerUniformDescriptor()
-  , m_view(ctx)
 {
 }
 
@@ -53,9 +52,8 @@ SamplerUniform::~SamplerUniform()
 SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
   : BaseUniform(std::move(rhs))
   , ISamplerUniformDescriptor()
-  , m_view(GetContext())
 {
-  std::swap(rhs.m_view, m_view);
+  std::swap(rhs.m_attachedImage, m_attachedImage);
   std::swap(rhs.m_sampler, m_sampler);
   std::swap(rhs.m_invalidSampler, m_invalidSampler);
 }
@@ -65,7 +63,7 @@ SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
   if (this != &rhs)
   {
     BaseUniform::operator=(std::move(rhs));
-    std::swap(rhs.m_view, m_view);
+    std::swap(rhs.m_attachedImage, m_attachedImage);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);
   }
@@ -82,7 +80,7 @@ VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
   assert(m_sampler);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_view.GetHandle();
+  imageInfo.imageView = m_attachedImage->GetView(ImageUsage::Sampler).GetHandle();
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -103,19 +101,17 @@ void SamplerUniform::SetInvalid()
   m_invalidSampler = true;
 }
 
-void SamplerUniform::AssignImage(IImageGPU & image)
+void SamplerUniform::AssignImage(IImageGPU * image)
 {
   Invalidate();
   auto && internalImage = utils::CastInterfaceClass2Internal<Image>(image);
-
-  m_view.AssignImage(&internalImage,
-                     utils::CastInterfaceEnum2Vulkan<VkImageViewType>(image.GetDescription().type));
+  m_attachedImage = internalImage;
   GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept
 {
-  return m_view.IsImageAssigned();
+  return m_attachedImage != nullptr;
 }
 
 uint32_t SamplerUniform::GetBinding() const noexcept

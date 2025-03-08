@@ -40,8 +40,8 @@ public:
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
-  void SetAttachments(std::vector<ImageView> && views) noexcept;
-  void AddAttachment(uint32_t index, ImageView && view);
+  void SetAttachments(std::vector<Image *> && views) noexcept;
+  void AddAttachment(uint32_t index, Image * view);
   void ClearAttachments() noexcept;
 
   using ProcessImagesFunc = std::function<void(Image &)>;
@@ -54,7 +54,7 @@ protected:
   /// cached size of all image attachments. ALl sizes of all images must be equal
   VkExtent3D m_extent;
   /// ImageViews
-  std::vector<ImageView> m_attachedImages;
+  std::vector<Image *> m_attachedImages;
   /// clear values for each attachment
   std::vector<VkClearValue> m_clearValues;
 

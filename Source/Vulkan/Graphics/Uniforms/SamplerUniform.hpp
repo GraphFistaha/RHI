@@ -3,17 +3,12 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../../Images/ImageView.hpp"
+#include "../../Images/Image.hpp"
 #include "BaseUniform.hpp"
 
 
 namespace RHI::vulkan
 {
-
-struct SamplerAttachment
-{
-
-};
 
 struct SamplerUniform final : public ISamplerUniformDescriptor,
                               private details::BaseUniform
@@ -25,7 +20,7 @@ struct SamplerUniform final : public ISamplerUniformDescriptor,
   SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
 
 public: // ISamplerUniformDescriptor interface
-  virtual void AssignImage(IImageGPU & image) override;
+  virtual void AssignImage(IImageGPU * image) override;
   virtual bool IsImageAssigned() const noexcept override;
 
 public:
@@ -38,12 +33,12 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  const ImageView & GetImageView() const & noexcept { return m_view; }
+  Image * GetAttachedImage() const noexcept { return m_attachedImage; }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  ImageView m_view;
+  Image * m_attachedImage = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };

@@ -1,9 +1,12 @@
 #pragma once
+#include <unordered_map>
+
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "../Memory/MemoryBlock.hpp"
+#include "ImageView.hpp"
 
 namespace RHI::vulkan
 {
@@ -29,6 +32,8 @@ public:
   std::future<DownloadResult> DownloadImage(HostImageFormat format, const ImageRegion & args);
   size_t Size() const;
   ImageCreateArguments GetDescription() const noexcept;
+  VkImageView GetView(ImageUsage usage);
+  void SetView(ImageUsage usage, VkImageView view);
 
   void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;
   void SetImageLayoutBeforeRenderPass(VkImageLayout newLayout) noexcept;
@@ -50,6 +55,8 @@ protected:
   ImageCreateArguments m_description;                 ///< description of image
   /// memory block for image. If none then Image doesn't own m_image
   memory::MemoryBlock m_memBlock;
+
+  std::unordered_map<ImageUsage, ImageView> m_views;
 
 private:
   Image(const Image &) = delete;

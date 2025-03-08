@@ -2,6 +2,7 @@
 
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
+#include "Image.hpp"
 
 namespace RHI::vulkan
 {
@@ -29,80 +30,42 @@ VkImageView CreateImageView(VkDevice device, const Image & image, VkImageViewTyp
 }
 } // namespace utils
 
-ImageView::ImageView(Context & ctx)
-  : OwnedBy<Context>(ctx)
+ImageView::ImageView(Context & ctx, Image & image, VkImageViewType type)
+  : m_context(&ctx)
+  , m_view(utils::CreateImageView(ctx.GetDevice(), image, type))
+{
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "Created VkImageView");
+}
+
+ImageView::ImageView(VkImageView view)
+  : m_context(nullptr)
+  , m_view(view)
 {
 }
 
 ImageView::~ImageView()
 {
-  if (m_owns)
-    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+  if (m_context)
+  {
+    m_context->GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
+    m_context->Log(RHI::LogMessageStatus::LOG_DEBUG, "VkImageView destroyed");
+  }
 }
 
 ImageView::ImageView(ImageView && rhs) noexcept
-  : OwnedBy<Context>(std::move(rhs))
 {
-  std::swap(m_imagePtr, rhs.m_imagePtr);
   std::swap(m_view, rhs.m_view);
-  std::swap(m_owns, rhs.m_owns);
+  std::swap(m_context, rhs.m_context);
 }
 
 ImageView & ImageView::operator=(ImageView && rhs) noexcept
 {
   if (this != &rhs)
   {
-    OwnedBy<Context>::operator=(std::move(rhs));
-    std::swap(m_imagePtr, rhs.m_imagePtr);
     std::swap(m_view, rhs.m_view);
-    std::swap(m_owns, rhs.m_owns);
+    std::swap(m_context, rhs.m_context);
   }
   return *this;
 }
 
-void ImageView::AssignImage(Image * image, VkImageView view)
-{
-  if (image)
-  {
-    if (m_owns)
-      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
-    m_imagePtr = image;
-    m_view = view;
-    m_owns = false;
-  }
-  else
-  {
-    if (m_owns)
-      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
-    m_imagePtr = nullptr;
-    m_view = VK_NULL_HANDLE;
-    m_owns = false;
-  }
-}
-
-void ImageView::AssignImage(Image * image, VkImageViewType type)
-{
-  if (image)
-  {
-    auto new_view = utils::CreateImageView(image->GetContext().GetDevice(), *image, type);
-    if (m_owns)
-      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
-    m_imagePtr = image;
-    m_view = new_view;
-    m_owns = true;
-  }
-  else
-  {
-    if (m_owns)
-      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_view, nullptr);
-    m_imagePtr = nullptr;
-    m_view = VK_NULL_HANDLE;
-    m_owns = false;
-  }
-}
-
-bool ImageView::IsImageAssigned() const noexcept
-{
-  return !!m_view;
-}
 } // namespace RHI::vulkan

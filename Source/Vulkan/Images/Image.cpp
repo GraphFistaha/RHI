@@ -111,20 +111,17 @@ Image & Image::operator=(Image && rhs) noexcept
   return *this;
 }
 
-std::future<UploadResult> Image::UploadImage(const uint8_t * data,
-                                                 const CopyImageArguments & args)
+std::future<UploadResult> Image::UploadImage(const uint8_t * data, const CopyImageArguments & args)
 {
   return GetContext().GetTransferer().UploadImage(*this, data, args);
 }
 
-std::future<DownloadResult> Image::DownloadImage(HostImageFormat format,
-                                                     const ImageRegion & region)
+std::future<DownloadResult> Image::DownloadImage(HostImageFormat format, const ImageRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-void Image::TransferLayout(details::CommandBuffer & commandBuffer,
-                               VkImageLayout newLayout) noexcept
+void Image::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept
 {
   if (newLayout == VK_IMAGE_LAYOUT_UNDEFINED || newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED ||
       newLayout == m_layout)
@@ -196,6 +193,21 @@ size_t Image::Size() const
 ImageCreateArguments Image::GetDescription() const noexcept
 {
   return m_description;
+}
+
+VkImageView Image::GetView(ImageUsage usage)
+{
+  auto it = m_views.find(usage);
+  if (it == m_views.end())
+  {
+    ImageView view(GetContext(), *this)
+    m_views.insert()
+  }
+}
+
+void Image::SetView(ImageUsage usage, VkImageView view)
+{
+  m_views[usage] = ImageView(view);
 }
 
 } // namespace RHI::vulkan

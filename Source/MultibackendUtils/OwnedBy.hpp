@@ -32,6 +32,17 @@ struct OwnedBy
     return *this;
   }
 
+  OwnedBy(const OwnedBy & rhs)
+    : m_owner(rhs.m_owner)
+  {
+  }
+
+  OwnedBy & operator=(const OwnedBy & rhs)
+  {
+    m_owner = rhs.m_owner;
+    return *this;
+  }
+
 protected:
   const OwnerObjectT & GetOwner() const & noexcept
   {

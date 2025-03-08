@@ -262,7 +262,7 @@ void DescriptorBuffer::TransitLayoutForUsedImages(details::CommandBuffer & comma
     VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     for (auto && sampler : samplers)
     {
-      auto && imagePtr = sampler.GetImageView().GetImagePtr();
+      auto && imagePtr = sampler.GetAttachedImage();
       if (imagePtr)
         imagePtr->TransferLayout(commandBuffer, layout);
     }

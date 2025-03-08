@@ -4,36 +4,30 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "Image.hpp"
-
 namespace RHI::vulkan
 {
 struct Context;
-}
+struct Image;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 /// @brief reference on image
-struct ImageView final : public OwnedBy<Context>
+struct ImageView final
 {
-  explicit ImageView(Context & ctx);
+  ImageView() = default;
+  ImageView(Context & ctx, Image & image, VkImageViewType type);
+  explicit ImageView(VkImageView view);
   ~ImageView();
   ImageView(ImageView && rhs) noexcept;
   ImageView & operator=(ImageView && rhs) noexcept;
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
-  void AssignImage(Image * image, VkImageView view);
-  void AssignImage(Image * image, VkImageViewType type);
-  bool IsImageAssigned() const noexcept;
-
   VkImageView GetHandle() const noexcept { return m_view; }
-  Image * GetImagePtr() const noexcept { return m_imagePtr; }
 
 private:
-  Image * m_imagePtr = nullptr;
+  Context * m_context = nullptr; // not null if m_view is owned
   VkImageView m_view = VK_NULL_HANDLE;
-  bool m_owns = false;
 
 private:
   ImageView(const ImageView &) = delete;
