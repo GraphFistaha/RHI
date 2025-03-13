@@ -137,6 +137,7 @@ void DescriptorBuffer::Invalidate()
     m_layout = new_layout;
     m_invalidLayout = false;
     m_invalidSet = true;
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorSetLayout has been rebuilt");
   }
 
   if (m_invalidPool || !m_pool)
@@ -150,6 +151,7 @@ void DescriptorBuffer::Invalidate()
     m_pool = new_pool;
     m_invalidPool = false;
     m_invalidSet = true;
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorPool has been rebuilt");
   }
 
   if (m_invalidSet || !m_set)
@@ -163,6 +165,7 @@ void DescriptorBuffer::Invalidate()
     }
     m_set = new_set;
     m_invalidSet = false;
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorSet has been rebuilt");
   }
 
   for (auto && [type, oneTypeDescriptors] : m_bufferUniformDescriptors)

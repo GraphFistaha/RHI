@@ -22,7 +22,7 @@ struct Subpass : public ISubpass,
                  public OwnedBy<Context>,
                  public OwnedBy<RenderPass>
 {
-  using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderImageSlot>;
+  using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderAttachmentSlot>;
   explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
                    uint32_t familyIndex);
   virtual ~Subpass() override;
@@ -72,7 +72,6 @@ public:
 
   void LockWriting(bool lock) const noexcept;
   void SetDirtyCacheCommands() noexcept;
-  void SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot);
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
 private:

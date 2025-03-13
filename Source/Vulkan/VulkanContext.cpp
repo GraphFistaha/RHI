@@ -10,6 +10,8 @@
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/SubpassConfiguration.hpp"
+#include "Images/BufferedTexture.hpp"
+#include "Images/SwapchainTexture.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
 #include "Utils/CastHelper.hpp"
@@ -200,8 +202,9 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                           m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
-  //TODO: rewrite
-  //m_surfaceSwapchain = std::make_unique<PresentativeSwapchain>(*this, m_impl->GetSurface());
+  auto surfaceTexture =
+    std::make_unique<SwapchainTexture>(*this, m_impl->GetSurface(), SamplesCount::One);
+  m_textures.emplace_back(std::move(surfaceTexture));
 }
 
 Context::~Context()
@@ -210,8 +213,7 @@ Context::~Context()
 
 IImageGPU * Context::GetSurfaceImage()
 {
-  //TODO: rewrite
-  return nullptr; //m_surfaceSwapchain.get();
+  return m_textures[0].get();
 }
 
 IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
@@ -230,7 +232,8 @@ IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped
 
 IImageGPU * Context::AllocImage(const ImageCreateArguments & args)
 {
-  return nullptr; //std::make_unique<ImageGPU>(*this, args);
+  auto && texture = std::make_unique<BufferedTexture>(*this, args);
+  return m_textures.emplace_back(std::move(texture)).get();
 }
 
 void Context::ClearResources()

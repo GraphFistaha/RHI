@@ -119,15 +119,6 @@ enum class BlendFactor : uint8_t
   OneMinusSrc1Alpha,
 };
 
-/// @brief
-enum class ShaderImageSlot : uint8_t
-{
-  Color,
-  DepthStencil,
-  Input,
-  TOTAL
-};
-
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -219,7 +210,7 @@ struct ISubpassConfiguration : public IInvalidable
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
-  virtual void SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding) = 0;
+  virtual void BindAttachment(ShaderAttachmentSlot slot, uint32_t binding) = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -321,7 +312,6 @@ struct IImageGPU
                                                 const CopyImageArguments & args) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) = 0;
-  virtual ImageCreateArguments GetDescription() const noexcept = 0;
   /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;

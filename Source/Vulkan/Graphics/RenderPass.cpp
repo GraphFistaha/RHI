@@ -68,12 +68,12 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphor
   m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-  renderTarget.ForEachAttachedImage(
-    [it = m_cachedAttachments.begin()](Image & img) mutable
-    {
-      img.SetImageLayoutBeforeRenderPass(it->initialLayout);
-      ++it;
-    });
+  //renderTarget.ForEachAttachedImage(
+  //  [it = m_cachedAttachments.begin()](Image & img) mutable
+  //  {
+  //    img.SetImageLayoutBeforeRenderPass(it->initialLayout);
+  //    ++it;
+  //  });
 
   // execute commands for subpasses
   {
@@ -97,12 +97,12 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphor
 
   m_submitter.PushCommand(vkCmdEndRenderPass);
 
-  renderTarget.ForEachAttachedImage(
-    [it = m_cachedAttachments.begin()](Image & img) mutable
-    {
-      img.SetImageLayoutAfterRenderPass(it->finalLayout);
-      ++it;
-    });
+  //renderTarget.ForEachAttachedImage(
+  //  [it = m_cachedAttachments.begin()](Image & img) mutable
+  //  {
+  //    img.SetImageLayoutAfterRenderPass(it->finalLayout);
+  //    ++it;
+  //  });
 
   m_submitter.EndWriting();
   auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, std::move(waitSemaphores));

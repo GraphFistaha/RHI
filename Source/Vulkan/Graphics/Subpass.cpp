@@ -128,12 +128,6 @@ void Subpass::SetDirtyCacheCommands() noexcept
   m_shouldBeInvalidated = true;
 }
 
-void Subpass::SetImageAttachmentUsage(uint32_t binding, RHI::ShaderImageSlot slot)
-{
-  m_layout.SetAttachment(slot, binding);
-  GetRenderPass().SetInvalid();
-}
-
 void Subpass::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
 {
   m_pipeline.TransitLayoutForUsedImages(commandBuffer);

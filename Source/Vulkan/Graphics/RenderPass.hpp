@@ -52,7 +52,7 @@ private:
 
   /// There is a lot of thread-readers, so it's must be synchronized access
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
-  bool m_invalidRenderPass : 1 = false;
+  bool m_invalidRenderPass = false;
   utils::RenderPassBuilder m_builder;
 
   /// Flag to notify that subpasses can begin pass

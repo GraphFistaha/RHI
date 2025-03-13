@@ -65,6 +65,7 @@ AsyncTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore>
     throw std::runtime_error("failed to submit command buffer!");
   std::swap(m_oldBarrier, m_newBarrier);
   m_isFirstSubmit = false;
+  waitSemaphores.clear();
   return &m_oldBarrier;
 }
 

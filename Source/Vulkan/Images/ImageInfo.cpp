@@ -106,4 +106,9 @@ VkImageCreateInfo BuildImageCreateInfo(const ImageCreateArguments & description)
 
   return imageInfo;
 }
+void TransferImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout prevImageLayout,
+                         VkImageLayout newLayout, VkImage image)
+{
+
+}
 } // namespace RHI::vulkan

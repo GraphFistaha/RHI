@@ -47,6 +47,7 @@ enum class HostImageFormat : uint8_t
 // TODO: Remove
 enum class ImageFormat : uint8_t
 {
+  UNDEFINED,
   // general formats
   R8,
   A8,
@@ -62,6 +63,16 @@ enum class ImageFormat : uint8_t
   //BC1,
   //BC5,
   //BC7
+};
+
+/// @brief
+enum ShaderAttachmentSlot
+{
+  Color,            ///< color attachment
+  DepthStencil,     ///< depth-stencil attachment
+  Input,            ///< read-only shader attachment
+  Preserved = 0x80, ///< flag, that image just stored and unused in shader
+  TOTAL
 };
 
 /// For Image1D used only 0'th index

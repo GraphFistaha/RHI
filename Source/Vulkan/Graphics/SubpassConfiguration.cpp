@@ -28,9 +28,10 @@ void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::
   m_invalidPipeline = true;
 }
 
-void SubpassConfiguration::SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding)
+void SubpassConfiguration::BindAttachment(ShaderAttachmentSlot slot, uint32_t binding)
 {
-  GetSubpass().SetImageAttachmentUsage(binding, slot);
+  GetSubpass().GetLayout().BindAttachment(slot, binding);
+  GetSubpass().GetRenderPass().SetInvalid();
 }
 
 void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
@@ -102,6 +103,7 @@ void SubpassConfiguration::Invalidate()
     m_layout = new_layout;
     m_invalidPipelineLayout = false;
     m_invalidPipeline = true;
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout has been rebuilt");
   }
 
   if (m_invalidPipeline || !m_pipeline)
@@ -113,6 +115,7 @@ void SubpassConfiguration::Invalidate()
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline has been rebuilt");
   }
 
   GetSubpass().SetDirtyCacheCommands();

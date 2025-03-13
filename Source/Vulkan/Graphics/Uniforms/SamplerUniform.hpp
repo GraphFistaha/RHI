@@ -3,7 +3,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../../Images/Image.hpp"
+#include "../TextureInterface.hpp"
 #include "BaseUniform.hpp"
 
 
@@ -33,12 +33,12 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  Image * GetAttachedImage() const noexcept { return m_attachedImage; }
+  IAttachment * GetAttachedImage() const noexcept { return m_attachedImage; }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  Image * m_attachedImage = nullptr;
+  IAttachment * m_attachedImage = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };

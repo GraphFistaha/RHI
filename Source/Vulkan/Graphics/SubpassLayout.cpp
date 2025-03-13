@@ -17,7 +17,7 @@ bool SubpassLayout::UseDepthStencil() const noexcept
   return m_depthStencilAttachment.attachment != VK_ATTACHMENT_UNUSED;
 }
 
-void SubpassLayout::SetAttachment(ShaderImageSlot slot, uint32_t idx)
+void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
 {
   auto assignOrInsert =
     [](std::vector<VkAttachmentReference> & atts, const VkAttachmentReference & ref)
@@ -29,22 +29,28 @@ void SubpassLayout::SetAttachment(ShaderImageSlot slot, uint32_t idx)
       *it = ref;
   };
 
+  if (slot & ShaderAttachmentSlot::Preserved)
+  {
+    m_preservedAttachments.push_back(idx);
+    return;
+  }
+
   switch (slot)
   {
-    case ShaderImageSlot::Color:
+    case ShaderAttachmentSlot::Color:
       assignOrInsert(m_colorAttachments,
                      VkAttachmentReference{idx, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
       break;
-    case ShaderImageSlot::Input:
+    case ShaderAttachmentSlot::Input:
       assignOrInsert(m_inputAttachments,
                      VkAttachmentReference{idx, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL});
       break;
-    case ShaderImageSlot::DepthStencil:
+    case ShaderAttachmentSlot::DepthStencil:
       m_depthStencilAttachment =
         VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL};
       break;
     default:
-      throw std::invalid_argument("Unknown ShaderImageSlot");
+      throw std::invalid_argument("Unknown ShaderAttachmentSlot");
       break;
   }
 }
@@ -59,6 +65,8 @@ VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
   subpassDescription.pInputAttachments = m_inputAttachments.data();
   subpassDescription.pDepthStencilAttachment = UseDepthStencil() ? &m_depthStencilAttachment
                                                                  : nullptr;
+  subpassDescription.pPreserveAttachments = m_preservedAttachments.data();
+  subpassDescription.preserveAttachmentCount = static_cast<uint32_t>(m_preservedAttachments.size());
   return subpassDescription;
 }
 

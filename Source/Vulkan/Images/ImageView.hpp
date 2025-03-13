@@ -12,6 +12,7 @@ struct Image;
 
 namespace RHI::vulkan
 {
+
 /// @brief reference on image
 struct ImageView final
 {

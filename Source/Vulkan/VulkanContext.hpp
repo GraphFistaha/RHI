@@ -10,6 +10,7 @@
 
 #include "GarbageCollector.hpp"
 #include "Graphics/Framebuffer.hpp"
+#include "Graphics/TextureInterface.hpp"
 #include "Memory/MemoryAllocator.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
@@ -66,9 +67,9 @@ private:
   std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
 
   std::unordered_map<std::thread::id, Transferer> m_transferers;
-  std::vector<Framebuffer> m_framebuffers;
+  std::deque<Framebuffer> m_framebuffers;
   std::vector<BufferGPU> m_buffers;
-  //std::unique_ptr<PresentativeSwapchain> m_surfaceSwapchain; // TODO: potentially there is a list
+  std::vector<std::unique_ptr<IAttachment>> m_textures;
   LoggingFunc m_logFunc;
 
 private:

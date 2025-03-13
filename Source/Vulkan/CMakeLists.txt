@@ -9,6 +9,7 @@ PRIVATE
 	Memory/MemoryBlock.cpp
 	Memory/MemoryBlock.hpp
 
+	Graphics/TextureInterface.hpp
 	Graphics/Framebuffer.cpp
 	Graphics/Framebuffer.hpp
 	Graphics/DescriptorsBuffer.cpp
@@ -54,10 +55,10 @@ PRIVATE
 	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
-	Images/SwapchainImage.cpp
-	Images/SwapchainImage.hpp
-	Images/PresentativeSwapchainImage.cpp
-	Images/PresentativeSwapchainImage.hpp
+	Images/BufferedTexture.cpp
+	Images/BufferedTexture.hpp
+	Images/SwapchainTexture.cpp
+	Images/SwapchainTexture.hpp
 	Images/ImageView.cpp
 	Images/ImageView.hpp
 

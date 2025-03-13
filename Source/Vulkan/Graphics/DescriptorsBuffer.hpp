@@ -6,6 +6,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../CommandsExecution/CommandBuffer.hpp"
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/DescriptorSetLayoutBuilder.hpp"
 #include "Uniforms/BufferUniform.hpp"
@@ -43,7 +44,7 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
   VkDescriptorSetLayout GetLayoutHandle() const noexcept;
   VkDescriptorSet GetHandle() const noexcept;
 
-  void TransitLayoutForUsedImages(details::CommandBuffer& commandBuffer);
+  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
 private:
   using BufferUniforms = std::deque<BufferUniform>;

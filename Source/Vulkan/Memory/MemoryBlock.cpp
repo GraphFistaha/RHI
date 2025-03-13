@@ -26,7 +26,7 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
                                 &allocInfo);
       res != VK_SUCCESS)
     throw std::invalid_argument("Failed to create VkImage");
-
+  
   m_image = image;
   m_memBlock = allocation;
   m_allocInfo = reinterpret_cast<AllocInfoRawMemory &>(allocInfo);

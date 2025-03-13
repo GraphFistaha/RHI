@@ -24,10 +24,12 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
 {
   explicit SubpassConfiguration(Context & ctx, Subpass & owner, uint32_t subpassIndex);
   virtual ~SubpassConfiguration() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(Subpass, GetSubpass);
 
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
-  virtual void SetAttachmentUsage(ShaderImageSlot slot, uint32_t binding) override;
+  virtual void BindAttachment(ShaderAttachmentSlot slot, uint32_t binding) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
@@ -41,6 +43,7 @@ public: // ISubpassConfiguration interface
 
   virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
   virtual void SetMeshTopology(MeshTopology topology) noexcept override;
+
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;
@@ -49,7 +52,7 @@ public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_layout; }
   void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint);
-  void TransitLayoutForUsedImages(details::CommandBuffer& commandBuffer);
+  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
 private:
   uint32_t m_subpassIndex;
@@ -61,12 +64,8 @@ private:
 
   utils::PipelineLayoutBuilder m_layoutBuilder;
   utils::PipelineBuilder m_pipelineBuilder;
-  bool m_invalidPipeline : 1 = false;
-  bool m_invalidPipelineLayout : 1 = false;
-
-public:
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(Subpass, GetSubpass);
+  bool m_invalidPipeline = false;
+  bool m_invalidPipelineLayout = false;
 };
 
 } // namespace RHI::vulkan

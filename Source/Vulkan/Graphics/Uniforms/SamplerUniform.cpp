@@ -78,9 +78,10 @@ VkSampler SamplerUniform::GetHandle() const noexcept
 VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
 {
   assert(m_sampler);
+  assert(m_attachedImage);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_attachedImage->GetView(ImageUsage::Sampler).GetHandle();
+  imageInfo.imageView = m_attachedImage->GetImage(ImageUsage::Sampler);
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -104,7 +105,7 @@ void SamplerUniform::SetInvalid()
 void SamplerUniform::AssignImage(IImageGPU * image)
 {
   Invalidate();
-  auto && internalImage = utils::CastInterfaceClass2Internal<Image>(image);
+  auto && internalImage = dynamic_cast<IAttachment *>(image);
   m_attachedImage = internalImage;
   GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }

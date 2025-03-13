@@ -5,6 +5,7 @@
 #include "../Resources/Transferer.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
+#include "BufferedTexture.hpp"
 #include "InternalImageTraits.hpp"
 
 namespace
@@ -80,9 +81,9 @@ constexpr VkPipelineStageFlags LayoutTransfer_MakePipelineStage(VkImageLayout la
 
 namespace RHI::vulkan
 {
-Image::Image(Context & ctx, const ImageCreateArguments & description)
+Image::Image(Context & ctx, BufferedTexture & texture)
   : OwnedBy<Context>(ctx)
-  , m_description(description)
+  , OwnedBy<BufferedTexture>(texture)
 {
 }
 
@@ -93,9 +94,9 @@ Image::~Image()
 
 Image::Image(Image && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
+  , OwnedBy<BufferedTexture>(std::move(rhs))
 {
   std::swap(m_image, rhs.m_image);
-  std::swap(m_description, rhs.m_description);
   std::swap(m_memBlock, rhs.m_memBlock);
 }
 
@@ -104,8 +105,8 @@ Image & Image::operator=(Image && rhs) noexcept
   if (this != &rhs)
   {
     OwnedBy<Context>::operator=(std::move(rhs));
+    OwnedBy<BufferedTexture>::operator=(std::move(rhs));
     std::swap(m_image, rhs.m_image);
-    std::swap(m_description, rhs.m_description);
     std::swap(m_memBlock, rhs.m_memBlock);
   }
   return *this;
@@ -128,6 +129,7 @@ void Image::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout
     return;
   VkImageMemoryBarrier barrier{};
   {
+    auto && description = GetTextureOwner().GetDescription();
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = m_layout;
     barrier.newLayout = newLayout;
@@ -136,7 +138,7 @@ void Image::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout
     barrier.image = m_image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = m_description.mipLevels;
+    barrier.subresourceRange.levelCount = description.mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
     barrier.srcAccessMask = LayoutTransfer_MakeAccessFlag(m_layout);
@@ -167,47 +169,31 @@ void Image::SetImageLayoutAfterRenderPass(VkImageLayout newLayout) noexcept
 
 VkImageType Image::GetVulkanImageType() const noexcept
 {
-  return utils::CastInterfaceEnum2Vulkan<VkImageType>(m_description.type);
+  auto && description = GetTextureOwner().GetDescription();
+  return utils::CastInterfaceEnum2Vulkan<VkImageType>(description.type);
 }
 
 VkExtent3D Image::GetVulkanExtent() const noexcept
 {
-  return VkExtent3D{m_description.extent[0], m_description.extent[1], m_description.extent[2]};
+  auto && description = GetTextureOwner().GetDescription();
+  return VkExtent3D{description.extent[0], description.extent[1], description.extent[2]};
 }
 
 VkFormat Image::GetVulkanFormat() const noexcept
 {
-  return utils::CastInterfaceEnum2Vulkan<VkFormat>(m_description.format);
+  auto && description = GetTextureOwner().GetDescription();
+  return utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
 }
 
 VkSampleCountFlagBits Image::GetVulkanSamplesCount() const noexcept
 {
-  return utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_description.samples);
+  auto && description = GetTextureOwner().GetDescription();
+  return utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
 }
 
 size_t Image::Size() const
 {
   return RHI::utils::GetSizeOfImage(GetVulkanExtent(), GetVulkanFormat());
-}
-
-ImageCreateArguments Image::GetDescription() const noexcept
-{
-  return m_description;
-}
-
-VkImageView Image::GetView(ImageUsage usage)
-{
-  auto it = m_views.find(usage);
-  if (it == m_views.end())
-  {
-    ImageView view(GetContext(), *this)
-    m_views.insert()
-  }
-}
-
-void Image::SetView(ImageUsage usage, VkImageView view)
-{
-  m_views[usage] = ImageView(view);
 }
 
 } // namespace RHI::vulkan

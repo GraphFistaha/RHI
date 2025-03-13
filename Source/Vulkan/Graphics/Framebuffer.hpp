@@ -7,32 +7,12 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/SwapchainImage.hpp"
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
+#include "TextureInterface.hpp"
 
 namespace RHI::vulkan
 {
-
-enum ImageUsage
-{
-  Transfer = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-  FramebufferAttachment = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-                          VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-  Sampler = VK_IMAGE_USAGE_SAMPLED_BIT
-};
-
-struct IAttachment
-{
-  virtual ~IAttachment() = default;
-  virtual std::pair<uint32_t, VkSemaphore> AcquireNextImage() = 0;
-  virtual Image * GetImage(uint32_t frameIndex) const noexcept = 0;
-  virtual bool FinishImage(VkSemaphore waitSemaphore) = 0; // not sure. Only presentation requires
-  virtual void SetFramesCount(uint32_t framesCount) = 0;
-  virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
-};
-
 
 /// @brief vulkan implementation for renderer
 struct Framebuffer : public IFramebuffer,
@@ -65,14 +45,13 @@ public: // RHI-only API
 
 protected:
   std::vector<RenderTarget> m_targets;
-  uint32_t m_activeTarget = 0;
+  uint32_t m_activeTarget = -1;
   RenderPass m_renderPass;
 
-  std::vector<IAttachment *> m_attachments;
+  std::vector<IAttachment *> m_attachments; //sort by count of buffers
   bool m_attachmentsChanged = false;
   std::vector<VkAttachmentDescription> m_attachmentDescriptions;
   std::vector<VkSemaphore> m_imagesAvailabilitySemaphores;
-  std::vector<uint32_t> m_selectedImageIndices;
 
   uint32_t m_framesCount = 0;
 

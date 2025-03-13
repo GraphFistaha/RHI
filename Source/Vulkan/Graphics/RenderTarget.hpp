@@ -5,7 +5,6 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/ImageView.hpp"
 #include "../Utils/FramebufferBuilder.hpp"
 
 namespace RHI::vulkan
@@ -35,18 +34,14 @@ public: // IRenderTarget interface
 public:
   void Invalidate();
   void BindRenderPass(const VkRenderPass & renderPass) noexcept;
+  void SetExtent(const RHI::ImageExtent & extent) noexcept;
 
   VkFramebuffer GetHandle() const noexcept { return m_framebuffer; }
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }
   const std::vector<VkClearValue> & GetClearValues() const & noexcept;
 
-  void SetAttachments(std::vector<Image *> && views) noexcept;
-  void AddAttachment(uint32_t index, Image * view);
+  void SetAttachments(std::vector<VkImageView> && views) noexcept;
   void ClearAttachments() noexcept;
-
-  using ProcessImagesFunc = std::function<void(Image &)>;
-  /// iterates over attached images and calls func for each of them. Used to transfer layout of images
-  void ForEachAttachedImage(ProcessImagesFunc && func) noexcept;
   size_t GetAttachmentsCount() const noexcept;
 
 protected:
@@ -54,7 +49,7 @@ protected:
   /// cached size of all image attachments. ALl sizes of all images must be equal
   VkExtent3D m_extent;
   /// ImageViews
-  std::vector<Image *> m_attachedImages;
+  std::vector<VkImageView> m_attachedImages;
   /// clear values for each attachment
   std::vector<VkClearValue> m_clearValues;
 

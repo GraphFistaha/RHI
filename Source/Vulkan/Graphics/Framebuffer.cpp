@@ -9,13 +9,13 @@
 
 namespace
 {
-RHI::ShaderImageSlot GetShaderImageSlotByImageDescription(
+RHI::ShaderAttachmentSlot GetShaderImageSlotByImageDescription(
   const RHI::ImageCreateArguments & desc) noexcept
 {
   if (desc.format == RHI::ImageFormat::DEPTH_STENCIL || desc.format == RHI::ImageFormat::DEPTH)
-    return RHI::ShaderImageSlot::DepthStencil;
+    return RHI::ShaderAttachmentSlot::DepthStencil;
 
-  return RHI::ShaderImageSlot::Color;
+  return RHI::ShaderAttachmentSlot::Color;
 }
 } // namespace
 
@@ -41,70 +41,89 @@ void Framebuffer::Invalidate()
 {
   if (m_attachmentsChanged)
   {
+    if (m_attachments.empty())
+      throw std::runtime_error("Framebuffer has no attachments");
+
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
+    newAttachmentsDescription.reserve(m_attachments.size());
     for (auto && attachment : m_attachments)
     {
-      newAttachmentsDescription.push_back(attachment ? attachment->BuildDescription()
-                                                     : VkAttachmentDescription{});
+      if (attachment)
+      {
+        attachment->Invalidate();
+        newAttachmentsDescription.push_back(attachment->BuildDescription());
+      }
+      else
+      {
+        newAttachmentsDescription.push_back(VkAttachmentDescription{});
+      }
     }
     m_attachmentDescriptions = std::move(newAttachmentsDescription);
 
-    // build render pass
+    // set attachments to render Pass
     m_renderPass.SetAttachments(m_attachmentDescriptions);
+    // update subpasses
     m_renderPass.ForEachSubpass(
       [this](Subpass & sb)
       {
         uint32_t idx = 0;
-        for (auto && description : m_imageDescriptions)
+        for (auto && attachment : m_attachments)
         {
-          if (!m_ownedImages[idx])
-            sb.GetLayout().SetAttachment(GetShaderImageSlotByImageDescription(description), idx++);
+          auto && attachmentSlot =
+            GetShaderImageSlotByImageDescription(attachment->GetDescription());
+          sb.GetLayout().BindAttachment(attachmentSlot, idx++);
         }
       });
+    //build render pass
     m_renderPass.Invalidate();
-    // final building of render targets
+
+    uint32_t buffersCount = m_attachments[0]->GetBuffering();
+    auto extent = m_attachments[0]->GetDescription().extent;
+    // all attachments must have equal count of buffers
+    assert(std::all_of(m_attachments.begin(), m_attachments.end(), [buffersCount](IAttachment * att)
+                       { return buffersCount == att->GetBuffering(); }));
+
+    if (m_targets.size() != buffersCount)
+    {
+      while (m_targets.size() > buffersCount)
+        m_targets.pop_back();
+
+      while (m_targets.size() < buffersCount)
+        m_targets.emplace_back(GetContext());
+    }
+
+    // build RenderTargets
     for (auto && target : m_targets)
     {
+      target.SetExtent(extent);
       target.BindRenderPass(m_renderPass.GetHandle());
-      target.Invalidate();
     }
     m_attachmentsChanged = false;
   }
 }
 
-//void Framebuffer::InvalidateAttachments()
-//{
-//TODO: Rewrite
-/*for (auto&& target : m_targets)
-  {
-    uint32_t binding = 0;
-    for (auto && description : m_imageDescriptions)
-    {
-      if (m_ownedImages[binding])
-      {
-        auto image = std::make_unique<ImageGPU>(GetContext(), description);
-        ImageView view(GetContext());
-        view.AssignImage(image.get(),
-                         utils::CastInterfaceEnum2Vulkan<VkImageViewType>(description.type));
-        target.AddAttachment(binding, std::move(image), std::move(view));
-      }
-      binding++;
-    }
-  }*/
-//}
-
 IRenderTarget * Framebuffer::BeginFrame()
 {
-  std::vector<Image *> selectedAttachments;
+  if (m_attachments.empty())
+    return nullptr;
+
+  Invalidate();
+
+  std::vector<VkImageView> renderingImages;
+  renderingImages.reserve(m_attachments.size());
+  m_imagesAvailabilitySemaphores.reserve(m_attachments.size());
+
   for (auto && attachment : m_attachments)
   {
-    auto [imageIndex, imgAvailSemaphore] = attachment->AcquireNextImage();
-    m_selectedImageIndices.push_back(imageIndex);
+    auto [imageView, imgAvailSemaphore] = attachment->AcquireForRendering();
     m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
-    selectedAttachments.push_back(attachment->GetImage(imageIndex));
+    renderingImages.push_back(imageView);
   }
-  // how to find appropriate RenderTarget by these attachments? to reuse its recreation
-  m_targets[m_activeTarget].SetAttachments(std::move(selectedAttachments));
+
+  m_activeTarget = (m_activeTarget + 1) % m_targets.size();
+
+  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages));
+  m_targets[m_activeTarget].Invalidate(); // rebuilds VkFramebuffer if need it
   return &m_targets[m_activeTarget];
 }
 
@@ -113,11 +132,7 @@ IAwaitable * Framebuffer::EndFrame()
   AsyncTask * task =
     m_renderPass.Draw(m_targets[m_activeTarget], std::move(m_imagesAvailabilitySemaphores));
   for (auto && attachment : m_attachments)
-    attachment->FinishImage(task->GetSemaphore());
-
-  m_activeTarget = (m_activeTarget + 1) % m_targets.size();
-  m_imagesAvailabilitySemaphores.clear();
-  m_selectedImageIndices.clear();
+    attachment->FinalRendering(task->GetSemaphore());
   return task;
 }
 
@@ -128,14 +143,19 @@ ISubpass * Framebuffer::CreateSubpass()
 
 void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
 {
+  while (m_attachments.size() < binding + 1)
+    m_attachments.push_back(nullptr);
+
   if (IAttachment * ptr = dynamic_cast<IAttachment *>(image))
   {
-    ptr->SetFramesCount(m_framesCount);
+    ptr->SetBuffering(m_framesCount);
     m_attachments[binding] = ptr;
     m_attachmentsChanged = true;
   }
   else
-    assert(false);
+  {
+    throw std::runtime_error("Failed to cast IImageGPU * to IAttachment *");
+  }
 }
 
 void Framebuffer::ClearImageAttachments() noexcept
@@ -147,7 +167,7 @@ void Framebuffer::ClearImageAttachments() noexcept
 void Framebuffer::SetFramesCount(uint32_t framesCount)
 {
   for (auto && attachment : m_attachments)
-    attachment->SetFramesCount(framesCount);
+    attachment->SetBuffering(framesCount);
 }
 
 } // namespace RHI::vulkan
