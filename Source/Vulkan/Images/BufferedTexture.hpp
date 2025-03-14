@@ -26,20 +26,27 @@ public: // IImageGPU interface
                                                 const CopyImageArguments & args) override;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) override;
+  virtual ImageCreateArguments GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;
+
+public: //ITexture interface
+  virtual VkImageView GetImageView(ImageUsage usage) const noexcept override;
+  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
+                              VkImageLayout layout) override;
+  virtual VkImageLayout GetLayout() const noexcept override;
+  virtual VkImage GetHandle() const noexcept override;
+  virtual VkFormat GetInternalFormat() const noexcept override;
+  virtual VkExtent3D GetInternalExtent() const noexcept override;
 
 public: // IAttachment interface
   virtual void Invalidate() override {}
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
-  virtual VkImageView GetImage(ImageUsage usage) const noexcept override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual void SetBuffering(uint32_t framesCount) override;
   virtual uint32_t GetBuffering() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
-  virtual ImageCreateArguments GetDescription() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
-                              VkImageLayout layout) override;
+  virtual void TransferLayout(VkImageLayout layout) noexcept override;
 
 private:
   Image * GetImage() noexcept;

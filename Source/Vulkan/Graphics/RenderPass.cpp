@@ -2,15 +2,16 @@
 
 #include "../CommandsExecution/Submitter.hpp"
 #include "../VulkanContext.hpp"
-#include "RenderTarget.hpp"
 #include "Framebuffer.hpp"
+#include "RenderTarget.hpp"
 #include "Subpass.hpp"
 
 namespace RHI::vulkan
 {
 
-RenderPass::RenderPass(Context & ctx)
-  : OwnedBy(ctx)
+RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
+  : OwnedBy<Context>(ctx)
+  , OwnedBy<Framebuffer>(framebuffer)
   , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
   , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
   , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
@@ -38,7 +39,8 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphore> && waitSemaphores)
+AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
+                             std::vector<VkSemaphore> && waitSemaphores)
 {
   assert(m_renderPass);
   assert(renderTarget.GetAttachmentsCount() == m_cachedAttachments.size());
@@ -68,12 +70,13 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphor
   m_submitter.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-  //renderTarget.ForEachAttachedImage(
-  //  [it = m_cachedAttachments.begin()](Image & img) mutable
-  //  {
-  //    img.SetImageLayoutBeforeRenderPass(it->initialLayout);
-  //    ++it;
-  //  });
+  GetFramebuffer().ForEachAttachment(
+    [it = m_cachedAttachments.begin()](IAttachment * att) mutable
+    {
+      if (att)
+        att->TransferLayout(it->initialLayout);
+      ++it;
+    });
 
   // execute commands for subpasses
   {
@@ -97,12 +100,13 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget, std::vector<VkSemaphor
 
   m_submitter.PushCommand(vkCmdEndRenderPass);
 
-  //renderTarget.ForEachAttachedImage(
-  //  [it = m_cachedAttachments.begin()](Image & img) mutable
-  //  {
-  //    img.SetImageLayoutAfterRenderPass(it->finalLayout);
-  //    ++it;
-  //  });
+  GetFramebuffer().ForEachAttachment(
+    [it = m_cachedAttachments.begin()](IAttachment * att) mutable
+    {
+      if (att)
+        att->TransferLayout(it->finalLayout);
+      ++it;
+    });
 
   m_submitter.EndWriting();
   auto res = m_submitter.Submit(false /*waitPrevSubmitOnGPU*/, std::move(waitSemaphores));

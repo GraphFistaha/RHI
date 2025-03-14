@@ -82,10 +82,11 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto subpass = swapchain->CreateSubpass();
+  auto subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
@@ -99,12 +100,12 @@ int main()
                                      RHI::InputAttributeElementType::FLOAT);
 
   // create vertex buffer
-  auto && vertexBuffer =
+  auto * vertexBuffer =
     ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
   vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
-  auto indexBuffer =
+  auto * indexBuffer =
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
   // fill buffer with Mapping into CPU memory
   if (auto scoped_map = indexBuffer->Map())
@@ -120,7 +121,7 @@ int main()
   {
     glfwPollEvents();
 
-    if (auto * renderTarget = swapchain->BeginFrame())
+    if (auto * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
 
@@ -144,7 +145,7 @@ int main()
         subpass->EndPass(); // finish drawing pass
         ShouldInvalidateScene = false;
       }
-      swapchain->EndFrame();
+      framebuffer->EndFrame();
     }
     t += 0.001f;
   }

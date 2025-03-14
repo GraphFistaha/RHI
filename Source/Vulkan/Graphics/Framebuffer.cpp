@@ -24,7 +24,7 @@ namespace RHI::vulkan
 
 Framebuffer::Framebuffer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_renderPass(ctx)
+  , m_renderPass(ctx, *this)
 {
 }
 
@@ -102,6 +102,11 @@ void Framebuffer::Invalidate()
   }
 }
 
+void Framebuffer::ForEachAttachment(AttachmentProcessFunc && func)
+{
+  std::for_each(m_attachments.begin(), m_attachments.end(), std::move(func));
+}
+
 IRenderTarget * Framebuffer::BeginFrame()
 {
   if (m_attachments.empty())
@@ -116,6 +121,8 @@ IRenderTarget * Framebuffer::BeginFrame()
   for (auto && attachment : m_attachments)
   {
     auto [imageView, imgAvailSemaphore] = attachment->AcquireForRendering();
+    if (!imageView)
+      return nullptr;
     m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
     renderingImages.push_back(imageView);
   }

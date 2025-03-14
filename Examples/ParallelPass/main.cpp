@@ -48,8 +48,8 @@ static constexpr uint32_t Indices[] = {0, 1, 2};
 // helper which incapsulated rendering code for some scene
 struct Renderer
 {
-  explicit Renderer(RHI::IContext & ctx, RHI::IRenderPass & swapchain, GLFWwindow * window);
-
+  explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwindow * window);
+  ~Renderer();
   // draw scene in parallel
   void AsyncDrawScene()
   {
@@ -79,8 +79,8 @@ private:
   RHI::ISubpass * m_subpass;
 
   /// some data for frame
-  std::unique_ptr<RHI::IBufferGPU> m_vertexBuffer;
-  std::unique_ptr<RHI::IBufferGPU> m_indexBuffer;
+  RHI::IBufferGPU * m_vertexBuffer;
+  RHI::IBufferGPU * m_indexBuffer;
 
   /// current draw task
   std::future<bool> m_drawTask;
@@ -126,8 +126,9 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
-  TriangleRenderer = std::make_unique<Renderer>(*ctx, *swapchain, window);
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  TriangleRenderer = std::make_unique<Renderer>(*ctx, *framebuffer, window);
   TriangleRenderer->AsyncDrawScene();
 
   while (!glfwWindowShouldClose(window))
@@ -135,10 +136,10 @@ int main()
     glfwPollEvents();
     TriangleRenderer->UpdateGeometry();
     ctx->Flush();
-    if (auto * renderTarget = swapchain->BeginFrame())
+    if (auto * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
-      swapchain->EndFrame();
+      framebuffer->EndFrame();
     }
   }
 
@@ -147,11 +148,11 @@ int main()
   return 0;
 }
 
-Renderer::Renderer(RHI::IContext & ctx, RHI::IRenderPass & swapchain, GLFWwindow * window)
+Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwindow * window)
   : m_windowPtr(window)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  m_subpass = swapchain.CreateSubpass();
+  m_subpass = framebuffer.CreateSubpass();
   auto && trianglePipeline = m_subpass->GetConfiguration();
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
@@ -174,6 +175,11 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IRenderPass & swapchain, GLFWwindow
   m_indexBuffer =
     ctx.AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
   m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
+}
+
+Renderer::~Renderer()
+{
+  //TODO: destroy buffers
 }
 
 bool Renderer::DrawSceneImpl()

@@ -38,8 +38,6 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->SetExtent(
-    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
   ShouldInvalidateScene = true;
 }
 
@@ -88,8 +86,9 @@ int main()
   auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
   auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
 
-  auto * swapchain = ctx->GetSurfaceSwapchain();
-  auto * subpass = swapchain->CreateSubpass();
+  auto * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  auto * subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
@@ -132,10 +131,10 @@ int main()
     std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
     transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
-    x += 0.0001f;
+    x += 0.001f;
     ctx->Flush();
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
+    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
@@ -157,7 +156,7 @@ int main()
         ShouldInvalidateScene = false;
       }
 
-      swapchain->EndFrame();
+      framebuffer->EndFrame();
     }
 
     ctx->ClearResources();

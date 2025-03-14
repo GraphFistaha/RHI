@@ -112,16 +112,6 @@ Image & Image::operator=(Image && rhs) noexcept
   return *this;
 }
 
-std::future<UploadResult> Image::UploadImage(const uint8_t * data, const CopyImageArguments & args)
-{
-  return GetContext().GetTransferer().UploadImage(*this, data, args);
-}
-
-std::future<DownloadResult> Image::DownloadImage(HostImageFormat format, const ImageRegion & region)
-{
-  return GetContext().GetTransferer().DownloadImage(*this, format, region);
-}
-
 void Image::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept
 {
   if (newLayout == VK_IMAGE_LAYOUT_UNDEFINED || newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED ||

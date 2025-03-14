@@ -43,6 +43,9 @@ public: // RHI-only API
   size_t GetImagesCount() const noexcept;
   void Invalidate();
 
+  using AttachmentProcessFunc = std::function<void(IAttachment *)>;
+  void ForEachAttachment(AttachmentProcessFunc && func);
+
 protected:
   std::vector<RenderTarget> m_targets;
   uint32_t m_activeTarget = -1;

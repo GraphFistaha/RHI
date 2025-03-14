@@ -312,6 +312,7 @@ struct IImageGPU
                                                 const CopyImageArguments & args) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) = 0;
+  virtual ImageCreateArguments GetDescription() const noexcept = 0;
   /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;

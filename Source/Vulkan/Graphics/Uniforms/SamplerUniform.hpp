@@ -33,12 +33,12 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  IAttachment * GetAttachedImage() const noexcept { return m_attachedImage; }
+  ITexture * GetAttachedImage() const noexcept { return m_boundTexture; }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  IAttachment * m_attachedImage = nullptr;
+  ITexture * m_boundTexture = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };

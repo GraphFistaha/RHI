@@ -56,8 +56,9 @@ void BufferGPU::UploadSync(const void * data, size_t size, size_t offset)
 
 std::future<UploadResult> BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
 {
-  return GetContext().GetTransferer().UploadBuffer(*this, reinterpret_cast<const uint8_t *>(data),
-                                                   size, offset);
+  return GetContext().GetTransferer().UploadBuffer(GetHandle(),
+                                                   reinterpret_cast<const uint8_t *>(data), size,
+                                                   offset);
 }
 
 IBufferGPU::ScopedPointer BufferGPU::Map()

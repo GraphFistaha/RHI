@@ -15,16 +15,14 @@ BufferedTexture::BufferedTexture(Context & ctx, const ImageCreateArguments & arg
 std::future<UploadResult> BufferedTexture::UploadImage(const uint8_t * srcPixelData,
                                                        const CopyImageArguments & args)
 {
-  assert(GetImage());
-  return GetImage()->UploadImage(srcPixelData, args);
+  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
 }
 
 
 std::future<DownloadResult> BufferedTexture::DownloadImage(HostImageFormat format,
                                                            const ImageRegion & region)
 {
-  assert(GetImage());
-  return GetImage()->DownloadImage(format, region);
+  return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
 size_t BufferedTexture::Size() const
@@ -36,10 +34,10 @@ size_t BufferedTexture::Size() const
 std::pair<VkImageView, VkSemaphore> BufferedTexture::AcquireForRendering()
 {
   m_activeImage = (m_activeImage + 1) % m_images.size();
-  return {GetImage(ImageUsage::FramebufferAttachment), VK_NULL_HANDLE};
+  return {GetImageView(ImageUsage::FramebufferAttachment), VK_NULL_HANDLE};
 }
 
-VkImageView BufferedTexture::GetImage(ImageUsage usage) const noexcept
+VkImageView BufferedTexture::GetImageView(ImageUsage usage) const noexcept
 {
   return m_views.at(usage)[m_activeImage];
 }
@@ -78,6 +76,10 @@ VkAttachmentDescription BufferedTexture::BuildDescription() const noexcept
   return BuildAttachmentDescription(m_description);
 }
 
+void BufferedTexture::TransferLayout(VkImageLayout layout) noexcept
+{
+}
+
 ImageCreateArguments BufferedTexture::GetDescription() const noexcept
 {
   return m_description;
@@ -85,6 +87,22 @@ ImageCreateArguments BufferedTexture::GetDescription() const noexcept
 
 void BufferedTexture::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
 {
-    // TODO
+  // TODO
+}
+VkImageLayout BufferedTexture::GetLayout() const noexcept
+{
+    return VkImageLayout();
+}
+VkImage BufferedTexture::GetHandle() const noexcept
+{
+    return VkImage();
+}
+VkFormat BufferedTexture::GetInternalFormat() const noexcept
+{
+    return VkFormat();
+}
+VkExtent3D BufferedTexture::GetInternalExtent() const noexcept
+{
+    return VkExtent3D();
 }
 } // namespace RHI::vulkan

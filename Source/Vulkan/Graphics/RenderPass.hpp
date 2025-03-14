@@ -17,17 +17,20 @@ namespace RHI::vulkan
 {
 struct Context;
 struct RenderTarget;
+struct Framebuffer;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
 struct RenderPass : public IInvalidable,
-                    public OwnedBy<Context>
+                    public OwnedBy<Context>,
+                    public OwnedBy<Framebuffer>
 {
-  explicit RenderPass(Context & ctx);
+  explicit RenderPass(Context & ctx, Framebuffer & framebuffer);
   virtual ~RenderPass() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
 public: // IFramebuffer Interface
   ISubpass * CreateSubpass();

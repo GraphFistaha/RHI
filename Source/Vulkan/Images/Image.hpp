@@ -31,8 +31,6 @@ struct Image final : public OwnedBy<Context>,
   MAKE_ALIAS_FOR_GET_OWNER(BufferedTexture, GetTextureOwner);
 
 public:
-  std::future<UploadResult> UploadImage(const uint8_t * data, const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(HostImageFormat format, const ImageRegion & args);
   size_t Size() const;
 
   void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout newLayout) noexcept;

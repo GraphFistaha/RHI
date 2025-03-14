@@ -8,7 +8,7 @@
 
 #include "../CommandsExecution/CompositeAsyncTask.hpp"
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Images/Image.hpp"
+#include "../Graphics/TextureInterface.hpp"
 #include "BufferGPU.hpp"
 
 namespace RHI::vulkan
@@ -21,20 +21,20 @@ namespace RHI::vulkan
 
 namespace details
 {
-struct Transferer final : public OwnedBy<Context>
+struct TransferSubmitter final : public OwnedBy<Context>
 {
-  Transferer(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex);
-  Transferer(Transferer && rhs) noexcept;
-  Transferer & operator=(Transferer && rhs) noexcept;
-  IAwaitable * DoTransfer();
+  TransferSubmitter(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex);
+  TransferSubmitter(TransferSubmitter && rhs) noexcept;
+  TransferSubmitter & operator=(TransferSubmitter && rhs) noexcept;
+  IAwaitable * Submit();
 
-  std::future<UploadResult> UploadBuffer(BufferGPU & dstBuffer, const uint8_t * srcData,
-                                         size_t size, size_t offset = 0);
-  std::future<DownloadResult> DownloadBuffer(BufferGPU & srcBuffer, size_t size, size_t offset = 0);
+  std::future<UploadResult> UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
+                                         size_t offset = 0);
+  std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(Image & dstImage, const uint8_t * srcData,
+  std::future<UploadResult> UploadImage(ITexture & dstImage, const uint8_t * srcData,
                                         const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(Image & srcImage, HostImageFormat format,
+  std::future<DownloadResult> DownloadImage(ITexture & srcImage, HostImageFormat format,
                                             const ImageRegion & region);
 
 private:
@@ -66,18 +66,18 @@ struct Transferer final : public OwnedBy<Context>
   explicit Transferer(Context & ctx);
   IAwaitable * DoTransfer();
 
-  std::future<UploadResult> UploadBuffer(BufferGPU & dstBuffer, const uint8_t * srcData,
-                                         size_t size, size_t offset = 0);
-  std::future<DownloadResult> DownloadBuffer(BufferGPU & srcBuffer, size_t size, size_t offset = 0);
+  std::future<UploadResult> UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
+                                         size_t offset = 0);
+  std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(Image & dstImage, const uint8_t * srcData,
+  std::future<UploadResult> UploadImage(ITexture & dstImage, const uint8_t * srcData,
                                         const CopyImageArguments & args);
-  std::future<DownloadResult> DownloadImage(Image & srcImage, HostImageFormat format,
+  std::future<DownloadResult> DownloadImage(ITexture & srcImage, HostImageFormat format,
                                             const ImageRegion & region);
 
 private:
-  details::Transferer m_genericSwapchain;
-  details::Transferer m_graphicsSwapchain;
+  details::TransferSubmitter m_genericSwapchain;
+  details::TransferSubmitter m_graphicsSwapchain;
   CompositeAsyncTask m_awaitable;
 };
 

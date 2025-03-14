@@ -29,15 +29,13 @@ SwapchainTexture::~SwapchainTexture()
 std::future<UploadResult> SwapchainTexture::UploadImage(const uint8_t * srcPixelData,
                                                         const CopyImageArguments & args)
 {
-  //TODO:
-  return std::future<UploadResult>();
+  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
 }
 
 std::future<DownloadResult> SwapchainTexture::DownloadImage(HostImageFormat format,
                                                             const ImageRegion & region)
 {
-  //TODO:
-  return std::future<DownloadResult>();
+  return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
 size_t SwapchainTexture::Size() const
@@ -62,10 +60,13 @@ void SwapchainTexture::Invalidate()
     DestroySwapchain();
 
     *m_swapchain = swap_ret.value();
-    m_swapchainImages = m_swapchain->get_images().value();
-    m_swapchainImageViews = m_swapchain->get_image_views().value();
-    for (auto && view : m_swapchainImageViews)
+    m_images = m_swapchain->get_images().value();
+    m_imageViews = m_swapchain->get_image_views().value();
+    for (auto && view : m_imageViews)
       m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(GetContext().GetDevice()));
+
+    m_layoutMutexes.resize(m_images.size());
+    m_imageLayouts.resize(m_images.size(), VK_IMAGE_LAYOUT_UNDEFINED);
 
     // reset invalid flags
     m_invalidSwapchain = false;
@@ -76,13 +77,16 @@ void SwapchainTexture::Invalidate()
 void SwapchainTexture::DestroySwapchain() noexcept
 {
   GetContext().WaitForIdle();
-  if (!m_swapchainImageViews.empty())
-    m_swapchain->destroy_image_views(m_swapchainImageViews);
+  if (!m_imageViews.empty())
+    m_swapchain->destroy_image_views(m_imageViews);
   vkb::destroy_swapchain(*m_swapchain);
   // we can delete semaphore directly, because we have waited for gpu's idle
   for (auto sem : m_imageAvailabilitySemaphores)
     vkDestroySemaphore(GetContext().GetDevice(), sem, nullptr);
+  m_images.clear();
+  m_imageViews.clear();
   m_imageAvailabilitySemaphores.clear();
+  m_imageLayouts.clear();
 }
 
 std::pair<VkImageView, VkSemaphore> SwapchainTexture::AcquireForRendering()
@@ -102,12 +106,12 @@ std::pair<VkImageView, VkSemaphore> SwapchainTexture::AcquireForRendering()
       std::format("Failed to acquire swap chain image - {}", static_cast<uint32_t>(res)));
   }
   m_activeImage = imageIndex;
-  return {GetImage(ImageUsage::FramebufferAttachment), signalSemaphore};
+  return {GetImageView(ImageUsage::FramebufferAttachment), signalSemaphore};
 }
 
-VkImageView SwapchainTexture::GetImage(ImageUsage usage) const noexcept
+VkImageView SwapchainTexture::GetImageView(ImageUsage usage) const noexcept
 {
-  return m_swapchainImageViews[m_activeImage];
+  return m_imageViews[m_activeImage];
 }
 
 bool SwapchainTexture::FinalRendering(VkSemaphore waitSemaphore)
@@ -147,14 +151,14 @@ void SwapchainTexture::SetBuffering(uint32_t framesCount)
 
 uint32_t SwapchainTexture::GetBuffering() const noexcept
 {
-  return static_cast<uint32_t>(m_swapchainImages.size());
+  return static_cast<uint32_t>(m_images.size());
 }
 
 VkAttachmentDescription SwapchainTexture::BuildDescription() const noexcept
 {
   VkAttachmentDescription description{};
   {
-    description.format = m_swapchain ? m_swapchain->image_format : VK_FORMAT_UNDEFINED;
+    description.format = GetInternalFormat();
     description.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_samplesCount);
     description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -164,6 +168,11 @@ VkAttachmentDescription SwapchainTexture::BuildDescription() const noexcept
     description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
   }
   return description;
+}
+
+void SwapchainTexture::TransferLayout(VkImageLayout layout) noexcept
+{
+  m_imageLayouts[m_activeImage] = layout;
 }
 
 ImageCreateArguments SwapchainTexture::GetDescription() const noexcept
@@ -190,6 +199,32 @@ ImageCreateArguments SwapchainTexture::GetDescription() const noexcept
 void SwapchainTexture::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
 {
   //TODO:
+}
+
+VkImageLayout SwapchainTexture::GetLayout() const noexcept
+{
+  return m_imageLayouts[m_activeImage];
+}
+
+VkImage SwapchainTexture::GetHandle() const noexcept
+{
+  return m_images[m_activeImage];
+}
+
+VkFormat SwapchainTexture::GetInternalFormat() const noexcept
+{
+  return m_swapchain ? m_swapchain->image_format : VK_FORMAT_UNDEFINED;
+}
+
+VkExtent3D SwapchainTexture::GetInternalExtent() const noexcept
+{
+  VkExtent3D result{0, 0, 0};
+  if (m_swapchain)
+  {
+    VkExtent2D tmp = m_swapchain->extent;
+    result = {tmp.width, tmp.height, 1};
+  }
+  return result;
 }
 
 } // namespace RHI::vulkan

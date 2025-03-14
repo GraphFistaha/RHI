@@ -53,7 +53,7 @@ SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
   : BaseUniform(std::move(rhs))
   , ISamplerUniformDescriptor()
 {
-  std::swap(rhs.m_attachedImage, m_attachedImage);
+  std::swap(rhs.m_boundTexture, m_boundTexture);
   std::swap(rhs.m_sampler, m_sampler);
   std::swap(rhs.m_invalidSampler, m_invalidSampler);
 }
@@ -63,7 +63,7 @@ SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
   if (this != &rhs)
   {
     BaseUniform::operator=(std::move(rhs));
-    std::swap(rhs.m_attachedImage, m_attachedImage);
+    std::swap(rhs.m_boundTexture, m_boundTexture);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);
   }
@@ -78,10 +78,10 @@ VkSampler SamplerUniform::GetHandle() const noexcept
 VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
 {
   assert(m_sampler);
-  assert(m_attachedImage);
+  assert(m_boundTexture);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_attachedImage->GetImage(ImageUsage::Sampler);
+  imageInfo.imageView = m_boundTexture->GetImageView(ImageUsage::Sampler);
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -105,14 +105,14 @@ void SamplerUniform::SetInvalid()
 void SamplerUniform::AssignImage(IImageGPU * image)
 {
   Invalidate();
-  auto && internalImage = dynamic_cast<IAttachment *>(image);
-  m_attachedImage = internalImage;
+  auto && internalImage = dynamic_cast<ITexture *>(image);
+  m_boundTexture = internalImage;
   GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept
 {
-  return m_attachedImage != nullptr;
+  return m_boundTexture != nullptr;
 }
 
 uint32_t SamplerUniform::GetBinding() const noexcept
