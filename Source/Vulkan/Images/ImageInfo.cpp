@@ -4,10 +4,6 @@
 
 namespace
 {
-constexpr VkImageLayout MakeImageInitialLayout(RHI::ImageFormat format) noexcept
-{
-  return VK_IMAGE_LAYOUT_UNDEFINED;
-}
 
 constexpr VkImageUsageFlags MakeImageUsage(RHI::ImageFormat format)
 {
@@ -88,27 +84,9 @@ VkImageCreateInfo BuildImageCreateInfo(const ImageCreateArguments & description)
 {
   VkImageCreateInfo imageInfo{};
   {
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(description.type);
-    imageInfo.extent.width = description.extent[0];
-    imageInfo.extent.height = description.extent[1];
-    imageInfo.extent.depth = description.extent[2];
-    imageInfo.mipLevels = description.mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = MakeImageInitialLayout(description.format);
-    imageInfo.usage = MakeImageUsage(description.format);
-    imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
-    imageInfo.sharingMode = description.shared ? VK_SHARING_MODE_CONCURRENT
-                                               : VK_SHARING_MODE_EXCLUSIVE;
+
   }
 
   return imageInfo;
-}
-void TransferImageLayout(details::CommandBuffer & commandBuffer, VkImageLayout prevImageLayout,
-                         VkImageLayout newLayout, VkImage image)
-{
-
 }
 } // namespace RHI::vulkan

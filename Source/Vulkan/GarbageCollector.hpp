@@ -4,6 +4,7 @@
 #include <typeindex>
 #include <variant>
 
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -16,10 +17,11 @@ struct Context;
 
 namespace RHI::vulkan::details
 {
-struct VkObjectsGarbageCollector final
+struct VkObjectsGarbageCollector final : public OwnedBy<Context>
 {
-  explicit VkObjectsGarbageCollector(const Context & ctx);
+  explicit VkObjectsGarbageCollector(Context & ctx);
   ~VkObjectsGarbageCollector();
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
   struct VkObjectDestroyData
   {
@@ -52,7 +54,6 @@ struct VkObjectsGarbageCollector final
   void ClearObjects();
 
 private:
-  const Context & m_context;
   mutable std::mutex m_mutex;
   //TODO: make queue lock-free
   mutable std::queue<DestroyData> m_queue;

@@ -167,13 +167,13 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwin
 
   // create vertex buffer
   m_vertexBuffer =
-    ctx.AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
+    ctx.AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
   m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
 
   // create index buffer
   m_indexBuffer =
-    ctx.AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
+    ctx.AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 }
 

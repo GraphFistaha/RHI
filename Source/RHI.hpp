@@ -127,14 +127,22 @@ enum class CommandBufferType : uint8_t
 };
 
 /// @brief enum to define usage of BufferGPU
-enum class BufferGPUUsage : uint8_t
+enum BufferGPUUsage
 {
-  VertexBuffer,
-  IndexBuffer,
-  UniformBuffer,
-  StorageBuffer,
-  TransformFeedbackBuffer,
-  IndirectBuffer
+  VertexBuffer = 1,
+  IndexBuffer = 2,
+  UniformBuffer = 4,
+  StorageBuffer = 8,
+  TransformFeedbackBuffer = 16,
+  IndirectBuffer = 32
+};
+
+enum TextureUsage
+{
+  Sampler = 1,               // Sampled in shaders, requires transfer destination usage
+  FramebufferAttachment = 2, // Used as a framebuffer attachment, also supports input attachments
+  Readback = 4,              // Used for copying data back from GPU (transfer source)
+  Compute = 8                // Used as a storage image in compute shaders
 };
 
 /// @brief defines what input attribute is used for. For instance or for each vertex
@@ -316,6 +324,7 @@ struct IImageGPU
   /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
+  virtual bool IsAllowedUsage(TextureUsage usage) const noexcept = 0;
 };
 
 
@@ -330,8 +339,8 @@ struct IContext
   virtual IImageGPU * GetSurfaceImage() = 0;
   virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
   /// @brief creates BufferGPU
-  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped = false) = 0;
-  virtual IImageGPU * AllocImage(const ImageCreateArguments & args) = 0;
+  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
+  virtual IImageGPU * AllocImage(const ImageCreateArguments & args, TextureUsage usage) = 0;
 };
 
 /// @brief Factory-function to create context

@@ -26,6 +26,9 @@ struct TransferSubmitter final : public OwnedBy<Context>
   TransferSubmitter(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex);
   TransferSubmitter(TransferSubmitter && rhs) noexcept;
   TransferSubmitter & operator=(TransferSubmitter && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+
+public:
   IAwaitable * Submit();
 
   std::future<UploadResult> UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
@@ -55,8 +58,6 @@ private:
   VkQueue m_queue;
   TransferBuffer m_writingTransferBuffer;
   TransferBuffer m_executingTransferBuffer;
-
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 };
 } // namespace details
 

@@ -43,8 +43,8 @@ static const std::unordered_map<std::type_index, void *> kDestroyFuncs =
 
 namespace RHI::vulkan::details
 {
-VkObjectsGarbageCollector::VkObjectsGarbageCollector(const Context & ctx)
-  : m_context(ctx)
+VkObjectsGarbageCollector::VkObjectsGarbageCollector(Context & ctx)
+  : OwnedBy<Context>(ctx)
 {
 }
 
@@ -56,7 +56,7 @@ VkObjectsGarbageCollector::~VkObjectsGarbageCollector()
 void VkObjectsGarbageCollector::ClearObjects()
 {
   auto && visitor = overloads{
-    [device = m_context.GetDevice()](const VkObjectDestroyData & data)
+    [device = GetContext().GetDevice()](const VkObjectDestroyData & data)
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
@@ -73,7 +73,7 @@ void VkObjectsGarbageCollector::ClearObjects()
       //block will be destroyed later
     }};
 
-  vkDeviceWaitIdle(m_context.GetDevice());
+  vkDeviceWaitIdle(GetContext().GetDevice());
   std::lock_guard lk{m_mutex};
   while (!m_queue.empty())
   {

@@ -155,6 +155,7 @@ void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
 
   if (IAttachment * ptr = dynamic_cast<IAttachment *>(image))
   {
+    ptr->AllowUsage(RHI::TextureUsage::FramebufferAttachment);
     ptr->SetBuffering(m_framesCount);
     m_attachments[binding] = ptr;
     m_attachmentsChanged = true;

@@ -19,6 +19,7 @@ struct CommandBuffer : public OwnedBy<Context>
   virtual ~CommandBuffer();
   CommandBuffer(CommandBuffer && rhs) noexcept;
   CommandBuffer & operator=(CommandBuffer && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
   void BeginWriting() const;
   void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
@@ -38,7 +39,6 @@ struct CommandBuffer : public OwnedBy<Context>
 
 public:
   VkCommandBuffer GetHandle() const noexcept { return m_buffer; }
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
   VkCommandBufferLevel m_level;

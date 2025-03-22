@@ -26,6 +26,8 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
 {
   explicit DescriptorBuffer(Context & ctx, SubpassConfiguration & owner);
   ~DescriptorBuffer();
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(SubpassConfiguration, GetConfiguration);
 
   void Invalidate();
 
@@ -64,10 +66,6 @@ private:
   bool m_invalidLayout : 1 = false;
   bool m_invalidPool : 1 = false;
   bool m_invalidSet : 1 = false;
-
-public:
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(SubpassConfiguration, GetConfiguration);
 };
 
 } // namespace RHI::vulkan

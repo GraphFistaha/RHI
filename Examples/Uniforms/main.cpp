@@ -83,8 +83,8 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   // create buffers for each uniform variables
-  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
-  auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer);
+  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
+  auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
   auto * framebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
@@ -112,13 +112,13 @@ int main()
 
   // create vertex buffer
   auto && vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
+    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
+  vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto indexBuffer =
-    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  indexBuffer->UploadSync(Indices, IndicesCount * sizeof(uint32_t));
+    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
+  indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
   float x = 0.0f;
   while (!glfwWindowShouldClose(window))

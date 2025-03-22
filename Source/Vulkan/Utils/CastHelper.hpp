@@ -42,29 +42,6 @@ constexpr inline VkIndexType CastInterfaceEnum2Vulkan<VkIndexType, RHI::IndexTyp
 }
 
 template<>
-constexpr inline VkBufferUsageFlags CastInterfaceEnum2Vulkan<
-  VkBufferUsageFlags, RHI::BufferGPUUsage>(RHI::BufferGPUUsage usage)
-{
-  switch (usage)
-  {
-    case BufferGPUUsage::VertexBuffer:
-      return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    case BufferGPUUsage::IndexBuffer:
-      return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    case BufferGPUUsage::UniformBuffer:
-      return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    case BufferGPUUsage::StorageBuffer:
-      return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    case BufferGPUUsage::TransformFeedbackBuffer:
-      return VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
-    case BufferGPUUsage::IndirectBuffer:
-      return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    default:
-      throw std::range_error("Failed to cast usage in Vulkan enum");
-  }
-}
-
-template<>
 constexpr inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(ImageType type)
 {
   switch (type)

@@ -1,31 +1,43 @@
 #include "BufferGPU.hpp"
 
-#include <vk_mem_alloc.h>
-
 #include "../VulkanContext.hpp"
 #include "Transferer.hpp"
 
+namespace
+{
+constexpr VkBufferUsageFlags Cast2VkBufferUsage(RHI::BufferGPUUsage usage) noexcept
+{
+  VkBufferUsageFlags result = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+  if (usage & RHI::BufferGPUUsage::VertexBuffer)
+    result |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  else if (usage & RHI::BufferGPUUsage::IndexBuffer)
+    result |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+  if (usage & RHI::BufferGPUUsage::UniformBuffer)
+    result |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+  if (usage & RHI::BufferGPUUsage::StorageBuffer)
+    result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+  if (usage & RHI::BufferGPUUsage::TransformFeedbackBuffer)
+    result |= VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+  if (usage & RHI::BufferGPUUsage::IndirectBuffer)
+    result |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+  return result;
+}
+} // namespace
 
 namespace RHI::vulkan
 {
+BufferGPU::BufferGPU(Context & ctx, size_t size, BufferGPUUsage usage, bool allowHostAccess)
+  : BufferGPU(ctx, size, Cast2VkBufferUsage(usage), allowHostAccess)
+{
+}
 
-BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool mapped /* = false*/)
+BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool allowHostAccess)
   : OwnedBy<Context>(ctx)
 {
-  VmaAllocationCreateFlags allocation_flags = 0;
-  if (mapped)
-  {
-    allocation_flags = VMA_ALLOCATION_CREATE_MAPPED_BIT |
-                       VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-  }
-  else
-  {
-    allocation_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-  }
-
-  m_memBlock =
-    GetContext().GetBuffersAllocator().AllocBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                   allocation_flags, VMA_MEMORY_USAGE_AUTO);
+  m_memBlock = GetContext().GetBuffersAllocator().AllocBuffer(size, usage, allowHostAccess);
 }
 
 BufferGPU::~BufferGPU()

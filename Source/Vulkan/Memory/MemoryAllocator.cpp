@@ -8,7 +8,7 @@
 namespace RHI::vulkan::memory
 {
 MemoryAllocator::MemoryAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
-                                       uint32_t vulkanVersion)
+                                 uint32_t vulkanVersion)
 {
   static_assert(
     sizeof(VmaAllocationInfo) <= sizeof(MemoryBlock::AllocInfoRawMemory),
@@ -37,16 +37,16 @@ MemoryAllocator::~MemoryAllocator()
   vmaDestroyAllocator(reinterpret_cast<VmaAllocator>(m_allocator));
 }
 
-MemoryBlock MemoryAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage, uint32_t flags,
-                                            uint32_t memoryUsage) const
+MemoryBlock MemoryAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage,
+                                         bool allowHostAccess) const
 {
-  return MemoryBlock(m_allocator, size, usage, flags, memoryUsage);
+  return MemoryBlock(m_allocator, size, usage, allowHostAccess);
 }
 
-MemoryBlock MemoryAllocator::AllocImage(const ImageCreateArguments & description, uint32_t flags,
-                                           uint32_t memoryUsage) const
+MemoryBlock MemoryAllocator::AllocImage(const ImageCreateArguments & description,
+                                        VkImageUsageFlags usage) const
 {
-  return MemoryBlock(m_allocator, description, flags, memoryUsage);
+  return MemoryBlock(m_allocator, description, usage);
 }
 
 } // namespace RHI::vulkan::memory

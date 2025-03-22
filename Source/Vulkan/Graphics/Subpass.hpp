@@ -26,6 +26,8 @@ struct Subpass : public ISubpass,
   explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
                    uint32_t familyIndex);
   virtual ~Subpass() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // ISubpass Interface
   virtual void BeginPass() override;
@@ -84,9 +86,5 @@ private:
   std::atomic_bool m_shouldBeInvalidated = true;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
-
-public:
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 };
 } // namespace RHI::vulkan

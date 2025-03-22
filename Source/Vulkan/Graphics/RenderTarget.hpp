@@ -23,6 +23,7 @@ struct RenderTarget : public IRenderTarget,
   RenderTarget(RenderTarget && rhs) noexcept;
   RenderTarget & operator=(RenderTarget && rhs) noexcept;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  RESTRICTED_COPY(RenderTarget);
 
 public: // IRenderTarget interface
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
@@ -53,14 +54,9 @@ protected:
   /// clear values for each attachment
   std::vector<VkClearValue> m_clearValues;
 
-protected: // handle
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
   utils::FramebufferBuilder m_builder;
   bool m_invalidFramebuffer = false;
-
-private:
-  RenderTarget(const RenderTarget &) = delete;
-  RenderTarget & operator=(const RenderTarget &) = delete;
 };
 
 } // namespace RHI::vulkan

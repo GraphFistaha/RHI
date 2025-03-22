@@ -9,7 +9,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Images/ImageView.hpp"
 #include "../Utils/RenderPassBuilder.hpp"
 #include "Subpass.hpp"
 

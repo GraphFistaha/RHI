@@ -223,16 +223,15 @@ IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
   return &result;
 }
 
-IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped /* = false*/)
+IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
 {
-  auto vkUsage = utils::CastInterfaceEnum2Vulkan<VkBufferUsageFlags>(usage);
-  auto && result = m_buffers.emplace_back(*this, size, vkUsage, mapped);
+  auto && result = m_buffers.emplace_back(*this, size, usage, allowHostAccess);
   return &result;
 }
 
-IImageGPU * Context::AllocImage(const ImageCreateArguments & args)
+IImageGPU * Context::AllocImage(const ImageCreateArguments & args, TextureUsage usage)
 {
-  auto && texture = std::make_unique<BufferedTexture>(*this, args);
+  auto && texture = std::make_unique<BufferedTexture>(*this, args, usage);
   return m_textures.emplace_back(std::move(texture)).get();
 }
 

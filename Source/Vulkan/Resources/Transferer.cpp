@@ -8,6 +8,9 @@
 namespace RHI::vulkan
 {
 
+static constexpr uint32_t g_stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                           VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
 namespace details
 {
 TransferSubmitter::TransferSubmitter(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex)
@@ -76,7 +79,7 @@ std::future<UploadResult> TransferSubmitter::UploadBuffer(VkBuffer dstBuffer,
                                                           size_t offset)
 {
   std::promise<UploadResult> promise;
-  BufferGPU stagingBuffer(GetContext(), size - offset, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
   stagingBuffer.UploadSync(srcData, size, offset);
 
   VkBufferCopy copy{};
@@ -94,7 +97,7 @@ std::future<DownloadResult> TransferSubmitter::DownloadBuffer(VkBuffer srcBuffer
                                                               size_t offset)
 {
   std::promise<DownloadResult> promise;
-  BufferGPU stagingBuffer(GetContext(), size - offset, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+  BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
   VkBufferCopy copy{};
   copy.dstOffset = 0;
   copy.srcOffset = offset;
@@ -121,7 +124,7 @@ std::future<UploadResult> TransferSubmitter::UploadImage(ITexture & dstImage,
   std::promise<UploadResult> promise;
   BufferGPU stagingBuffer(GetContext(),
                           RHI::utils::GetSizeOfImage(args.src.extent, args.hostFormat),
-                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+                          g_stagingUsage, true);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     CopyImageFromHost(srcData, args.src.extent, args.src, args.hostFormat,
@@ -167,8 +170,9 @@ std::future<DownloadResult> TransferSubmitter::DownloadImage(ITexture & srcImage
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(),
-                          RHI::utils::GetSizeOfImage(imgRegion.extent, srcImage.GetInternalFormat()),
-                          VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+                          RHI::utils::GetSizeOfImage(imgRegion.extent,
+                                                     srcImage.GetInternalFormat()),
+                          g_stagingUsage, true);
   VkBufferImageCopy region{};
   {
     region.bufferOffset = 0;
@@ -252,7 +256,7 @@ std::future<UploadResult> Transferer::UploadImage(ITexture & dstImage, const uin
   return m_genericSwapchain.UploadImage(dstImage, srcData, args);
 }
 
-std::future<DownloadResult> Transferer::DownloadImage(ITexture& srcImage, HostImageFormat format,
+std::future<DownloadResult> Transferer::DownloadImage(ITexture & srcImage, HostImageFormat format,
                                                       const ImageRegion & region)
 {
   return m_graphicsSwapchain.DownloadImage(srcImage, format, region);

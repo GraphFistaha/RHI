@@ -12,24 +12,16 @@ namespace RHI::vulkan
 {
 static constexpr uint32_t g_InvalidImageIndex = -1;
 
-enum ImageUsage
-{
-  Transfer = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-  FramebufferAttachment = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-                          VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-  Sampler = VK_IMAGE_USAGE_SAMPLED_BIT
-};
-
 struct ITexture : public IImageGPU
 {
   virtual ~ITexture() = default;
-  virtual VkImageView GetImageView(ImageUsage usage) const noexcept = 0;
+  virtual VkImageView GetImageView(TextureUsage usage) const noexcept = 0;
   virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) = 0;
   virtual VkImageLayout GetLayout() const noexcept = 0;
   virtual VkImage GetHandle() const noexcept = 0;
   virtual VkFormat GetInternalFormat() const noexcept = 0;
   virtual VkExtent3D GetInternalExtent() const noexcept = 0;
+  virtual void AllowUsage(RHI::TextureUsage usage) noexcept = 0;
 };
 
 struct IAttachment : public ITexture

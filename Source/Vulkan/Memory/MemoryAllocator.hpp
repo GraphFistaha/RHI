@@ -12,16 +12,15 @@ struct MemoryAllocator final
   using AllocatorHandle = void *;
 
   explicit MemoryAllocator(VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
-                            uint32_t vulkanVersion);
+                           uint32_t vulkanVersion);
   ~MemoryAllocator();
 
+public:
   AllocatorHandle GetHandle() const noexcept { return m_allocator; }
 
-  MemoryBlock AllocBuffer(size_t size, VkBufferUsageFlags usage, uint32_t flags,
-                          uint32_t memoryUsage) const;
+  MemoryBlock AllocBuffer(size_t size, VkBufferUsageFlags usage, bool allowHostAccess) const;
 
-  MemoryBlock AllocImage(const ImageCreateArguments & description, uint32_t flags,
-                         uint32_t memoryUsage) const;
+  MemoryBlock AllocImage(const ImageCreateArguments & description, VkImageUsageFlags usage) const;
 
 private:
   AllocatorHandle m_allocator;

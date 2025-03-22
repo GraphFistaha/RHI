@@ -11,7 +11,17 @@ struct MemoryBlock final
   ~MemoryBlock();
   MemoryBlock(MemoryBlock && rhs) noexcept;
   MemoryBlock & operator=(MemoryBlock && rhs) noexcept;
+  RESTRICTED_COPY(MemoryBlock);
 
+private:
+  /// create memory block for image
+  explicit MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
+                       VkImageUsageFlags usage);
+  /// Create memory block for buffer
+  explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
+                       bool allowHostAccess);
+
+public:
   bool UploadSync(const void * data, size_t size, size_t offset = 0);
   bool DownloadSync(size_t offset, void * data, size_t size) const;
   IBufferGPU::ScopedPointer Map();
@@ -27,23 +37,12 @@ private:
   using AllocInfoRawMemory = std::array<uint32_t, 16>;
 
   InternalObjectHandle m_allocator = nullptr;
-  AllocInfoRawMemory m_allocInfo;
+  AllocInfoRawMemory m_allocInfo{};
   InternalObjectHandle m_memBlock = nullptr;
   VkImage m_image = VK_NULL_HANDLE;
   VkBuffer m_buffer = VK_NULL_HANDLE;
   size_t m_size = 0;
   uint32_t m_flags = 0;
-
-private:
-  /// create memory block for image
-  explicit MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
-                       uint32_t flags, uint32_t memoryUsage);
-  /// Create memory block for buffer
-  explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
-                       uint32_t flags, uint32_t memoryUsage);
-
-  MemoryBlock(const MemoryBlock & rhs) = delete;
-  MemoryBlock & operator=(const MemoryBlock & rhs) = delete;
 };
 
 } // namespace RHI::vulkan::memory

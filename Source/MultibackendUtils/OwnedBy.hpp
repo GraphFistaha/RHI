@@ -2,6 +2,7 @@
 #include <cassert>
 #include <utility>
 
+
 namespace RHI
 {
 /// @brief object owned by another object

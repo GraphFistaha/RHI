@@ -34,12 +34,13 @@ struct Context final : public IContext
   explicit Context(const SurfaceConfig * config, LoggingFunc log);
   /// @brief destructor
   virtual ~Context() override;
+  RESTRICTED_COPY(Context);
 
 public: // IContext interface
   virtual IImageGPU * GetSurfaceImage() override;
   virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) override;
-  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool mapped = false) override;
-  virtual IImageGPU * AllocImage(const ImageCreateArguments & args) override;
+  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) override;
+  virtual IImageGPU * AllocImage(const ImageCreateArguments & args, TextureUsage usage) override;
   virtual void ClearResources() override;
   virtual void Flush() override;
 
@@ -72,10 +73,6 @@ private:
   std::deque<BufferGPU> m_buffers;
   std::vector<std::unique_ptr<IAttachment>> m_textures;
   LoggingFunc m_logFunc;
-
-private:
-  Context(const Context &) = delete;
-  Context & operator=(const Context &) = delete;
 };
 
 } // namespace RHI::vulkan

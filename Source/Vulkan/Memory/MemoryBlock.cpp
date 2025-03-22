@@ -6,18 +6,81 @@
 #include "../Utils/CastHelper.hpp"
 #include "MemoryAllocator.hpp"
 
+namespace
+{
+template<typename VkUsageFlagsT>
+constexpr VmaAllocationCreateFlags CalcAllocationFlags(VkUsageFlagsT usage,
+                                                       bool allowHostAccess) noexcept = delete;
+
+
+template<>
+constexpr VmaAllocationCreateFlags CalcAllocationFlags<VkBufferUsageFlagBits>(
+  VkBufferUsageFlagBits usage, bool allowHostAccess) noexcept
+{
+  VmaAllocationCreateFlags flags = 0;
+  const bool isStaging = usage ==
+                         (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+  // Staging buffers for transfers and uniforms (typically host-visible)
+  if (isStaging || usage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+  {
+    flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+  }
+
+  // Device-local memory for buffers that GPU reads frequently
+  if (usage & (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT))
+  {
+    if (allowHostAccess)
+      flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    else
+      flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+  }
+
+  assert(flags != 0);
+  return flags;
+}
+
+
+template<>
+constexpr VmaAllocationCreateFlags CalcAllocationFlags<VkImageUsageFlagBits>(
+  VkImageUsageFlagBits usage, bool allowHostAccess) noexcept
+{
+  return VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+}
+
+} // namespace
+
 namespace RHI::vulkan::memory
 {
 
 MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
-                         uint32_t flags, uint32_t memoryUsage)
+                         VkImageUsageFlags usage)
   : m_allocator(allocator)
 {
-  VkImageCreateInfo imageInfo = BuildImageCreateInfo(description);
+  VkImageCreateInfo imageInfo{};
+  {
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(description.type);
+    imageInfo.extent.width = description.extent[0];
+    imageInfo.extent.height = description.extent[1];
+    imageInfo.extent.depth = description.extent[2];
+    imageInfo.mipLevels = description.mipLevels;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
+    imageInfo.sharingMode = description.shared ? VK_SHARING_MODE_CONCURRENT
+                                               : VK_SHARING_MODE_EXCLUSIVE;
+  }
+  VmaAllocationCreateFlags allocFlags =
+    CalcAllocationFlags(static_cast<VkImageUsageFlagBits>(usage), false);
   VmaAllocationCreateInfo allocCreateInfo = {};
-  allocCreateInfo.usage = static_cast<VmaMemoryUsage>(memoryUsage);
-  allocCreateInfo.flags = flags;
+  allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+  allocCreateInfo.flags = allocFlags;
   allocCreateInfo.priority = 1.0f;
+
   VkImage image;
   VmaAllocation allocation;
   VmaAllocationInfo allocInfo;
@@ -26,16 +89,16 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
                                 &allocInfo);
       res != VK_SUCCESS)
     throw std::invalid_argument("Failed to create VkImage");
-  
+
   m_image = image;
   m_memBlock = allocation;
   m_allocInfo = reinterpret_cast<AllocInfoRawMemory &>(allocInfo);
-  m_flags = flags;
+  m_flags = allocFlags;
   m_size = allocInfo.size;
 }
 
 MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
-                         uint32_t flags, uint32_t memoryUsage)
+                         bool allowHostAccess)
   : m_allocator(allocator)
 {
   VkBufferCreateInfo bufferInfo{};
@@ -43,9 +106,11 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUs
   bufferInfo.size = size;
   bufferInfo.usage = usage;
 
+  VmaAllocationCreateFlags allocationFlags =
+    CalcAllocationFlags(static_cast<VkBufferUsageFlagBits>(usage), allowHostAccess);
   VmaAllocationCreateInfo allocCreateInfo = {};
-  allocCreateInfo.usage = static_cast<VmaMemoryUsage>(memoryUsage);
-  allocCreateInfo.flags = flags;
+  allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+  allocCreateInfo.flags = allocationFlags;
   VkBuffer buffer;
   VmaAllocation allocation;
   VmaAllocationInfo allocInfo;
@@ -60,7 +125,7 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUs
   m_memBlock = allocation;
   m_allocInfo = reinterpret_cast<AllocInfoRawMemory &>(allocInfo);
   m_size = allocInfo.size;
-  m_flags = flags;
+  m_flags = allocationFlags;
 }
 
 MemoryBlock::MemoryBlock(MemoryBlock && rhs) noexcept
@@ -91,7 +156,7 @@ MemoryBlock & MemoryBlock::operator=(MemoryBlock && rhs) noexcept
 
 MemoryBlock::operator bool() const noexcept
 {
-  return true;
+  return !!m_image || !!m_buffer;
 }
 
 MemoryBlock::~MemoryBlock()

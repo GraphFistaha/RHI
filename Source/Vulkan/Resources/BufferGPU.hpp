@@ -17,12 +17,15 @@ struct BufferGPU : public IBufferGPU,
 {
   using IBufferGPU::ScopedPointer;
 
-  explicit BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool mapped = false);
+  explicit BufferGPU(Context& ctx, size_t size, BufferGPUUsage usage, bool allowHostAccess);
+  explicit BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool allowHostAccess);
   virtual ~BufferGPU() override;
-
   BufferGPU(BufferGPU && rhs) noexcept;
   BufferGPU & operator=(BufferGPU && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  RESTRICTED_COPY(BufferGPU);
 
+public:
   virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
   virtual std::future<UploadResult> UploadAsync(const void * data, size_t size,
                                                 size_t offset = 0) override;
@@ -33,13 +36,8 @@ struct BufferGPU : public IBufferGPU,
 
 public:
   VkBuffer GetHandle() const noexcept;
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 private:
   memory::MemoryBlock m_memBlock;
-
-private:
-  BufferGPU(const BufferGPU &) = delete;
-  BufferGPU & operator=(const BufferGPU &) = delete;
 };
 } // namespace RHI::vulkan

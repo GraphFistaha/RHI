@@ -101,12 +101,12 @@ int main()
 
   // create vertex buffer
   auto * vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
+    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, true);
   vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto * indexBuffer =
-    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
+    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, true);
   // fill buffer with Mapping into CPU memory
   if (auto scoped_map = indexBuffer->Map())
   {
