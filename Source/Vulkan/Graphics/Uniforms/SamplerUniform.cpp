@@ -104,9 +104,10 @@ void SamplerUniform::SetInvalid()
 
 void SamplerUniform::AssignImage(IImageGPU * image)
 {
+  if (!image->IsAllowedUsage(RHI::TextureUsage::Sampler))
+    throw std::runtime_error(
+      "Texture is not allowed to used as Sampler. Allow it in texture creation");
   auto * internalImage = dynamic_cast<ITexture *>(image);
-  if (internalImage)
-    internalImage->AllowUsage(RHI::TextureUsage::Sampler);
   m_boundTexture = internalImage;
   Invalidate();
   GetDescriptorsBuffer().OnDescriptorChanged(*this);

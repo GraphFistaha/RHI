@@ -117,16 +117,6 @@ VkExtent3D SwapchainTexture::GetInternalExtent() const noexcept
   return result;
 }
 
-void SwapchainTexture::AllowUsage(RHI::TextureUsage usage) noexcept
-{
-  if (!IsAllowedUsage(usage))
-  {
-    m_allowedUsage = static_cast<RHI::TextureUsage>(m_allowedUsage | usage);
-    //it's not necessary, because you don't control images. Images are under VkSwapchainKHR
-    //m_invalidSwapchain = true;
-  }
-}
-
 // --------------------- IAttachment interface ----------------------
 
 void SwapchainTexture::Invalidate()

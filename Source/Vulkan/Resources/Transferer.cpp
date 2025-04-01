@@ -122,9 +122,9 @@ std::future<UploadResult> TransferSubmitter::UploadImage(ITexture & dstImage,
                                                          const CopyImageArguments & args)
 {
   std::promise<UploadResult> promise;
-  BufferGPU stagingBuffer(GetContext(),
-                          RHI::utils::GetSizeOfImage(args.src.extent, args.hostFormat),
-                          g_stagingUsage, true);
+  const size_t copyingRegionSize =
+    RHI::utils::GetSizeOfImage(args.src.extent, dstImage.GetInternalFormat());
+  BufferGPU stagingBuffer(GetContext(), copyingRegionSize, g_stagingUsage, true);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     CopyImageFromHost(srcData, args.src.extent, args.src, args.hostFormat,

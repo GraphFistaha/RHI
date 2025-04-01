@@ -20,7 +20,7 @@ struct BufferedTexture : public IAttachment,
 {
   explicit BufferedTexture(Context & ctx, const ImageCreateArguments & m_description,
                            TextureUsage usage);
-  virtual ~BufferedTexture() override = default;
+  virtual ~BufferedTexture() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IImageGPU interface
@@ -41,7 +41,6 @@ public: //ITexture interface
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
-  virtual void AllowUsage(RHI::TextureUsage usage) noexcept override;
 
 public: // IAttachment interface
   virtual void Invalidate() override;
@@ -53,19 +52,21 @@ public: // IAttachment interface
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
 
 protected:
-  using ImageViews = std::vector<VkImageView>;
-  std::mutex m_renderingMutex;
-  ImageCreateArguments m_description;
+  static constexpr RHI::TextureUsage s_allowedUsages[] = {RHI::TextureUsage::Sampler,
+                                                          RHI::TextureUsage::FramebufferAttachment};
 
-  std::vector<memory::MemoryBlock> m_images;
-  std::vector<ImageLayoutTransferer> m_layouts;
-  std::unordered_map<RHI::TextureUsage, ImageViews> m_views;
-  uint32_t m_activeImage = g_InvalidImageIndex;
+  std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
+  ImageCreateArguments m_description; ///< description of image, all main params for image
+
+  std::vector<memory::MemoryBlock> m_images;    ///< memory for image instances
+  std::vector<ImageLayoutTransferer> m_layouts; ///< each image must control its layout
+  std::vector<VkImageView> m_samplerViews;
+  std::vector<VkImageView> m_attachmentViews;
+  uint32_t m_activeImage = 0;
 
   uint32_t m_desiredInstancesCount = 0;
-  bool m_fullInvalidationRequired = false;
-  bool m_justChangeImagesCountRequired = false;
-  TextureUsage m_allowedUsage;
+  bool m_changedImagesCount = false;
+  const TextureUsage m_allowedUsage;
 };
 
 } // namespace RHI::vulkan

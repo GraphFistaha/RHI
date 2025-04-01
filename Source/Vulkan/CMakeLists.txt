@@ -48,8 +48,6 @@ PRIVATE
 	Utils/ShaderCompiler.hpp
 
 	
-	Images/ImageInfo.hpp
-	Images/ImageInfo.cpp
 	Images/ImageLayoutTransferer.cpp
 	Images/ImageLayoutTransferer.hpp
 	Images/InternalImageTraits.hpp
@@ -59,8 +57,6 @@ PRIVATE
 	Images/BufferedTexture.hpp
 	Images/SwapchainTexture.cpp
 	Images/SwapchainTexture.hpp
-	#Images/ImageView.cpp
-	#Images/ImageView.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

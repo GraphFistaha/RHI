@@ -2,11 +2,8 @@
 
 #include <format>
 
-#include "../Images/ImageInfo.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "RenderPass.hpp"
-
 namespace
 {
 RHI::ShaderAttachmentSlot GetShaderImageSlotByImageDescription(
@@ -150,12 +147,14 @@ ISubpass * Framebuffer::CreateSubpass()
 
 void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
 {
+  if (!image->IsAllowedUsage(RHI::TextureUsage::FramebufferAttachment))
+    throw std::runtime_error(
+      "Texture is not allowed to used as FramebufferAttachment. Allow it in texture creation");
   while (m_attachments.size() < binding + 1)
     m_attachments.push_back(nullptr);
 
   if (IAttachment * ptr = dynamic_cast<IAttachment *>(image))
   {
-    ptr->AllowUsage(RHI::TextureUsage::FramebufferAttachment);
     ptr->SetBuffering(m_framesCount);
     m_attachments[binding] = ptr;
     m_attachmentsChanged = true;

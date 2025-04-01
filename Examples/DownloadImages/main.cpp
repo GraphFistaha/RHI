@@ -27,8 +27,7 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 }
 
 /// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const char * path,
-                                                   bool with_alpha)
+RHI::IImageGPU * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool with_alpha)
 {
   int w = 0, h = 0, channels = 3;
   uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);
@@ -46,7 +45,7 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const ch
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  auto texture = ctx.AllocImage(imageArgs);
+  auto texture = ctx.AllocImage(imageArgs, RHI::TextureUsage::Sampler);
   RHI::CopyImageArguments copyArgs{};
   copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
   copyArgs.src.extent = extent;

@@ -56,7 +56,7 @@ VkObjectsGarbageCollector::~VkObjectsGarbageCollector()
 void VkObjectsGarbageCollector::ClearObjects()
 {
   auto && visitor = overloads{
-    [device = GetContext().GetDevice()](const VkObjectDestroyData & data)
+    [device = GetContext().GetDevice()](VkObjectDestroyData & data)
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
@@ -68,7 +68,7 @@ void VkObjectsGarbageCollector::ClearObjects()
       func(device, reinterpret_cast<VkSemaphore>(data.object),
            reinterpret_cast<const VkAllocationCallbacks *>(data.allocator));
     },
-    [](const memory::MemoryBlock & block)
+    [](memory::MemoryBlock & block)
     {
       //block will be destroyed later
     }};

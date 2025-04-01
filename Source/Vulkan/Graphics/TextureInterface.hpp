@@ -21,7 +21,6 @@ struct ITexture : public IImageGPU
   virtual VkImage GetHandle() const noexcept = 0;
   virtual VkFormat GetInternalFormat() const noexcept = 0;
   virtual VkExtent3D GetInternalExtent() const noexcept = 0;
-  virtual void AllowUsage(RHI::TextureUsage usage) noexcept = 0;
 };
 
 struct IAttachment : public ITexture

@@ -41,7 +41,6 @@ public: //ITexture interface
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
-  virtual void AllowUsage(RHI::TextureUsage usage) noexcept override;
 
 public: // IAttachment interface
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;

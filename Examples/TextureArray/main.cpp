@@ -61,8 +61,7 @@ struct PushConstant
 
 
 /// @brief uploads image from file and create RHI image object
-std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const char * path,
-                                                   bool with_alpha)
+RHI::IImageGPU * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool with_alpha)
 {
   int w = 0, h = 0, channels = 3;
   uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);
@@ -80,7 +79,7 @@ std::unique_ptr<RHI::IImageGPU> CreateAndLoadImage(RHI::IContext & ctx, const ch
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  auto texture = ctx.AllocImage(imageArgs);
+  auto texture = ctx.AllocImage(imageArgs, RHI::TextureUsage::Sampler);
   RHI::CopyImageArguments copyArgs{};
   copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
   copyArgs.src.extent = extent;
@@ -120,7 +119,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  std::list<std::unique_ptr<RHI::IImageGPU>> textures;
+  std::vector<RHI::IImageGPU *> textures;
   textures.emplace_back(CreateAndLoadImage(*ctx, "BT_texture.png", true));
   textures.emplace_back(CreateAndLoadImage(*ctx, "BT_jackal.jpg", false));
   textures.emplace_back(CreateAndLoadImage(*ctx, "BT_shrek1.jpg", false));
@@ -129,8 +128,9 @@ int main()
   textures.emplace_back(CreateAndLoadImage(*ctx, "BT_pepe.jpg", false));
   auto image_it = textures.begin();
 
-  auto * swapchain = ctx->GetSurfaceSwapchain();
-  auto * subpass = swapchain->CreateSubpass();
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
@@ -148,7 +148,7 @@ int main()
     auto it = image_it;
     for (auto && sampler : samplers)
     {
-      sampler->AssignImage(*it->get());
+      sampler->AssignImage(*it);
       it = std::next(it);
       if (it == textures.end())
         it = textures.begin();
@@ -170,7 +170,7 @@ int main()
       auto it = image_it;
       for (auto && sampler : samplers)
       {
-        sampler->AssignImage(*it->get());
+        sampler->AssignImage(*it);
         it = std::next(it);
         if (it == textures.end())
           it = textures.begin();
@@ -178,7 +178,7 @@ int main()
       ShouldSwitchNextImage = false;
     }
 
-    if (RHI::IRenderTarget * renderTarget = swapchain->BeginFrame())
+    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
@@ -212,7 +212,7 @@ int main()
         subpass->EndPass();
       }
 
-      swapchain->EndFrame();
+      framebuffer->EndFrame();
     }
   }
 

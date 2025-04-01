@@ -2,7 +2,6 @@
 
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "ImageInfo.hpp"
 #include "InternalImageTraits.hpp"
 
 namespace
@@ -29,22 +28,66 @@ VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkI
 
 constexpr VkImageUsageFlags CastTextureUsageToVkImageUsage(RHI::TextureUsage usage) noexcept
 {
-  VkImageUsageFlags vkUsage = 0;
+  VkImageUsageFlags vkUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
   if (usage & RHI::TextureUsage::Sampler)
-    vkUsage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    vkUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
   if (usage & RHI::TextureUsage::FramebufferAttachment)
-    vkUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-               VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-
-  if (usage & RHI::TextureUsage::Readback)
-    vkUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    vkUsage |=
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT /* | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+               VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT*/
+      ;
 
   if (usage & RHI::TextureUsage::Compute)
     vkUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
 
   return vkUsage;
+}
+
+constexpr VkImageLayout MakeAttachmentInitialLayout(RHI::ImageFormat format)
+{
+  return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+constexpr VkImageLayout MakeAttachmentFinalLayout(RHI::ImageFormat format)
+{
+  switch (format)
+  {
+    case RHI::ImageFormat::A8:
+    case RHI::ImageFormat::R8:
+    case RHI::ImageFormat::RG8:
+    case RHI::ImageFormat::RGB8:
+    case RHI::ImageFormat::RGBA8:
+    case RHI::ImageFormat::BGR8:
+    case RHI::ImageFormat::BGRA8:
+      return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case RHI::ImageFormat::DEPTH:
+      return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    case RHI::ImageFormat::DEPTH_STENCIL:
+      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    default:
+      return VK_IMAGE_LAYOUT_UNDEFINED;
+  }
+}
+
+VkAttachmentDescription BuildAttachmentDescription(
+  const RHI::ImageCreateArguments & description) noexcept
+{
+  VkAttachmentDescription attachmentDescription{};
+  {
+    attachmentDescription.format =
+      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
+    attachmentDescription.samples =
+      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
+    attachmentDescription.initialLayout = MakeAttachmentInitialLayout(description.format);
+    attachmentDescription.finalLayout = MakeAttachmentFinalLayout(description.format);
+    attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+  }
+  return attachmentDescription;
 }
 } // namespace
 
@@ -59,6 +102,14 @@ BufferedTexture::BufferedTexture(Context & ctx, const ImageCreateArguments & arg
   // по умолчанию создаем по 1 экземпл€ру картинки
   SetBuffering(1);
   Invalidate();
+}
+
+BufferedTexture::~BufferedTexture()
+{
+  for (auto && view : m_samplerViews)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(view, nullptr);
+  for (auto && view : m_attachmentViews)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(view, nullptr);
 }
 
 
@@ -97,7 +148,16 @@ ImageCreateArguments BufferedTexture::GetDescription() const noexcept
 
 VkImageView BufferedTexture::GetImageView(RHI::TextureUsage usage) const noexcept
 {
-  return m_views.at(usage)[m_activeImage];
+  switch (usage)
+  {
+    case RHI::TextureUsage::Sampler:
+      return m_samplerViews[m_activeImage];
+    case RHI::TextureUsage::FramebufferAttachment:
+      return m_attachmentViews[m_activeImage];
+    default:
+      assert(false);
+      return VK_NULL_HANDLE;
+  }
 }
 
 void BufferedTexture::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
@@ -125,31 +185,20 @@ VkExtent3D BufferedTexture::GetInternalExtent() const noexcept
   return {m_description.extent[0], m_description.extent[1], m_description.extent[2]};
 }
 
-void BufferedTexture::AllowUsage(RHI::TextureUsage usage) noexcept
-{
-  if (!IsAllowedUsage(usage))
-  {
-    GetContext().Log(RHI::LogMessageStatus::LOG_WARNING,
-                     "Allowed usage has been changed for BufferedTexture"
-                     " It can reduce performance because texture will be rebuilt");
-    m_allowedUsage = static_cast<RHI::TextureUsage>(m_allowedUsage | usage);
-    m_fullInvalidationRequired = true;
-  }
-}
-
 //-------------------- IAttachment interface --------------------
 
 void BufferedTexture::Invalidate()
 {
-    //¬месо того, чтобы пресоздавать изобрадение, давай лучше замен€ть VkImage в MemoryBlock
-  if (m_justChangeImagesCountRequired)
+  if (m_changedImagesCount)
   {
     while (m_images.size() > m_desiredInstancesCount)
     {
       m_images.pop_back();
       m_layouts.pop_back();
-      for (auto && [usage, views] : m_views)
-        views.pop_back();
+      if (m_allowedUsage & RHI::TextureUsage::Sampler)
+        m_samplerViews.pop_back();
+      if (m_allowedUsage & RHI::TextureUsage::FramebufferAttachment)
+        m_samplerViews.pop_back();
     }
 
     while (m_images.size() < m_desiredInstancesCount)
@@ -158,17 +207,27 @@ void BufferedTexture::Invalidate()
         GetContext().GetBuffersAllocator().AllocImage(m_description, CastTextureUsageToVkImageUsage(
                                                                        m_allowedUsage));
       m_layouts.emplace_back(memoryBlock.GetImage());
+      if (m_allowedUsage & RHI::TextureUsage::Sampler)
+        m_samplerViews.emplace_back(::CreateImageView(GetContext().GetDevice(),
+                                                      memoryBlock.GetImage(), GetInternalFormat(),
+                                                      VK_IMAGE_VIEW_TYPE_2D));
+
+      if (m_allowedUsage & RHI::TextureUsage::FramebufferAttachment)
+        m_attachmentViews.emplace_back(
+          ::CreateImageView(GetContext().GetDevice(), memoryBlock.GetImage(), GetInternalFormat(),
+                            VK_IMAGE_VIEW_TYPE_2D));
       m_images.push_back(std::move(memoryBlock));
     }
-    m_justChangeImagesCountRequired = false;
+    m_changedImagesCount = false;
   }
 }
 
 std::pair<VkImageView, VkSemaphore> BufferedTexture::AcquireForRendering()
 {
   m_renderingMutex.lock();
-  // TODO: Set layout for image
   m_activeImage = (m_activeImage + 1) % m_images.size();
+
+  // TODO: Set layout for image
   return {GetImageView(RHI::TextureUsage::FramebufferAttachment), VK_NULL_HANDLE};
 }
 
@@ -184,7 +243,7 @@ void BufferedTexture::SetBuffering(uint32_t framesCount)
   if (GetBuffering() != framesCount)
   {
     m_desiredInstancesCount = framesCount;
-    m_justChangeImagesCountRequired = true;
+    m_changedImagesCount = true;
   }
 }
 

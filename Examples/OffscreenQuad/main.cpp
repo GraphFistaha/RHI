@@ -72,27 +72,35 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IRenderPass * swapchain = ctx->GetSurfaceSwapchain();
+  RHI::ImageCreateArguments args;
+  args.extent = {100, 100, 1};
+  args.format = RHI::ImageFormat::RGBA8;
+  args.mipLevels = 1; 
+  args.samples = RHI::SamplesCount::One;
+  args.shared = false;
+  args.type = RHI::ImageType::Image2D;
+  auto image =  
+    ctx->AllocImage(args, static_cast<RHI::TextureUsage>(RHI::TextureUsage::Sampler |
+                                                         RHI::TextureUsage::Sampler));
 
-  auto image = ctx->AllocImage();
 
-  int width, height;
-  glfwGetWindowSize(window, &width, &height);
-  auto offscreenSwapchain = ctx->CreateOffscreenSwapchain(width, height, 3);
-  offscreenSwapchain->AddImageAttachment(0, image);
+ // RHI::IFramebuffer * offscreen = ctx->CreateFramebuffer(3);
+  //offscreen->AddImageAttachment(0, image);
 
-  // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto subpass = swapchain->CreateSubpass();
+  RHI::IFramebuffer * windowed = ctx->CreateFramebuffer(3);
+  windowed->AddImageAttachment(0, ctx->GetSurfaceImage());
+
+  auto windowedSubpass = windowed->CreateSubpass();
   {
-    auto && subpassConfig = subpass->GetConfiguration();
+    auto && subpassConfig = windowedSubpass->GetConfiguration();
     // set shaders
     subpassConfig.AttachShader(RHI::ShaderType::Vertex,
                                std::filesystem::path(SHADERS_FOLDER) / "quad.vert");
     subpassConfig.AttachShader(RHI::ShaderType::Fragment,
                                std::filesystem::path(SHADERS_FOLDER) / "quad.frag");
-    subpassConfig.SetMeshTopology(RHI::MeshTopology::TriangleFan);
-    auto * sampler = subpassConfig.DeclareSampler(0, RHI::ShaderType::Fragment);
-    sampler->AssignImage(image);
+    subpassConfig.SetMeshTopology(RHI::MeshTopology::TriangleFan); 
+    //auto * sampler = subpassConfig.DeclareSampler(0, RHI::ShaderType::Fragment);
+    //sampler->AssignImage(image);
   }
 
   // create vertex buffer
@@ -109,16 +117,22 @@ int main()
   {
     glfwPollEvents();
 
-    if (auto * renderTarget = swapchain->BeginFrame())
+    if (auto * renderTarget = windowed->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.1f, 0.7f, 0.4f, 1.0f);
-      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
+      if (ShouldInvalidateScene || windowedSubpass->ShouldBeInvalidated())
       {
-        subpass->BeginPass();
-        subpass->DrawVertices(4, 1);
-        subpass->EndPass();
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        windowedSubpass->BeginPass();
+        windowedSubpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        windowedSubpass->SetScissor(0, 0, static_cast<uint32_t>(width),
+                                    static_cast<uint32_t>(height));
+        windowedSubpass->DrawVertices(4, 1);
+        windowedSubpass->EndPass();
+        ShouldInvalidateScene = false;
       }
-      swapchain->EndFrame();
+      windowed->EndFrame();
     }
   }
 
