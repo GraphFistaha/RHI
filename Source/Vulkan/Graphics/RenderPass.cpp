@@ -71,7 +71,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
                           VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   GetFramebuffer().ForEachAttachment(
-    [it = m_cachedAttachments.begin()](IAttachment * att) mutable
+    [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {
       if (att)
         att->TransferLayout(it->initialLayout);
@@ -101,7 +101,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
   m_submitter.PushCommand(vkCmdEndRenderPass);
 
   GetFramebuffer().ForEachAttachment(
-    [it = m_cachedAttachments.begin()](IAttachment * att) mutable
+    [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {
       if (att)
         att->TransferLayout(it->finalLayout);

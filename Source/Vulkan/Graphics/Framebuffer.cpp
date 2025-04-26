@@ -77,7 +77,8 @@ void Framebuffer::Invalidate()
     uint32_t buffersCount = m_attachments[0]->GetBuffering();
     auto extent = m_attachments[0]->GetDescription().extent;
     // all attachments must have equal count of buffers
-    assert(std::all_of(m_attachments.begin(), m_attachments.end(), [buffersCount](IAttachment * att)
+    assert(std::all_of(m_attachments.begin(), m_attachments.end(),
+                       [buffersCount](IInternalAttachment * att)
                        { return buffersCount == att->GetBuffering(); }));
 
     if (m_targets.size() != buffersCount)
@@ -145,15 +146,12 @@ ISubpass * Framebuffer::CreateSubpass()
   return m_renderPass.CreateSubpass();
 }
 
-void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
+void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
 {
-  if (!image->IsAllowedUsage(RHI::TextureUsage::FramebufferAttachment))
-    throw std::runtime_error(
-      "Texture is not allowed to used as FramebufferAttachment. Allow it in texture creation");
   while (m_attachments.size() < binding + 1)
     m_attachments.push_back(nullptr);
 
-  if (IAttachment * ptr = dynamic_cast<IAttachment *>(image))
+  if (IInternalAttachment * ptr = dynamic_cast<IInternalAttachment *>(attachment))
   {
     ptr->SetBuffering(m_framesCount);
     m_attachments[binding] = ptr;
@@ -161,11 +159,11 @@ void Framebuffer::AddImageAttachment(uint32_t binding, IImageGPU * image)
   }
   else
   {
-    throw std::runtime_error("Failed to cast IImageGPU * to IAttachment *");
+    throw std::runtime_error("Failed to cast ITexture * to IInternalAttachment *");
   }
 }
 
-void Framebuffer::ClearImageAttachments() noexcept
+void Framebuffer::ClearAttachments() noexcept
 {
   m_attachments.clear();
   m_attachmentsChanged = true;

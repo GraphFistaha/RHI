@@ -27,7 +27,7 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 }
 
 /// @brief uploads image from file and create RHI image object
-RHI::IImageGPU * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool with_alpha)
+RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool with_alpha)
 {
   int w = 0, h = 0, channels = 3;
   uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);

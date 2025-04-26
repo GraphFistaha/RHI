@@ -53,10 +53,10 @@ PRIVATE
 	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
-	Images/BufferedTexture.cpp
-	Images/BufferedTexture.hpp
-	Images/SwapchainTexture.cpp
-	Images/SwapchainTexture.hpp
+	#Images/BufferedTexture.cpp
+	#Images/BufferedTexture.hpp
+	Images/SurfacedAttachment.cpp
+	Images/SurfacedAttachment.hpp
 
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp

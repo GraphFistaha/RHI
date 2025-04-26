@@ -18,12 +18,11 @@ namespace RHI::vulkan
 struct BufferedTexture : public IAttachment,
                          public OwnedBy<Context>
 {
-  explicit BufferedTexture(Context & ctx, const ImageCreateArguments & m_description,
-                           TextureUsage usage);
+  explicit BufferedTexture(Context & ctx, const ImageCreateArguments & m_description);
   virtual ~BufferedTexture() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
-public: // IImageGPU interface
+public: // ITexture interface
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
                                                 const CopyImageArguments & args) override;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
@@ -31,10 +30,9 @@ public: // IImageGPU interface
   virtual ImageCreateArguments GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;
-  virtual bool IsAllowedUsage(TextureUsage usage) const noexcept override;
 
 public: //ITexture interface
-  virtual VkImageView GetImageView(TextureUsage usage) const noexcept override;
+  virtual VkImageView GetImageView() const noexcept override;
   virtual void TransferLayout(details::CommandBuffer & commandBuffer,
                               VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
@@ -52,9 +50,6 @@ public: // IAttachment interface
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
 
 protected:
-  static constexpr RHI::TextureUsage s_allowedUsages[] = {RHI::TextureUsage::Sampler,
-                                                          RHI::TextureUsage::FramebufferAttachment};
-
   std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
   ImageCreateArguments m_description; ///< description of image, all main params for image
 
@@ -66,7 +61,6 @@ protected:
 
   uint32_t m_desiredInstancesCount = 0;
   bool m_changedImagesCount = false;
-  const TextureUsage m_allowedUsage;
 };
 
 } // namespace RHI::vulkan

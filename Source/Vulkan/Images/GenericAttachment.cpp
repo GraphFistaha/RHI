@@ -93,11 +93,9 @@ VkAttachmentDescription BuildAttachmentDescription(
 
 namespace RHI::vulkan
 {
-BufferedTexture::BufferedTexture(Context & ctx, const ImageCreateArguments & args,
-                                 TextureUsage usage)
+BufferedTexture::BufferedTexture(Context & ctx, const ImageCreateArguments & args)
   : OwnedBy<Context>(ctx)
   , m_description(args)
-  , m_allowedUsage(usage)
 {
   // по умолчанию создаем по 1 экземпл€ру картинки
   SetBuffering(1);
@@ -113,7 +111,7 @@ BufferedTexture::~BufferedTexture()
 }
 
 
-//--------------------- IImageGPU interface ----------------
+//--------------------- ITexture interface ----------------
 
 std::future<UploadResult> BufferedTexture::UploadImage(const uint8_t * srcPixelData,
                                                        const CopyImageArguments & args)
@@ -134,11 +132,6 @@ size_t BufferedTexture::Size() const
   return m_images.empty() ? 0 : m_images.begin()->Size();
 }
 
-bool BufferedTexture::IsAllowedUsage(TextureUsage usage) const noexcept
-{
-  return m_allowedUsage & usage;
-}
-
 ImageCreateArguments BufferedTexture::GetDescription() const noexcept
 {
   return m_description;
@@ -146,7 +139,7 @@ ImageCreateArguments BufferedTexture::GetDescription() const noexcept
 
 // -------------------- ITexture interface ------------------
 
-VkImageView BufferedTexture::GetImageView(RHI::TextureUsage usage) const noexcept
+VkImageView BufferedTexture::GetImageView() const noexcept
 {
   switch (usage)
   {

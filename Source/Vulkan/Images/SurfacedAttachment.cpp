@@ -1,4 +1,4 @@
-#include "SwapchainTexture.hpp"
+#include "SurfacedAttachment.hpp"
 
 #include <format>
 
@@ -12,47 +12,34 @@
 namespace RHI::vulkan
 {
 
-SwapchainTexture::SwapchainTexture(Context & ctx, const VkSurfaceKHR surface,
-                                   RHI::SamplesCount samplesCount)
+SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
+                                       RHI::SamplesCount samplesCount)
   : OwnedBy<Context>(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
   , m_samplesCount(samplesCount)
-  , m_allowedUsage(RHI::TextureUsage::FramebufferAttachment)
 {
   std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Present);
 }
 
-SwapchainTexture::~SwapchainTexture()
+SurfacedAttachment::~SurfacedAttachment()
 {
   DestroySwapchain();
 }
 
-// --------------------- IImageGPU interface --------------
-
-std::future<UploadResult> SwapchainTexture::UploadImage(const uint8_t * srcPixelData,
-                                                        const CopyImageArguments & args)
+std::future<UploadResult> SurfacedAttachment::UploadImage(const uint8_t * srcPixelData,
+                                                          const CopyImageArguments & args)
 {
   return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
 }
 
-std::future<DownloadResult> SwapchainTexture::DownloadImage(HostImageFormat format,
-                                                            const ImageRegion & region)
+std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat format,
+                                                              const ImageRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-size_t SwapchainTexture::Size() const
-{
-  return RHI::utils::GetSizeOfImage(GetInternalExtent(), GetInternalFormat());
-}
-
-bool SwapchainTexture::IsAllowedUsage(RHI::TextureUsage usage) const noexcept
-{
-  return m_allowedUsage & usage;
-}
-
-ImageCreateArguments SwapchainTexture::GetDescription() const noexcept
+ImageCreateArguments SurfacedAttachment::GetDescription() const noexcept
 {
   ImageCreateArguments description{};
   {
@@ -73,40 +60,40 @@ ImageCreateArguments SwapchainTexture::GetDescription() const noexcept
   return description;
 }
 
-// -------------------- ITexture interface ---------------------
-
-VkImageView SwapchainTexture::GetImageView(RHI::TextureUsage usage) const noexcept
+size_t SurfacedAttachment::Size() const
 {
-  if (usage == RHI::TextureUsage::FramebufferAttachment)
-    return m_imageViews[m_activeImage];
-  else
-  {
-    assert(false);
-    return VK_NULL_HANDLE;
-  }
+  return RHI::utils::GetSizeOfImage(GetInternalExtent(), GetInternalFormat());
 }
 
-void SwapchainTexture::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
+// -------------------- ITexture interface ---------------------
+
+VkImageView SurfacedAttachment::GetImageView() const noexcept
+{
+  return m_imageViews[m_activeImage];
+}
+
+void SurfacedAttachment::TransferLayout(details::CommandBuffer & commandBuffer,
+                                        VkImageLayout layout)
 {
   m_layouts[m_activeImage].TransferLayout(commandBuffer, layout);
 }
 
-VkImageLayout SwapchainTexture::GetLayout() const noexcept
+VkImageLayout SurfacedAttachment::GetLayout() const noexcept
 {
   return m_layouts[m_activeImage].GetLayout();
 }
 
-VkImage SwapchainTexture::GetHandle() const noexcept
+VkImage SurfacedAttachment::GetHandle() const noexcept
 {
   return m_images[m_activeImage];
 }
 
-VkFormat SwapchainTexture::GetInternalFormat() const noexcept
+VkFormat SurfacedAttachment::GetInternalFormat() const noexcept
 {
   return m_swapchain ? m_swapchain->image_format : VK_FORMAT_UNDEFINED;
 }
 
-VkExtent3D SwapchainTexture::GetInternalExtent() const noexcept
+VkExtent3D SurfacedAttachment::GetInternalExtent() const noexcept
 {
   VkExtent3D result{0, 0, 0};
   if (m_swapchain)
@@ -117,9 +104,15 @@ VkExtent3D SwapchainTexture::GetInternalExtent() const noexcept
   return result;
 }
 
+void SurfacedAttachment::BlitTo(ITexture * texture)
+{
+  //if (auto * ptr = dynamic_cast<RHI::vulkan::IInternalTexture *>(texture))
+  //  GetContext().GetTransferer().BlitImageToImage(*ptr, *this);
+}
+
 // --------------------- IAttachment interface ----------------------
 
-void SwapchainTexture::Invalidate()
+void SurfacedAttachment::Invalidate()
 {
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
@@ -150,7 +143,7 @@ void SwapchainTexture::Invalidate()
   }
 }
 
-std::pair<VkImageView, VkSemaphore> SwapchainTexture::AcquireForRendering()
+std::pair<VkImageView, VkSemaphore> SurfacedAttachment::AcquireForRendering()
 {
   m_renderingMutex.lock();
   VkSemaphore signalSemaphore = m_imageAvailabilitySemaphores[m_activeSemaphore];
@@ -170,10 +163,10 @@ std::pair<VkImageView, VkSemaphore> SwapchainTexture::AcquireForRendering()
       std::format("Failed to acquire swap chain image - {}", static_cast<uint32_t>(res)));
   }
   m_activeImage = imageIndex;
-  return {GetImageView(RHI::TextureUsage::FramebufferAttachment), signalSemaphore};
+  return {GetImageView(), signalSemaphore};
 }
 
-bool SwapchainTexture::FinalRendering(VkSemaphore waitSemaphore)
+bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
 {
   const VkSwapchainKHR swapchains[] = {m_swapchain->swapchain};
   VkPresentInfoKHR presentInfo{};
@@ -202,7 +195,7 @@ bool SwapchainTexture::FinalRendering(VkSemaphore waitSemaphore)
   return true;
 }
 
-void SwapchainTexture::SetBuffering(uint32_t framesCount)
+void SurfacedAttachment::SetBuffering(uint32_t framesCount)
 {
   if (!m_swapchain || framesCount != m_swapchain->image_count)
   {
@@ -211,12 +204,12 @@ void SwapchainTexture::SetBuffering(uint32_t framesCount)
   }
 }
 
-uint32_t SwapchainTexture::GetBuffering() const noexcept
+uint32_t SurfacedAttachment::GetBuffering() const noexcept
 {
   return static_cast<uint32_t>(m_images.size());
 }
 
-VkAttachmentDescription SwapchainTexture::BuildDescription() const noexcept
+VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept
 {
   VkAttachmentDescription description{};
   {
@@ -232,14 +225,14 @@ VkAttachmentDescription SwapchainTexture::BuildDescription() const noexcept
   return description;
 }
 
-void SwapchainTexture::TransferLayout(VkImageLayout newLayout) noexcept
+void SurfacedAttachment::TransferLayout(VkImageLayout newLayout) noexcept
 {
   m_layouts[m_activeImage].TransferLayout(newLayout);
 }
 
 // ---------------------------- Private -----------------
 
-void SwapchainTexture::DestroySwapchain() noexcept
+void SurfacedAttachment::DestroySwapchain() noexcept
 {
   GetContext().WaitForIdle();
   if (!m_imageViews.empty())

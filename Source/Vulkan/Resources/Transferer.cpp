@@ -69,6 +69,12 @@ IAwaitable * TransferSubmitter::Submit()
   }
   m_writingTransferBuffer.download_data.clear();
 
+  for (auto && promise : m_writingTransferBuffer.blit_data)
+  {
+    BlitResult result = 0;
+    promise.set_value(result);
+  }
+
   m_writingTransferBuffer.submitter.Reset();
   m_writingTransferBuffer.submitter.BeginWriting();
   return awaitable;
@@ -117,7 +123,7 @@ std::future<DownloadResult> TransferSubmitter::DownloadBuffer(VkBuffer srcBuffer
   return std::get<1>(data).get_future();
 }
 
-std::future<UploadResult> TransferSubmitter::UploadImage(ITexture & dstImage,
+std::future<UploadResult> TransferSubmitter::UploadImage(IInternalTexture & dstImage,
                                                          const uint8_t * srcData,
                                                          const CopyImageArguments & args)
 {
@@ -164,7 +170,7 @@ std::future<UploadResult> TransferSubmitter::UploadImage(ITexture & dstImage,
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSubmitter::DownloadImage(ITexture & srcImage,
+std::future<DownloadResult> TransferSubmitter::DownloadImage(IInternalTexture & srcImage,
                                                              HostImageFormat format,
                                                              const ImageRegion & imgRegion)
 {
@@ -213,6 +219,23 @@ std::future<DownloadResult> TransferSubmitter::DownloadImage(ITexture & srcImage
   return std::get<1>(data).get_future();
 }
 
+std::future<BlitResult> TransferSubmitter::BlitImageToImage(IInternalTexture & dst,
+                                                           IInternalTexture & src,
+                                                           const ImageRegion & region)
+{
+  std::promise<BlitResult> promise;
+  VkImageCopy copy{};
+  {
+    //TODO: Fill copy
+    copy.extent = src.GetInternalExtent();
+    //copy.dstOffset =
+  }
+  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyImage, src.GetHandle(), src.GetLayout(),
+                                                dst.GetHandle(), dst.GetLayout(), 1, &copy);
+  auto && data = m_writingTransferBuffer.blit_data.emplace_back(std::move(promise));
+  return data.get_future();
+}
+
 TransferSubmitter::TransferBuffer::TransferBuffer(Context & ctx, VkQueue queue,
                                                   uint32_t queueFamilyIndex)
   : submitter(ctx, queue, queueFamilyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT)
@@ -250,16 +273,24 @@ std::future<DownloadResult> Transferer::DownloadBuffer(VkBuffer srcBuffer, size_
   return m_genericSwapchain.DownloadBuffer(srcBuffer, size, offset);
 }
 
-std::future<UploadResult> Transferer::UploadImage(ITexture & dstImage, const uint8_t * srcData,
+std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
+                                                  const uint8_t * srcData,
                                                   const CopyImageArguments & args)
 {
   return m_genericSwapchain.UploadImage(dstImage, srcData, args);
 }
 
-std::future<DownloadResult> Transferer::DownloadImage(ITexture & srcImage, HostImageFormat format,
+std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
+                                                      HostImageFormat format,
                                                       const ImageRegion & region)
 {
   return m_graphicsSwapchain.DownloadImage(srcImage, format, region);
+}
+
+std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
+                                                     const ImageRegion & region)
+{
+  return m_graphicsSwapchain.BlitImageToImage(dst, src, region);
 }
 
 } // namespace RHI::vulkan

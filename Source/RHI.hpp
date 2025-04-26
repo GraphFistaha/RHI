@@ -137,14 +137,6 @@ enum BufferGPUUsage
   IndirectBuffer = 32
 };
 
-enum TextureUsage
-{
-  Sampler = 1,               // Sampled in shaders, requires transfer destination usage
-  FramebufferAttachment = 2, // Used as a framebuffer attachment, also supports input attachments
-  Readback = 4,              // Used for copying data back from GPU (transfer source)
-  Compute = 8                // Used as a storage image in compute shaders
-};
-
 /// @brief defines what input attribute is used for. For instance or for each vertex
 enum class InputBindingType : uint8_t
 {
@@ -172,7 +164,8 @@ enum class IndexType : uint8_t
 //----------------- Images ---------------------
 
 struct IBufferGPU;
-struct IImageGPU;
+struct ITexture;
+struct IAttachment;
 
 //TODO: Remove this interface
 struct IInvalidable
@@ -198,7 +191,7 @@ struct IUniformDescriptor : public IInvalidable
 
 struct ISamplerUniformDescriptor : public IUniformDescriptor
 {
-  virtual void AssignImage(IImageGPU * image) = 0;
+  virtual void AssignImage(ITexture * texture) = 0;
   virtual bool IsImageAssigned() const noexcept = 0;
 };
 
@@ -281,14 +274,16 @@ struct IFramebuffer
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) = 0;
-  virtual void AddImageAttachment(uint32_t binding, IImageGPU * image) = 0;
-  virtual void ClearImageAttachments() noexcept = 0;
+  virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
+
+  virtual void ClearAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
 };
 
 // ------------------- Data ------------------
 using UploadResult = size_t;
 using DownloadResult = std::vector<uint8_t>;
+using BlitResult = size_t;
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
@@ -313,18 +308,23 @@ struct IBufferGPU
 };
 
 
-struct IImageGPU
+struct ITexture
 {
-  virtual ~IImageGPU() = default;
+  virtual ~ITexture() = default;
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
                                                 const CopyImageArguments & args) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) = 0;
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
-  /// @brief Get size of image in bytes
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
-  virtual bool IsAllowedUsage(TextureUsage usage) const noexcept = 0;
+};
+
+
+struct IAttachment
+{
+  virtual ~IAttachment() = default;
+  virtual void BlitTo(ITexture * texture) = 0;
 };
 
 
@@ -336,11 +336,12 @@ struct IContext
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-  virtual IImageGPU * GetSurfaceImage() = 0;
+  virtual IAttachment * GetSurfaceImage() = 0;
   virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
-  virtual IImageGPU * AllocImage(const ImageCreateArguments & args, TextureUsage usage) = 0;
+  virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
+  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args) = 0;
 };
 
 /// @brief Factory-function to create context

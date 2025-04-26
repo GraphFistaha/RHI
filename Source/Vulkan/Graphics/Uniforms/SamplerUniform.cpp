@@ -81,7 +81,7 @@ VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
   assert(m_boundTexture);
   VkDescriptorImageInfo imageInfo{};
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_boundTexture->GetImageView(RHI::TextureUsage::Sampler);
+  imageInfo.imageView = m_boundTexture->GetImageView();
   imageInfo.sampler = m_sampler;
   return imageInfo;
 }
@@ -102,12 +102,9 @@ void SamplerUniform::SetInvalid()
   m_invalidSampler = true;
 }
 
-void SamplerUniform::AssignImage(IImageGPU * image)
+void SamplerUniform::AssignImage(ITexture * image)
 {
-  if (!image->IsAllowedUsage(RHI::TextureUsage::Sampler))
-    throw std::runtime_error(
-      "Texture is not allowed to used as Sampler. Allow it in texture creation");
-  auto * internalImage = dynamic_cast<ITexture *>(image);
+  auto * internalImage = dynamic_cast<IInternalTexture *>(image);
   m_boundTexture = internalImage;
   Invalidate();
   GetDescriptorsBuffer().OnDescriptorChanged(*this);

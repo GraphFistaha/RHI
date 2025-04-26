@@ -83,7 +83,7 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto subpass = framebuffer->CreateSubpass();

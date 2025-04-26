@@ -12,10 +12,10 @@ namespace RHI::vulkan
 {
 static constexpr uint32_t g_InvalidImageIndex = -1;
 
-struct ITexture : public IImageGPU
+struct IInternalTexture : public ITexture
 {
-  virtual ~ITexture() = default;
-  virtual VkImageView GetImageView(TextureUsage usage) const noexcept = 0;
+  virtual ~IInternalTexture() = default;
+  virtual VkImageView GetImageView() const noexcept = 0;
   virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) = 0;
   virtual VkImageLayout GetLayout() const noexcept = 0;
   virtual VkImage GetHandle() const noexcept = 0;
@@ -23,9 +23,10 @@ struct ITexture : public IImageGPU
   virtual VkExtent3D GetInternalExtent() const noexcept = 0;
 };
 
-struct IAttachment : public ITexture
+struct IInternalAttachment : public IAttachment,
+                             public IInternalTexture
 {
-  virtual ~IAttachment() = default;
+  virtual ~IInternalAttachment() = default;
   virtual void Invalidate() = 0;
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() = 0;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) = 0;

@@ -20,7 +20,7 @@ struct SamplerUniform final : public ISamplerUniformDescriptor,
   SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
 
 public: // ISamplerUniformDescriptor interface
-  virtual void AssignImage(IImageGPU * image) override;
+  virtual void AssignImage(ITexture * image) override;
   virtual bool IsImageAssigned() const noexcept override;
 
 public:
@@ -33,12 +33,12 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  ITexture * GetAttachedImage() const noexcept { return m_boundTexture; }
+  IInternalTexture * GetAttachedImage() const noexcept { return m_boundTexture; }
   VkDescriptorImageInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  ITexture * m_boundTexture = nullptr;
+  IInternalTexture * m_boundTexture = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
   bool m_invalidSampler = true;
 };
