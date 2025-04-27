@@ -19,7 +19,6 @@ struct CommandBuffer;
 
 namespace RHI::vulkan
 {
-/// @brief Base class for all images
 struct ImageLayoutTransferer final
 {
   explicit ImageLayoutTransferer(VkImage image);

@@ -87,6 +87,7 @@ int main()
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto subpass = framebuffer->CreateSubpass();
+  subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   auto && trianglePipeline = subpass->GetConfiguration();
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,

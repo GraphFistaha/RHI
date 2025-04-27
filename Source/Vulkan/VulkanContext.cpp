@@ -11,8 +11,9 @@
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/SubpassConfiguration.hpp"
 //#include "Images/GenericAttachment.hpp"
-#include "Images/SurfacedAttachment.hpp"
+#include "Attachments/SurfacedAttachment.hpp"
 #include "Resources/BufferGPU.hpp"
+#include "Resources/Texture.hpp"
 #include "Resources/Transferer.hpp"
 #include "Utils/CastHelper.hpp"
 
@@ -204,7 +205,7 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
   auto surfaceTexture =
     std::make_unique<SurfacedAttachment>(*this, m_impl->GetSurface(), SamplesCount::One);
-  m_textures.emplace_back(std::move(surfaceTexture));
+  m_attachments.emplace_back(std::move(surfaceTexture));
 }
 
 Context::~Context()
@@ -213,7 +214,7 @@ Context::~Context()
 
 IAttachment * Context::GetSurfaceImage()
 {
-  return m_textures[0].get();
+  return m_attachments[0].get();
 }
 
 IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
@@ -231,7 +232,9 @@ IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowH
 
 ITexture * Context::AllocImage(const ImageCreateArguments & args)
 {
-  return nullptr;
+  auto && texture = std::make_unique<Texture>(*this, args);
+  auto && result = m_textures.emplace_back(std::move(texture));
+  return result.get();
 }
 
 IAttachment * Context::AllocAttachment(const ImageCreateArguments & args)

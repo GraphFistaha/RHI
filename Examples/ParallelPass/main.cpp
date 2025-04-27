@@ -127,7 +127,7 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
   TriangleRenderer = std::make_unique<Renderer>(*ctx, *framebuffer, window);
   TriangleRenderer->AsyncDrawScene();
 
@@ -153,6 +153,7 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwin
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   m_subpass = framebuffer.CreateSubpass();
+  m_subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   auto && trianglePipeline = m_subpass->GetConfiguration();
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,

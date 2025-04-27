@@ -79,7 +79,7 @@ RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool 
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  auto texture = ctx.AllocImage(imageArgs, RHI::TextureUsage::Sampler);
+  auto texture = ctx.AllocImage(imageArgs);
   RHI::CopyImageArguments copyArgs{};
   copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
   copyArgs.src.extent = extent;
@@ -119,7 +119,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  std::vector<RHI::ITexture*> textures;
+  std::vector<RHI::ITexture *> textures;
   textures.emplace_back(CreateAndLoadImage(*ctx, "texture.png", true));
   textures.emplace_back(CreateAndLoadImage(*ctx, "jackal.jpg", false));
   textures.emplace_back(CreateAndLoadImage(*ctx, "shrek1.jpg", false));
@@ -129,8 +129,9 @@ int main()
   auto image_it = textures.begin();
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
   auto * subpass = framebuffer->CreateSubpass();
+  subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,

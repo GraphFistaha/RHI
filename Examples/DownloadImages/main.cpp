@@ -45,7 +45,7 @@ RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool 
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
-  auto texture = ctx.AllocImage(imageArgs, RHI::TextureUsage::Sampler);
+  auto texture = ctx.AllocImage(imageArgs);
   RHI::CopyImageArguments copyArgs{};
   copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
   copyArgs.src.extent = extent;

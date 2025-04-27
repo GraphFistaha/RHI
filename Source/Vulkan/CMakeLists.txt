@@ -9,7 +9,6 @@ PRIVATE
 	Memory/MemoryBlock.cpp
 	Memory/MemoryBlock.hpp
 
-	Graphics/TextureInterface.hpp
 	Graphics/Framebuffer.cpp
 	Graphics/Framebuffer.hpp
 	Graphics/DescriptorsBuffer.cpp
@@ -31,8 +30,6 @@ PRIVATE
 	Graphics/Uniforms/BufferUniform.cpp
 	Graphics/Uniforms/BufferUniform.hpp
 
-	Resources/Transferer.hpp
-	Resources/Transferer.cpp
 
 	Utils/CastHelper.hpp
 	Utils/DescriptorSetLayoutBuilder.cpp
@@ -53,13 +50,21 @@ PRIVATE
 	Images/InternalImageTraits.hpp
 	Images/ImageFormatsConversation.cpp
 	Images/ImageFormatsConversation.hpp
-	#Images/BufferedTexture.cpp
-	#Images/BufferedTexture.hpp
-	Images/SurfacedAttachment.cpp
-	Images/SurfacedAttachment.hpp
+	Images/TextureInterface.hpp
+	Images/ImageUtils.hpp
+	Images/ImageUtils.cpp
+	#Attachments/BufferedTexture.cpp
+	#Attachments/BufferedTexture.hpp
+	Attachments/Attachment.hpp
+	Attachments/SurfacedAttachment.cpp
+	Attachments/SurfacedAttachment.hpp
 
+	Resources/Texture.cpp
+	Resources/Texture.hpp
 	Resources/BufferGPU.cpp
 	Resources/BufferGPU.hpp
+	Resources/Transferer.hpp
+	Resources/Transferer.cpp
 	
 
 	CommandsExecution/CommandBuffer.cpp 

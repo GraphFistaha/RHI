@@ -247,6 +247,7 @@ struct ISubpass
   virtual void SetEnabled(bool enabled) noexcept = 0;
   virtual bool IsEnabled() const noexcept = 0;
   virtual bool ShouldBeInvalidated() const noexcept = 0;
+  virtual void BindAttachment(uint32_t attachmentIdx, ShaderAttachmentSlot slot) = 0;
 
   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
@@ -307,7 +308,7 @@ struct IBufferGPU
   virtual size_t Size() const noexcept = 0;
 };
 
-
+/// Image with mipmaps, compression
 struct ITexture
 {
   virtual ~ITexture() = default;
@@ -318,15 +319,19 @@ struct ITexture
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
-};
-
-
-struct IAttachment
-{
-  virtual ~IAttachment() = default;
   virtual void BlitTo(ITexture * texture) = 0;
 };
 
+/// swapchained image sequence to attach it to framebuffer
+struct IAttachment
+{
+  virtual ~IAttachment() = default;
+  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
+                                                    const ImageRegion & region) = 0;
+  virtual ImageCreateArguments GetDescription() const noexcept = 0;
+  virtual size_t Size() const = 0;
+  virtual void BlitTo(ITexture * texture) = 0;
+};
 
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
 struct IContext

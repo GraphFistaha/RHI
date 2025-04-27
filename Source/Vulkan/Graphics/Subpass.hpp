@@ -36,6 +36,7 @@ public: // ISubpass Interface
   virtual void SetEnabled(bool enabled) noexcept override;
   virtual bool IsEnabled() const noexcept override;
   virtual bool ShouldBeInvalidated() const noexcept override;
+  virtual void BindAttachment(uint32_t attachmentIdx, ShaderAttachmentSlot slot) override;
 
 public: // Commands
   /// @brief draw vertices command (analog glDrawArrays)

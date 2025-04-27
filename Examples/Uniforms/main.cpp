@@ -87,8 +87,9 @@ int main()
   auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
   auto * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddImageAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
   auto * subpass = framebuffer->CreateSubpass();
+  subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");

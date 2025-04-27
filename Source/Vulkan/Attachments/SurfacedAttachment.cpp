@@ -5,9 +5,9 @@
 #include <VkBootstrap.h>
 
 #include "../Graphics/RenderPass.hpp"
+#include "../Images/InternalImageTraits.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
-#include "InternalImageTraits.hpp"
 
 namespace RHI::vulkan
 {
@@ -25,12 +25,6 @@ SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface
 SurfacedAttachment::~SurfacedAttachment()
 {
   DestroySwapchain();
-}
-
-std::future<UploadResult> SurfacedAttachment::UploadImage(const uint8_t * srcPixelData,
-                                                          const CopyImageArguments & args)
-{
-  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
 }
 
 std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat format,

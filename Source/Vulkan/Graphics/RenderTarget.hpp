@@ -35,7 +35,7 @@ public: // IRenderTarget interface
 public:
   void Invalidate();
   void BindRenderPass(const VkRenderPass & renderPass) noexcept;
-  void SetExtent(const RHI::ImageExtent & extent) noexcept;
+  void SetExtent(const VkExtent3D & extent) noexcept;
 
   VkFramebuffer GetHandle() const noexcept { return m_framebuffer; }
   VkExtent3D GetVkExtent() const noexcept { return m_extent; }

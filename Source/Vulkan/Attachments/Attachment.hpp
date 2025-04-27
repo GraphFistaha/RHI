@@ -3,28 +3,13 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan::details
-{
-struct CommandBuffer;
-}
+#include "../Images/TextureInterface.hpp"
 
 namespace RHI::vulkan
 {
 static constexpr uint32_t g_InvalidImageIndex = -1;
 
-struct IInternalTexture : public ITexture
-{
-  virtual ~IInternalTexture() = default;
-  virtual VkImageView GetImageView() const noexcept = 0;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) = 0;
-  virtual VkImageLayout GetLayout() const noexcept = 0;
-  virtual VkImage GetHandle() const noexcept = 0;
-  virtual VkFormat GetInternalFormat() const noexcept = 0;
-  virtual VkExtent3D GetInternalExtent() const noexcept = 0;
-};
-
-struct IInternalAttachment : public IAttachment,
-                             public IInternalTexture
+struct IInternalAttachment : public IInternalTexture
 {
   virtual ~IInternalAttachment() = default;
   virtual void Invalidate() = 0;

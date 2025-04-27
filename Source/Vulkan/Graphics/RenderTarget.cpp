@@ -91,9 +91,9 @@ void RenderTarget::BindRenderPass(const VkRenderPass & renderPass) noexcept
   }
 }
 
-void RenderTarget::SetExtent(const RHI::ImageExtent & extent) noexcept
+void RenderTarget::SetExtent(const VkExtent3D & extent) noexcept
 {
-  m_extent = {extent[0], extent[1], extent[2]};
+  m_extent = extent;
 }
 
 const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcept

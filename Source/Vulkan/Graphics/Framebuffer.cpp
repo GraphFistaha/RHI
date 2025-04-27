@@ -6,14 +6,12 @@
 #include "../VulkanContext.hpp"
 namespace
 {
-RHI::ShaderAttachmentSlot GetShaderImageSlotByImageDescription(
-  const RHI::ImageCreateArguments & desc) noexcept
-{
-  if (desc.format == RHI::ImageFormat::DEPTH_STENCIL || desc.format == RHI::ImageFormat::DEPTH)
-    return RHI::ShaderAttachmentSlot::DepthStencil;
 
-  return RHI::ShaderAttachmentSlot::Color;
+bool operator==(const VkExtent3D & e1, const VkExtent3D & e2)
+{
+  return std::memcmp(&e1, &e2, sizeof(VkExtent3D)) == 0;
 }
+
 } // namespace
 
 namespace RHI::vulkan
@@ -59,27 +57,17 @@ void Framebuffer::Invalidate()
 
     // set attachments to render Pass
     m_renderPass.SetAttachments(m_attachmentDescriptions);
-    // update subpasses
-    m_renderPass.ForEachSubpass(
-      [this](Subpass & sb)
-      {
-        uint32_t idx = 0;
-        for (auto && attachment : m_attachments)
-        {
-          auto && attachmentSlot =
-            GetShaderImageSlotByImageDescription(attachment->GetDescription());
-          sb.GetLayout().BindAttachment(attachmentSlot, idx++);
-        }
-      });
     //build render pass
     m_renderPass.Invalidate();
 
     uint32_t buffersCount = m_attachments[0]->GetBuffering();
-    auto extent = m_attachments[0]->GetDescription().extent;
+    auto extent = m_attachments[0]->GetInternalExtent();
     // all attachments must have equal count of buffers
     assert(std::all_of(m_attachments.begin(), m_attachments.end(),
-                       [buffersCount](IInternalAttachment * att)
-                       { return buffersCount == att->GetBuffering(); }));
+                       [buffersCount, extent](IInternalAttachment * att) {
+                         return buffersCount == att->GetBuffering() &&
+                                att->GetInternalExtent() == extent;
+                       }));
 
     if (m_targets.size() != buffersCount)
     {

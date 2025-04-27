@@ -7,9 +7,9 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../Attachments/Attachment.hpp"
 #include "RenderPass.hpp"
 #include "RenderTarget.hpp"
-#include "TextureInterface.hpp"
 
 namespace RHI::vulkan
 {
@@ -43,7 +43,7 @@ public: // RHI-only API
   size_t GetImagesCount() const noexcept;
   void Invalidate();
 
-  using AttachmentProcessFunc = std::function<void(IInternalAttachment*)>;
+  using AttachmentProcessFunc = std::function<void(IInternalAttachment *)>;
   void ForEachAttachment(AttachmentProcessFunc && func);
 
 protected:

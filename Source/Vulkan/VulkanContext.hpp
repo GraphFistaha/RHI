@@ -10,7 +10,7 @@
 
 #include "GarbageCollector.hpp"
 #include "Graphics/Framebuffer.hpp"
-#include "Graphics/TextureInterface.hpp"
+#include "Images/TextureInterface.hpp"
 #include "Memory/MemoryAllocator.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"
@@ -73,7 +73,8 @@ private:
   // TODO: replace deque with pool
   std::deque<Framebuffer> m_framebuffers;
   std::deque<BufferGPU> m_buffers;
-  std::vector<std::unique_ptr<IAttachment>> m_textures;
+  std::vector<std::unique_ptr<IAttachment>> m_attachments;
+  std::vector<std::unique_ptr<ITexture>> m_textures;
   LoggingFunc m_logFunc;
 };
 

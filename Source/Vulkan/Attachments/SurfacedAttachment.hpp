@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "../CommandsExecution/AsyncTask.hpp"
-#include "../Graphics/TextureInterface.hpp"
-#include "ImageLayoutTransferer.hpp"
+#include "../Images/ImageLayoutTransferer.hpp"
+#include "Attachment.hpp"
 
 namespace vkb
 {
@@ -15,7 +15,8 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct SurfacedAttachment final : public IInternalAttachment,
+struct SurfacedAttachment final : public IAttachment,
+                                  public IInternalAttachment,
                                   public OwnedBy<Context>
 {
   explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
@@ -24,8 +25,6 @@ struct SurfacedAttachment final : public IInternalAttachment,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // ITexture interface
-  virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const CopyImageArguments & args) override;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) override;
   virtual ImageCreateArguments GetDescription() const noexcept override;
