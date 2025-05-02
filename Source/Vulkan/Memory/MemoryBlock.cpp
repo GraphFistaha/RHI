@@ -66,7 +66,9 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
     imageInfo.mipLevels = description.mipLevels;
     imageInfo.arrayLayers = 1;
     imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.tiling = /*description.format == RHI::ImageFormat::DEPTH_STENCIL
+                       ? VK_IMAGE_TILING_LINEAR
+                       :*/ VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);

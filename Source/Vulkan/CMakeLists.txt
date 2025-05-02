@@ -53,8 +53,8 @@ PRIVATE
 	Images/TextureInterface.hpp
 	Images/ImageUtils.hpp
 	Images/ImageUtils.cpp
-	#Attachments/BufferedTexture.cpp
-	#Attachments/BufferedTexture.hpp
+	Attachments/GenericAttachment.cpp
+	Attachments/GenericAttachment.hpp
 	Attachments/Attachment.hpp
 	Attachments/SurfacedAttachment.cpp
 	Attachments/SurfacedAttachment.hpp

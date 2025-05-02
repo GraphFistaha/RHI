@@ -28,9 +28,15 @@ void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::
   m_invalidPipeline = true;
 }
 
-void SubpassConfiguration::BindAttachment(ShaderAttachmentSlot slot, uint32_t binding)
+void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot)
 {
   GetSubpass().GetLayout().BindAttachment(slot, binding);
+  //  only colored attachment should have colorBlendState
+  if (slot == ShaderAttachmentSlot::Color)
+  {
+    m_pipelineBuilder.OnColorAttachmentHasBound();
+    m_invalidPipeline = true;
+  }
   GetSubpass().GetRenderPass().SetInvalid();
 }
 
@@ -86,6 +92,18 @@ void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderSt
 void SubpassConfiguration::SetMeshTopology(MeshTopology topology) noexcept
 {
   m_pipelineBuilder.SetMeshTopology(topology);
+  m_invalidPipeline = true;
+}
+
+void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
+{
+  m_pipelineBuilder.SetDepthTestEnabled(enabled);
+  m_invalidPipeline = true;
+}
+
+void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
+{
+  m_pipelineBuilder.SetDepthTestCompareOperator(op);
   m_invalidPipeline = true;
 }
 

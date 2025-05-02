@@ -47,7 +47,7 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
       break;
     case ShaderAttachmentSlot::DepthStencil:
       m_depthStencilAttachment =
-        VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL};
+        VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
       break;
     default:
       throw std::invalid_argument("Unknown ShaderAttachmentSlot");

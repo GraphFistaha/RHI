@@ -109,7 +109,8 @@ IRenderTarget * Framebuffer::BeginFrame()
     auto [imageView, imgAvailSemaphore] = attachment->AcquireForRendering();
     if (!imageView)
       return nullptr;
-    m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
+    if (imgAvailSemaphore)
+      m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
     renderingImages.push_back(imageView);
   }
 
@@ -141,7 +142,7 @@ void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
 
   if (IInternalAttachment * ptr = dynamic_cast<IInternalAttachment *>(attachment))
   {
-    ptr->SetBuffering(m_framesCount);
+    //ptr->SetBuffering(m_framesCount);
     m_attachments[binding] = ptr;
     m_attachmentsChanged = true;
   }

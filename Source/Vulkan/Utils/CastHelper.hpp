@@ -9,7 +9,7 @@ namespace RHI::vulkan::utils
 template<typename InternalClassT, typename InterfaceClassT>
 constexpr decltype(auto) CastInterfaceClass2Internal(InterfaceClassT && obj)
 {
-    using ResultType = RHI::utils::copy_cv_reference_t<InterfaceClassT, InternalClassT>;
+  using ResultType = RHI::utils::copy_cv_reference_t<InterfaceClassT, InternalClassT>;
   return dynamic_cast<ResultType>(std::forward<InterfaceClassT>(obj));
 }
 
@@ -104,7 +104,7 @@ constexpr inline VkFormat CastInterfaceEnum2Vulkan<VkFormat, ImageFormat>(ImageF
     case ImageFormat::DEPTH:
       return VK_FORMAT_D32_SFLOAT;
     case ImageFormat::DEPTH_STENCIL:
-      return VK_FORMAT_D24_UNORM_S8_UINT;
+      return VK_FORMAT_D32_SFLOAT_S8_UINT;
     default:
       return VK_FORMAT_UNDEFINED;
   }

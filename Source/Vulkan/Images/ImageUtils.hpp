@@ -4,5 +4,6 @@
 
 namespace RHI::vulkan::utils
 {
-VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageViewType type);
+VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageViewType type,
+                            VkImageAspectFlags aspectFlags);
 }

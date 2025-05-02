@@ -39,8 +39,6 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSurfaceSwapchain()->SetExtent(
-    {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
   ShouldInvalidateScene = true;
 }
 
@@ -81,40 +79,43 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::ImageCreateArguments args;
+  {
+    args.format = RHI::ImageFormat::DEPTH_STENCIL;
+    args.extent = {800, 600, 1};
+    args.mipLevels = 1;
+    args.samples = RHI::SamplesCount::One;
+    args.shared = false;
+    args.type = RHI::ImageType::Image2D;
+  }
 
-  auto * swapchain = ctx->GetSurfaceSwapchain();
-  swapchain->AddImageAttachment(1, args);
+  auto * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(1, ctx->AllocAttachment(args));
 
-  auto * subpass = swapchain->CreateSubpass();
+  auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
+  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  trianglePipeline.BindAttachment(1, RHI::ShaderAttachmentSlot::DepthStencil);
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "colored_quad.vert");
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
                                 std::filesystem::path(SHADERS_FOLDER) / "colored_quad.frag");
   trianglePipeline.DefinePushConstant(sizeof(PushConstant),
                                       RHI::ShaderType::Vertex | RHI::ShaderType::Fragment);
-  //trianglePipeline.SetAttachmentUsage(RHI::ShaderImageSlot::Color, 0);
-  //trianglePipeline.SetAttachmentUsage(RHI::ShaderImageSlot::DepthStencil, 1);
+  trianglePipeline.EnableDepthTest(true);
 
   ShouldInvalidateScene = true;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    ctx->GetTransferer()->Flush();
-
-    if (RHI::IRenderTarget * renderTarget = swapchain->AcquireFrame())
+    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
     {
       renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
+      renderTarget->SetClearValue(1, 1.0f, 0);
       if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
       {
-        PushConstant constant;
-        constant.color = {1.0, 0.0, 0.0, 1.0};
-        constant.transform = {0.25, 0,    0.0, 0.25, //
-                              0.0,  0.25, 0.0, 0.25, //
-                              0.0,  0.0,  1.0, 0.25, //
-                              0.0,  0.0,  0.0, 1.0};
         // get size of window
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -124,15 +125,22 @@ int main()
         // set scissor
         subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
+        // draw first quad - Red quad
+        PushConstant constant;
+        constant.color = {1.0, 0.0, 0.0, 1.0};
+        constant.transform = {0.25, 0,    0.0, 0.25, //
+                              0.0,  0.25, 0.0, 0.25, //
+                              0.0,  0.0,  1.0, 0.25,  //
+                              0.0,  0.0,  0.0, 1.0};
         // draw first quad
         subpass->PushConstant(&constant, sizeof(constant));
         subpass->DrawVertices(6, 1);
 
-        //draw second quad
+        //draw second quad - Green quad
         constant.color = {0.0, 1.0, 0.0, 1.0};
-        constant.transform = {0.25, 0,    0.0, 0.0, //
-                              0.0,  0.25, 0.0, 0.0, //
-                              0.0,  0.0,  1.0, 0.0, //
+        constant.transform = {0.25, 0,    0.0, 0.0,  //
+                              0.0,  0.25, 0.0, 0.0,  //
+                              0.0,  0.0,  1.0, 0.5, //
                               0.0,  0.0,  0.0, 1.0};
         subpass->PushConstant(&constant, sizeof(constant));
         subpass->DrawVertices(6, 1);
@@ -140,9 +148,11 @@ int main()
 
         ShouldInvalidateScene = false;
       }
-
-      swapchain->FlushFrame();
+      framebuffer->EndFrame();
     }
+
+    ctx->Flush();
+    ctx->ClearResources();
   }
 
 

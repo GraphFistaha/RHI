@@ -17,7 +17,8 @@ Texture::Texture(Context & ctx, const ImageCreateArguments & args)
 {
   m_view =
     utils::CreateImageView(GetContext().GetDevice(), m_memBlock.GetImage(), GetInternalFormat(),
-                           utils::CastInterfaceEnum2Vulkan<VkImageViewType>(m_description.type));
+                           utils::CastInterfaceEnum2Vulkan<VkImageViewType>(m_description.type),
+                           VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 Texture::~Texture()

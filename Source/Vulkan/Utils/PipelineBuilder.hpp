@@ -13,53 +13,59 @@ namespace RHI::vulkan::utils
 struct PipelineBuilder final
 {
   PipelineBuilder();
-  VkPipeline Make(const VkDevice & device, const VkRenderPass & renderPass,
-                    uint32_t subpass_index, const VkPipelineLayout & layout);
+  RESTRICTED_COPY(PipelineBuilder);
+
+public:
+  VkPipeline Make(const VkDevice & device, const VkRenderPass & renderPass, uint32_t subpass_index,
+                  const VkPipelineLayout & layout);
   void Reset();
 
+public:
+  // shaders
   void AttachShader(RHI::ShaderType type, const std::filesystem::path & path);
-  void SetMeshTopology(MeshTopology topology) { m_topology = topology; }
-  void SetLineWidth(float width) { m_lineWidth = width; }
-  void SetPolygonMode(PolygonMode mode) { m_polygonMode = mode; }
-  void SetCullingMode(CullingMode mode, FrontFace front)
-  {
-    m_cullingMode = mode;
-    m_frontFace = front;
-  }
 
-  void SetBlendEnabled(bool value) { m_blendEnabled = value; }
+  // assembly
+  void SetMeshTopology(MeshTopology topology);
+  void SetPrimitiveRestartEnabled(bool value);
 
+  // rasterization
+  void SetLineWidth(float width);
+  void SetPolygonMode(PolygonMode mode);
+  void SetCullingMode(CullingMode mode, FrontFace front);
+
+  // depth stencil
+  void SetDepthTestEnabled(bool enabled);
+  void SetDepthWriteMode(bool enabled);
+  void SetDepthTestCompareOperator(CompareOperation op);
+
+  void SetStencilTestEnabled(bool enabled);
+
+  // blending
+  void OnColorAttachmentHasBound();
+  void SetBlendEnabled(uint32_t attachmentIdx, bool value);
+
+  // VAO settings
   void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type);
   void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset, uint32_t elemsCount,
                          InputAttributeElementType type);
 
 private:
-  MeshTopology m_topology = MeshTopology::Triangle;
+  VkPipelineDynamicStateCreateInfo m_dynamicStatesInfo{};
+  VkPipelineVertexInputStateCreateInfo m_vertexInputInfo{};
+  VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo{};
+  VkPipelineViewportStateCreateInfo m_viewportInfo{};
+  VkPipelineDepthStencilStateCreateInfo m_depthStencilInfo{};
+  VkPipelineRasterizationStateCreateInfo m_rasterizationInfo{};
+  VkPipelineMultisampleStateCreateInfo m_multisampleInfo{};
+  VkPipelineColorBlendStateCreateInfo m_colorBlendInfo{};
 
-  float m_lineWidth = 1.0f;
-  PolygonMode m_polygonMode;
-
-  CullingMode m_cullingMode;
-  FrontFace m_frontFace;
-
-  bool m_blendEnabled;
-  BlendOperation m_blendColorOp;
-  BlendOperation m_blendAlphaOp;
-  BlendFactor m_blendSrcColorFactor;
-  BlendFactor m_blendDstColorFactor;
-  BlendFactor m_blendSrcAlphaFactor;
-  BlendFactor m_blendDstAlphaFactor;
-
+  /// Attached shaders
   std::vector<std::pair<ShaderType, std::filesystem::path>> m_attachedShaders;
 
   std::vector<VkDynamicState> m_dynamicStates;
   std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendAttachments;
   std::vector<VkVertexInputBindingDescription> m_bindings;
   std::vector<VkVertexInputAttributeDescription> m_attributes;
-
-private:
-  PipelineBuilder(const PipelineBuilder &) = delete;
-  PipelineBuilder & operator=(const PipelineBuilder &) = delete;
 };
 
 } // namespace RHI::vulkan::utils

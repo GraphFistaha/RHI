@@ -29,7 +29,7 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
 
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
-  virtual void BindAttachment(ShaderAttachmentSlot slot, uint32_t binding) override;
+  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
@@ -43,6 +43,9 @@ public: // ISubpassConfiguration interface
 
   virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
   virtual void SetMeshTopology(MeshTopology topology) noexcept override;
+
+  virtual void EnableDepthTest(bool enabled) noexcept override;
+  virtual void SetDepthFunc(CompareOperation op) noexcept override;
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;

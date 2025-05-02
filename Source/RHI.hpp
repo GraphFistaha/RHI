@@ -119,6 +119,18 @@ enum class BlendFactor : uint8_t
   OneMinusSrc1Alpha,
 };
 
+enum class CompareOperation
+{
+  Never = 0,
+  Less = 1,
+  Equal = 2,
+  LessOrEqual = 3,
+  Greater = 4,
+  NotEqual = 5,
+  GreaterOrEqual = 6,
+  Always = 7
+};
+
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -211,7 +223,7 @@ struct ISubpassConfiguration : public IInvalidable
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
-  virtual void BindAttachment(ShaderAttachmentSlot slot, uint32_t binding) = 0;
+  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -223,6 +235,9 @@ struct ISubpassConfiguration : public IInvalidable
   virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * out_array[]) = 0;
   virtual void SetMeshTopology(MeshTopology topology) noexcept = 0;
+
+  virtual void EnableDepthTest(bool enabled) noexcept = 0;
+  virtual void SetDepthFunc(CompareOperation op) noexcept = 0;
   /// @brief Get subpass index
   virtual uint32_t GetSubpassIndex() const = 0;
 };
@@ -247,7 +262,6 @@ struct ISubpass
   virtual void SetEnabled(bool enabled) noexcept = 0;
   virtual bool IsEnabled() const noexcept = 0;
   virtual bool ShouldBeInvalidated() const noexcept = 0;
-  virtual void BindAttachment(uint32_t attachmentIdx, ShaderAttachmentSlot slot) = 0;
 
   /// @brief draw vertices command (analog glDrawArrays)
   virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,

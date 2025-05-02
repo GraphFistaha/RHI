@@ -131,9 +131,9 @@ int main()
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
   auto * subpass = framebuffer->CreateSubpass();
-  subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
+  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment,

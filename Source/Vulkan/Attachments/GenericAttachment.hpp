@@ -4,8 +4,8 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Graphics/TextureInterface.hpp"
-#include "ImageLayoutTransferer.hpp"
+#include "../Images/ImageLayoutTransferer.hpp"
+#include "Attachment.hpp"
 
 namespace RHI::vulkan
 {
@@ -15,23 +15,23 @@ struct Context;
 namespace RHI::vulkan
 {
 
-struct BufferedTexture : public IAttachment,
-                         public OwnedBy<Context>
+struct GenericAttachment : public IAttachment,
+                           public IInternalAttachment,
+                           public OwnedBy<Context>
 {
-  explicit BufferedTexture(Context & ctx, const ImageCreateArguments & m_description);
-  virtual ~BufferedTexture() override;
+  explicit GenericAttachment(Context & ctx, const ImageCreateArguments & m_description);
+  virtual ~GenericAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
-public: // ITexture interface
-  virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const CopyImageArguments & args) override;
+public: // IAttachment interface
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const ImageRegion & region) override;
   virtual ImageCreateArguments GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;
+  virtual void BlitTo(ITexture* texture) override;
 
-public: //ITexture interface
+public: //IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
   virtual void TransferLayout(details::CommandBuffer & commandBuffer,
                               VkImageLayout layout) override;
@@ -40,7 +40,7 @@ public: //ITexture interface
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
 
-public: // IAttachment interface
+public: // IInternalAttachment interface
   virtual void Invalidate() override;
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
@@ -55,8 +55,7 @@ protected:
 
   std::vector<memory::MemoryBlock> m_images;    ///< memory for image instances
   std::vector<ImageLayoutTransferer> m_layouts; ///< each image must control its layout
-  std::vector<VkImageView> m_samplerViews;
-  std::vector<VkImageView> m_attachmentViews;
+  std::vector<VkImageView> m_views;
   uint32_t m_activeImage = 0;
 
   uint32_t m_desiredInstancesCount = 0;

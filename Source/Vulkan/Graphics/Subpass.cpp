@@ -64,11 +64,6 @@ bool Subpass::ShouldBeInvalidated() const noexcept
   return m_shouldBeInvalidated;
 }
 
-void Subpass::BindAttachment(uint32_t attachmentIdx, ShaderAttachmentSlot slot)
-{
-  GetLayout().BindAttachment(slot, attachmentIdx);
-}
-
 void Subpass::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
                            std::uint32_t firstVertex, std::uint32_t firstInstance)
 {

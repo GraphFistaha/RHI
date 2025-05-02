@@ -5,13 +5,13 @@
 #include <RHI.hpp>
 #include <VkBootstrap.h>
 
+#include "Attachments/GenericAttachment.hpp"
+#include "Attachments/SurfacedAttachment.hpp"
 #include "CommandsExecution/CommandBuffer.hpp"
 #include "Graphics/Framebuffer.hpp"
 #include "Graphics/RenderPass.hpp"
 #include "Graphics/RenderTarget.hpp"
 #include "Graphics/SubpassConfiguration.hpp"
-//#include "Images/GenericAttachment.hpp"
-#include "Attachments/SurfacedAttachment.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Texture.hpp"
 #include "Resources/Transferer.hpp"
@@ -239,9 +239,8 @@ ITexture * Context::AllocImage(const ImageCreateArguments & args)
 
 IAttachment * Context::AllocAttachment(const ImageCreateArguments & args)
 {
-  //auto && texture = std::make_unique<GenericAttachment>(*this, args);
-  //return m_textures.emplace_back(std::move(texture)).get();
-  return nullptr;
+  auto && attachment = std::make_unique<GenericAttachment>(*this, args);
+  return m_attachments.emplace_back(std::move(attachment)).get();
 }
 
 void Context::ClearResources()

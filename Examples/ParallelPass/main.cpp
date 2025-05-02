@@ -153,8 +153,8 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwin
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   m_subpass = framebuffer.CreateSubpass();
-  m_subpass->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   auto && trianglePipeline = m_subpass->GetConfiguration();
+  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
                                 std::filesystem::path(SHADERS_FOLDER) / "triangle.vert");
