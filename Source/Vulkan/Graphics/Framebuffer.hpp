@@ -39,6 +39,8 @@ public: // IFramebuffer interface
   /// @param frames_count
   virtual void SetFramesCount(uint32_t frames_count) override;
 
+  virtual void Resize(uint32_t width, uint32_t height) override;
+
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
   void Invalidate();

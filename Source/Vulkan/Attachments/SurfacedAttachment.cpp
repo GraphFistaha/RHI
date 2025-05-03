@@ -224,6 +224,12 @@ void SurfacedAttachment::TransferLayout(VkImageLayout newLayout) noexcept
   m_layouts[m_activeImage].TransferLayout(newLayout);
 }
 
+void SurfacedAttachment::Resize(const VkExtent2D & new_extent) noexcept
+{
+  // do nothing because resizing handled in AcquireForRend
+  m_invalidSwapchain = true;
+}
+
 // ---------------------------- Private -----------------
 
 void SurfacedAttachment::DestroySwapchain() noexcept

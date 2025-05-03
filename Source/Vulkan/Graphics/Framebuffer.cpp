@@ -160,8 +160,16 @@ void Framebuffer::ClearAttachments() noexcept
 
 void Framebuffer::SetFramesCount(uint32_t framesCount)
 {
-  for (auto && attachment : m_attachments)
+  for (auto * attachment : m_attachments)
     attachment->SetBuffering(framesCount);
+  m_attachmentsChanged = true;
+}
+
+void Framebuffer::Resize(uint32_t width, uint32_t height)
+{
+  for (auto * attachment : m_attachments)
+    attachment->Resize(VkExtent2D(width, height));
+  m_attachmentsChanged = true;
 }
 
 } // namespace RHI::vulkan

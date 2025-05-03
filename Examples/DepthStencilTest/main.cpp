@@ -34,11 +34,13 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
 
 // flag means that you should clear and update trianglePipelineCommands (see in main)
 bool ShouldInvalidateScene = true;
+RHI::IFramebuffer * defaultFramebuffer = nullptr;
 
 // Resize window callback
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
+  defaultFramebuffer->Resize(width, height);
   ShouldInvalidateScene = true;
 }
 
@@ -88,7 +90,7 @@ int main()
     args.type = RHI::ImageType::Image2D;
   }
 
-  auto * framebuffer = ctx->CreateFramebuffer(3);
+  auto * framebuffer = defaultFramebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
   framebuffer->AddAttachment(1, ctx->AllocAttachment(args));
 

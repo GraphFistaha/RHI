@@ -135,6 +135,19 @@ VkExtent3D GenericAttachment::GetInternalExtent() const noexcept
 
 void GenericAttachment::Invalidate()
 {
+  if (m_changedSize)
+  {
+    for (auto && view : m_views)
+      GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(view), nullptr);
+    for (auto && memBlock : m_images)
+      GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(memBlock), nullptr);
+    m_images.clear();
+    m_views.clear();
+
+    m_changedSize = false;
+    m_changedImagesCount = true;
+  }
+
   if (m_changedImagesCount)
   {
     while (m_images.size() > m_desiredInstancesCount)
@@ -198,6 +211,12 @@ VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
 void GenericAttachment::TransferLayout(VkImageLayout layout) noexcept
 {
   m_layouts[m_activeImage].TransferLayout(layout);
+}
+
+void GenericAttachment::Resize(const VkExtent2D & new_extent) noexcept
+{
+  m_description.extent = {new_extent.width, new_extent.height, 1};
+  m_changedSize = true;
 }
 
 } // namespace RHI::vulkan

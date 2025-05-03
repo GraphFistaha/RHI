@@ -48,6 +48,7 @@ public: // IInternalAttachment interface
   virtual uint32_t GetBuffering() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
+  virtual void Resize(const VkExtent2D& new_extent) noexcept override;
 
 protected:
   std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
@@ -60,6 +61,7 @@ protected:
 
   uint32_t m_desiredInstancesCount = 0;
   bool m_changedImagesCount = false;
+  bool m_changedSize = false;
 };
 
 } // namespace RHI::vulkan
