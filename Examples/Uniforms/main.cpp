@@ -1,13 +1,15 @@
+#include <cmath>
 #include <cstdio>
+#include <cstring>
 
 #include <GLFW/glfw3.h>
+#include <RHI.hpp>
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include <GLFW/glfw3native.h>
-#include <RHI.hpp>
 
 // Custom log function used by RHI::Context
 void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
@@ -23,6 +25,9 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
     case RHI::LogMessageStatus::LOG_ERROR:
       std::printf("ERROR: - %s\n", message.c_str());
       break;
+    case RHI::LogMessageStatus::LOG_DEBUG:
+      std::printf("DEBUG: - %s\n", message.c_str());
+      break;
   }
 }
 
@@ -33,7 +38,6 @@ bool ShouldInvalidateScene = true;
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ctx->GetSwapchain().Invalidate();
   ShouldInvalidateScene = true;
 }
 
@@ -75,125 +79,88 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(surface, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  // pipeline must be associated with some framebuffer.
-  // We want to draw info window surface so we must attach pipeline to DefaultFramebuffer (like OpenGL)
-  auto && defaultFramebuffer = ctx->GetSwapchain().GetDefaultFramebuffer();
+  // create buffers for each uniform variables
+  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
+  auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
-  // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto && trianglePipeline = ctx->CreatePipeline(defaultFramebuffer, 0 /*index of subpass*/);
-  // set shaders
-  trianglePipeline->AttachShader(RHI::ShaderType::Vertex, L"Shaders/uniform.vert");
-  trianglePipeline->AttachShader(RHI::ShaderType::Fragment, L"Shaders/uniform.frag");
+  auto * framebuffer = ctx->CreateFramebuffer(3);
+  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  auto * subpass = framebuffer->CreateSubpass();
+  auto && trianglePipeline = subpass->GetConfiguration();
+  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "uniform.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "uniform.frag");
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
-                                      RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
+  trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
+  trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
+                                     RHI::InputAttributeElementType::FLOAT);
 
-  auto && tbuf =
-    trianglePipeline->DeclareUniform("ub", 0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex,
-                                     sizeof(float));
+  // declare uniform variables
+  auto && u_t =
+    trianglePipeline.DeclareUniform(0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
+  u_t->Invalidate();
+  u_t->AssignBuffer(*tBuf); // bind buffer to uniform variable
 
-  auto && transformBuf =
-    trianglePipeline->DeclareUniform("tb", 1, RHI::ShaderType::Vertex, 2 * sizeof(float));
-  // don't forget to call Invalidate to apply all changed settings
-  trianglePipeline->Invalidate();
+  auto && u_transform = trianglePipeline.DeclareUniform(1, RHI::ShaderType::Vertex);
+  u_transform->Invalidate();
+  u_transform->AssignBuffer(*transformBuf); // bind buffer to uniform variable
 
   // create vertex buffer
   auto && vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer);
-  // fill buffer with Mapping into CPU memory
-  if (auto scoped_map = vertexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Vertices, VerticesCount * 5 * sizeof(float));
-    // in the end of scope mapping will be destroyed
-  }
-  // to make sure that buffer is sent on GPU
-  vertexBuffer->Flush();
-
+    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
+  vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto indexBuffer =
-    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer);
-  // fill buffer with Mapping into CPU memory
-  if (auto scoped_map = indexBuffer->Map())
-  {
-    std::memcpy(scoped_map.get(), Indices, IndicesCount * sizeof(uint32_t));
-    // in the end of scope mapping will be destroyed
-  }
-  // to make sure that buffer is sent on GPU
-  indexBuffer->Flush();
+    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
+  indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
-
-  // command buffer for drawing triangle
-  auto && trianglePipelineCommands = ctx->GetSwapchain().CreateCommandBuffer();
-  ShouldInvalidateScene = true;
   float x = 0.0f;
   while (!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
 
-    // fill trianglePipelineCommands
-    if (ShouldInvalidateScene)
+    float t_val = std::abs(std::sin(x));
+    tBuf->UploadSync(&t_val, sizeof(float));
+
+    std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
+    transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
+
+    x += 0.001f;
+    ctx->Flush();
+
+    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
     {
-      // get size of window
-      int width, height;
-      glfwGetFramebufferSize(window, &width, &height);
-      // clear commands buffer
-      trianglePipelineCommands->Reset();
-      // enter in editing mode.
-      trianglePipelineCommands->BeginWriting(defaultFramebuffer, *trianglePipeline);
-      // here we can push all commands you want
+      renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
+      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
+      {
+        // get size of window
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        subpass->BeginPass();
+        // set viewport
+        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        // set scissor
+        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        // draw triangle
+        subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+        subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+        subpass->DrawIndexedVertices(IndicesCount, 1);
+        subpass->EndPass();
 
-      // set viewport
-      trianglePipelineCommands->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      // set scissor
-      trianglePipelineCommands->SetScissor(0, 0, static_cast<uint32_t>(width),
-                                           static_cast<uint32_t>(height));
-      // draw triangle
-      trianglePipelineCommands->BindVertexBuffer(0, *vertexBuffer, 0);
-      trianglePipelineCommands->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-      trianglePipelineCommands->DrawIndexedVertices(IndicesCount, 1);
+        ShouldInvalidateScene = false;
+      }
 
-      // finish editing mode
-      trianglePipelineCommands->EndWriting();
-
-      ShouldInvalidateScene = false;
+      framebuffer->EndFrame();
     }
 
-    if (auto map = tbuf->Map())
-    {
-      float t_val = std::abs(std::sinf(x));
-      std::memcpy(map.get(), &t_val, sizeof(float));
-    }
-
-    if (auto map = transformBuf->Map())
-    {
-      float cos_val = std::cosf(x);
-      float sin_val = std::sinf(x);
-      std::memcpy(map.get(), &sin_val, sizeof(float));
-      std::memcpy(reinterpret_cast<char *>(map.get()) + sizeof(float), &cos_val, sizeof(float));
-    }
-
-    x += 0.0001;
-
-    // swapchain used as generic interface for drawing on window
-    auto && swapchain = ctx->GetSwapchain();
-    // begin frame returns Command buffer you should fill.
-    // It's empty on this step.
-    // Written commands will be upload to GPU and executed
-    auto && commands = swapchain.BeginFrame({0.3f, 0.3f, 0.5f, 1.0f});
-    // push trianglePipelineCommands to CommandBuffer for drawing
-    commands->AddCommands(*trianglePipelineCommands);
-    // finish frame and output image on window
-    swapchain.EndFrame();
+    ctx->ClearResources();
   }
 
-  // wait while gpu is idle to destroy context and its objects correctly
-  ctx->WaitForIdle();
   glfwTerminate();
   return 0;
 }

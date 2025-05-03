@@ -1,13 +1,21 @@
 #include "VulkanContext.hpp"
 
+#include <format>
+
 #include <RHI.hpp>
 #include <VkBootstrap.h>
 
-#include "BufferGPU.hpp"
-#include "CommandBuffer.hpp"
-#include "Framebuffer.hpp"
-#include "Pipeline.hpp"
-#include "Swapchain.hpp"
+#include "Attachments/GenericAttachment.hpp"
+#include "Attachments/SurfacedAttachment.hpp"
+#include "CommandsExecution/CommandBuffer.hpp"
+#include "Graphics/Framebuffer.hpp"
+#include "Graphics/RenderPass.hpp"
+#include "Graphics/RenderTarget.hpp"
+#include "Graphics/SubpassConfiguration.hpp"
+#include "Resources/BufferGPU.hpp"
+#include "Resources/Texture.hpp"
+#include "Resources/Transferer.hpp"
+#include "Utils/CastHelper.hpp"
 
 // --------------------- Static functions ------------------------------
 
@@ -50,7 +58,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, RHI::Log
                     .request_validation_layers()
 #endif
                     .set_debug_callback(VulkanDebugCallback)
-                    .set_debug_callback_user_data_pointer(logFunc)
+                    .set_debug_callback_user_data_pointer(reinterpret_cast<void *>(logFunc))
                     .set_minimum_instance_version(apiVersion)
                     .build();
   if (!inst_ret || !inst_ret.has_value())
@@ -66,7 +74,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, RHI::Log
   return result;
 }
 
-vk::SurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & config)
+VkSurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & config)
 {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   VkResult result;
@@ -85,7 +93,7 @@ vk::SurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & conf
 #endif
   if (result != VK_SUCCESS)
     throw std::runtime_error("failed to create window surface!");
-  return vk::SurfaceKHR(surface);
+  return VkSurfaceKHR(surface);
 }
 
 vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
@@ -93,10 +101,11 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
-  auto phys_ret = selector.set_surface(surface)
-                    .require_present(surface != VK_NULL_HANDLE)
-                    .set_minimum_version(apiVersion.first, apiVersion.second)
-                    .select();
+  auto phys_ret =
+    selector.set_surface(surface)
+      .require_present(surface != VK_NULL_HANDLE)
+      //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
+      .select();
 
   if (!phys_ret)
   {
@@ -117,14 +126,26 @@ constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 struct Context::Impl final
 {
-  Impl(const char * appName, const SurfaceConfig & config, vk::SurfaceKHR & surface,
-       LoggingFunc logFunc)
+  explicit Impl(const char * appName, const SurfaceConfig * config, LoggingFunc logFunc)
   {
     m_instance = CreateInstance("AppName", VulkanAPIVersion, logFunc);
-    surface = CreateSurface(m_instance, config);
-    m_gpu = SelectPhysicalDevice(m_instance, surface, VulkanAPIVersionPair);
+    logFunc(LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
+    if (config)
+    {
+      m_surface = CreateSurface(m_instance, *config);
+      logFunc(LogMessageStatus::LOG_DEBUG, "VkSurfaceKHR has been created successfully");
+    }
+    else
+    {
+      m_surface = VK_NULL_HANDLE;
+      logFunc(LogMessageStatus::LOG_DEBUG, "Context doesn't have VkSurvaceKHR");
+    }
+    m_gpu = SelectPhysicalDevice(m_instance, m_surface, VulkanAPIVersionPair);
+    logFunc(LogMessageStatus::LOG_DEBUG,
+            "VkPhysicalDevice has been selected successfully" + m_gpu.name);
     vkb::DeviceBuilder device_builder{m_gpu};
     auto dev_ret = device_builder.build();
+    logFunc(LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
     if (!dev_ret)
     {
       std::string msg =
@@ -137,20 +158,32 @@ struct Context::Impl final
 
   ~Impl()
   {
+    vkb::destroy_surface(m_instance, m_surface);
     vkb::destroy_device(m_device);
     vkb::destroy_instance(m_instance);
   }
 
-  VkDevice GetDevice() const { return m_device; }
-  VkInstance GetInstance() const { return m_instance; }
-  VkPhysicalDevice GetGPU() const { return m_gpu; }
+  VkDevice GetDevice() const noexcept { return m_device; }
+  VkInstance GetInstance() const noexcept { return m_instance; }
+  VkPhysicalDevice GetGPU() const noexcept { return m_gpu; }
+  VkSurfaceKHR GetSurface() const noexcept { return m_surface; }
+  const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept
+  {
+    return m_gpu.properties;
+  }
 
   std::pair<uint32_t, VkQueue> GetQueue(vkb::QueueType type) const
   {
     auto queue_ret = m_device.get_queue(type);
-    auto familly_index = m_device.get_queue_index(type);
+    // if device doesn't have compute or transfer queue, try graphics for that
+    if ((type == vkb::QueueType::compute || type == vkb::QueueType::transfer) && !queue_ret)
+    {
+      type = vkb::QueueType::graphics;
+      queue_ret = m_device.get_queue(type);
+    }
     if (!queue_ret)
-      throw std::runtime_error("failed to request queue");
+      return {-1, VK_NULL_HANDLE};
+    auto familly_index = m_device.get_queue_index(type);
     return std::make_pair(familly_index.value(), queue_ret.value());
   }
 
@@ -159,58 +192,86 @@ private:
   vkb::PhysicalDevice m_gpu;
   vkb::Device m_device;
   vkb::DispatchTable m_dispatchTable;
+  VkSurfaceKHR m_surface;
 };
 
 
-Context::Context(const SurfaceConfig & config, LoggingFunc logFunc)
+Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
-  vk::SurfaceKHR surface;
-  m_impl = std::make_unique<Impl>("appName", config, surface, m_logFunc);
-  m_swapchain = std::make_unique<Swapchain>(*this, surface);
-  m_allocator = std::make_unique<BuffersAllocator>(*this);
+  m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
+  m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
+                                                          m_impl->GetDevice(), GetVulkanVersion());
+  m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
+  auto surfaceTexture =
+    std::make_unique<SurfacedAttachment>(*this, m_impl->GetSurface(), SamplesCount::One);
+  m_attachments.emplace_back(std::move(surfaceTexture));
 }
 
 Context::~Context()
 {
-  vkDeviceWaitIdle(m_impl->GetDevice());
 }
 
-std::unique_ptr<IFramebuffer> Context::CreateFramebuffer() const
+IAttachment * Context::GetSurfaceImage()
 {
-  return nullptr; //std::make_unique<Framebuffer>(*this, GetSwapchain().GetBuffersCount());
+  return m_attachments[0].get();
 }
 
-std::unique_ptr<IPipeline> Context::CreatePipeline(const IFramebuffer & framebuffer,
-                                                   uint32_t subpassIndex) const
+IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
 {
-  return std::make_unique<Pipeline>(*this, framebuffer, subpassIndex);
+  auto & result = m_framebuffers.emplace_back(*this);
+  result.SetFramesCount(frames_count);
+  return &result;
 }
 
-std::unique_ptr<IBufferGPU> Context::AllocBuffer(size_t size, BufferGPUUsage usage,
-                                                 bool mapped /* = false*/) const
+IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
 {
-  return std::make_unique<BufferGPU>(size, usage, *m_allocator, mapped);
+  auto && result = m_buffers.emplace_back(*this, size, usage, allowHostAccess);
+  return &result;
 }
 
-void Context::WaitForIdle() const
+ITexture * Context::AllocImage(const ImageCreateArguments & args)
 {
-  vkDeviceWaitIdle(GetDevice());
+  auto && texture = std::make_unique<Texture>(*this, args);
+  auto && result = m_textures.emplace_back(std::move(texture));
+  return result.get();
 }
 
-const vk::Instance Context::GetInstance() const
+IAttachment * Context::AllocAttachment(const ImageCreateArguments & args)
+{
+  auto && attachment = std::make_unique<GenericAttachment>(*this, args);
+  return m_attachments.emplace_back(std::move(attachment)).get();
+}
+
+void Context::ClearResources()
+{
+  m_gc->ClearObjects();
+}
+
+void Context::Flush()
+{
+  for (auto && [thread_id, transferer] : m_transferers)
+    transferer.DoTransfer();
+}
+
+VkInstance Context::GetInstance() const noexcept
 {
   return m_impl->GetInstance();
 }
 
-const vk::Device Context::GetDevice() const
+VkDevice Context::GetDevice() const noexcept
 {
   return m_impl->GetDevice();
 }
 
-const vk::PhysicalDevice Context::GetGPU() const
+VkPhysicalDevice Context::GetGPU() const noexcept
 {
   return m_impl->GetGPU();
+}
+
+const VkPhysicalDeviceProperties & Context::GetGpuProperties() const & noexcept
+{
+  return m_impl->GetGpuProperties();
 }
 
 std::pair<uint32_t, VkQueue> Context::GetQueue(QueueType type) const
@@ -218,25 +279,71 @@ std::pair<uint32_t, VkQueue> Context::GetQueue(QueueType type) const
   return m_impl->GetQueue(static_cast<vkb::QueueType>(type));
 }
 
-uint32_t Context::GetVulkanVersion() const
+uint32_t Context::GetVulkanVersion() const noexcept
 {
   return VulkanAPIVersion;
 }
 
 void Context::Log(LogMessageStatus status, const std::string & message) const noexcept
 {
+#ifdef NDEBUG
+  if (m_logFunc && status != LogMessageStatus::LOG_DEBUG)
+    m_logFunc(status, message);
+#else
   if (m_logFunc)
     m_logFunc(status, message);
+#endif
+}
+
+void Context::WaitForIdle() const noexcept
+{
+  vkDeviceWaitIdle(GetDevice());
+}
+
+Transferer & Context::GetTransferer() & noexcept
+{
+  auto id = std::this_thread::get_id();
+  auto it = m_transferers.find(id);
+  if (it == m_transferers.end())
+  {
+    bool inserted = false;
+    std::tie(it, inserted) = m_transferers.insert({id, Transferer(*this)});
+    assert(inserted);
+  }
+  return it->second;
+}
+
+const memory::MemoryAllocator & Context::GetBuffersAllocator() const & noexcept
+{
+  return *m_allocator;
+}
+
+const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const & noexcept
+{
+  return *m_gc;
 }
 
 } // namespace RHI::vulkan
 
 namespace RHI
 {
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
+std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config /* = nullptr*/,
                                         LoggingFunc loggingFunc /* = nullptr*/)
 {
-  return std::make_unique<vulkan::Context>(config, loggingFunc);
+  try
+  {
+    return std::make_unique<vulkan::Context>(config, loggingFunc);
+  }
+  catch (const std::exception & e)
+  {
+    loggingFunc(LogMessageStatus::LOG_ERROR, e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    loggingFunc(LogMessageStatus::LOG_ERROR, "Unknown error happend while creating VulkanContext");
+    return nullptr;
+  }
 }
 } // namespace RHI
 
@@ -244,18 +351,18 @@ std::unique_ptr<IContext> CreateContext(const SurfaceConfig & config,
 namespace RHI::vulkan::utils
 {
 
-vk::Semaphore CreateVkSemaphore(vk::Device device)
+VkSemaphore CreateVkSemaphore(VkDevice device)
 {
-  VkSemaphoreCreateInfo info{};
   VkSemaphore result = VK_NULL_HANDLE;
+  VkSemaphoreCreateInfo info{};
   info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   // Don't use createSemaphore in dispatchTable because it's broken
   if (vkCreateSemaphore(device, &info, nullptr, &result) != VK_SUCCESS)
     throw std::runtime_error("failed to create semaphore");
-  return vk::Semaphore(result);
+  return VkSemaphore(result);
 }
 
-vk::Fence CreateFence(vk::Device device, bool locked)
+VkFence CreateFence(VkDevice device, bool locked)
 {
   VkFenceCreateInfo info{};
   VkFence result = VK_NULL_HANDLE;
@@ -265,19 +372,6 @@ vk::Fence CreateFence(vk::Device device, bool locked)
   // Don't use createFence in dispatchTable because it's broken
   if (vkCreateFence(device, &info, nullptr, &result) != VK_SUCCESS)
     throw std::runtime_error("failed to create fence");
-  return vk::Fence(result);
-}
-
-vk::CommandPool CreateCommandPool(vk::Device device, uint32_t queue_family_index)
-{
-  VkCommandPool commandPool = VK_NULL_HANDLE;
-
-  VkCommandPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = queue_family_index;
-  if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-    throw std::runtime_error("failed to create command pool!");
-  return vk::CommandPool{commandPool};
+  return VkFence(result);
 }
 } // namespace RHI::vulkan::utils

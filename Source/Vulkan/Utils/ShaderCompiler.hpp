@@ -5,9 +5,16 @@
 #include <string>
 #include <vector>
 
-#include "../VulkanContext.hpp"
+#include <RHI.hpp>
+#include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan::details
+namespace RHI::vulkan
+{
+constexpr const char * apiFolder = ".vulkan";
+constexpr const char * shaderExtension = ".spv";
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan::utils
 {
 
 /// @brief reads shader SPIR-V file as binary
@@ -16,7 +23,11 @@ namespace RHI::vulkan::details
 std::vector<uint32_t> ReadSPIRV(const std::filesystem::path & path)
 {
   std::vector<uint32_t> words;
+#ifdef _WIN32
   FILE * f = _wfopen(path.c_str(), L"rb");
+#else
+  FILE * f = fopen(path.c_str(), "rb");
+#endif
   if (f)
   {
     fseek(f, 0, SEEK_END);
@@ -37,7 +48,7 @@ std::vector<uint32_t> ReadSPIRV(const std::filesystem::path & path)
 /// @param ctx - vulkan context
 /// @param filename - path to file
 /// @return compiled shader module
-vk::ShaderModule BuildShaderModule(const vk::Device & device, const std::filesystem::path & path)
+VkShaderModule BuildShaderModule(const VkDevice & device, const std::filesystem::path & path)
 {
   auto code = ReadSPIRV(RHI::details::ResolveShaderExtension(path, apiFolder, shaderExtension));
   VkShaderModuleCreateInfo createInfo{};
@@ -49,7 +60,7 @@ vk::ShaderModule BuildShaderModule(const vk::Device & device, const std::filesys
   if (VkResult result = vkCreateShaderModule(device, &createInfo, nullptr, &module);
       result != VK_SUCCESS)
     throw std::runtime_error("failed to create shader module!");
-  return vk::ShaderModule(module);
+  return VkShaderModule(module);
 }
 
-} // namespace RHI::vulkan::details
+} // namespace RHI::vulkan::utils

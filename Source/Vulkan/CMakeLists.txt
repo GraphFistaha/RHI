@@ -1,44 +1,92 @@
 target_sources (${PROJECT_NAME}
 PRIVATE
-	"VulkanContext.cpp"
-	"Swapchain.cpp"
-	"Framebuffer.cpp" 
-	"Pipeline.cpp" 
-	"Utils/PipelineBuilder.cpp" 
-	"Utils/FramebufferBuilder.cpp"
-	"CommandBuffer.cpp" 
-	"BufferGPU.cpp"
-	"DescriptorsBuffer.cpp"
-PRIVATE
-	"VulkanContext.hpp"
-	"Swapchain.hpp"
-	"Framebuffer.hpp"
-	"Pipeline.hpp"
-	"Utils/Builders.hpp"
-	"CommandBuffer.hpp"
-	"BufferGPU.hpp"
-	"DescriptorsBuffer.hpp"
+	VulkanContext.cpp
+	VulkanContext.hpp
+	GarbageCollector.cpp
+	GarbageCollector.hpp
+	Memory/MemoryAllocator.hpp
+	Memory/MemoryAllocator.cpp
+	Memory/MemoryBlock.cpp
+	Memory/MemoryBlock.hpp
+
+	Graphics/Framebuffer.cpp
+	Graphics/Framebuffer.hpp
+	Graphics/DescriptorsBuffer.cpp
+	Graphics/DescriptorsBuffer.hpp
+	Graphics/Subpass.cpp
+	Graphics/Subpass.hpp
+	Graphics/SubpassLayout.cpp
+	Graphics/SubpassLayout.hpp
+	Graphics/RenderPass.cpp
+	Graphics/RenderPass.hpp
+	Graphics/RenderTarget.cpp 
+	Graphics/RenderTarget.hpp
+	Graphics/SubpassConfiguration.cpp
+	Graphics/SubpassConfiguration.hpp
+
+	Graphics/Uniforms/BaseUniform.hpp
+	Graphics/Uniforms/SamplerUniform.hpp
+	Graphics/Uniforms/SamplerUniform.cpp
+	Graphics/Uniforms/BufferUniform.cpp
+	Graphics/Uniforms/BufferUniform.hpp
+
+
+	Utils/CastHelper.hpp
+	Utils/DescriptorSetLayoutBuilder.cpp
+	Utils/DescriptorSetLayoutBuilder.hpp
+	Utils/FramebufferBuilder.cpp
+	Utils/FramebufferBuilder.hpp
+	Utils/PipelineBuilder.cpp 
+	Utils/PipelineBuilder.hpp
+	Utils/PipelineLayoutBuilder.cpp
+	Utils/PipelineLayoutBuilder.hpp
+	Utils/RenderPassBuilder.cpp
+	Utils/RenderPassBuilder.hpp
+	Utils/ShaderCompiler.hpp
+
+	
+	Images/ImageLayoutTransferer.cpp
+	Images/ImageLayoutTransferer.hpp
+	Images/InternalImageTraits.hpp
+	Images/ImageFormatsConversation.cpp
+	Images/ImageFormatsConversation.hpp
+	Images/TextureInterface.hpp
+	Images/ImageUtils.hpp
+	Images/ImageUtils.cpp
+	Attachments/GenericAttachment.cpp
+	Attachments/GenericAttachment.hpp
+	Attachments/Attachment.hpp
+	Attachments/SurfacedAttachment.cpp
+	Attachments/SurfacedAttachment.hpp
+
+	Resources/Texture.cpp
+	Resources/Texture.hpp
+	Resources/BufferGPU.cpp
+	Resources/BufferGPU.hpp
+	Resources/Transferer.hpp
+	Resources/Transferer.cpp
+	
+
+	CommandsExecution/CommandBuffer.cpp 
+	CommandsExecution/CommandBuffer.hpp 
+	CommandsExecution/Submitter.cpp
+	CommandsExecution/Submitter.hpp
+	CommandsExecution/AsyncTask.cpp
+	CommandsExecution/AsyncTask.hpp
+	CommandsExecution/CompositeAsyncTask.cpp
+	CommandsExecution/CompositeAsyncTask.hpp
 )
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)
 
-message(STATUS "Fetch vkBootstrap")
-FetchContent_Declare(
-    vk_bootstrap
-    GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-    GIT_TAG        main #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
+target_compile_definitions(${PROJECT_NAME} 
+PRIVATE
+	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
-FetchContent_MakeAvailable(vk_bootstrap)
 
-message(STATUS "Fetch VulkanMemoryAllocator")
-FetchContent_Declare(
-    VulkanMemoryAllocator
-    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-    GIT_TAG        master #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
-	GIT_PROGRESS   TRUE
-)
-FetchContent_MakeAvailable(VulkanMemoryAllocator)
+add_subdirectory(ThirdParty/VulkanMemoryAllocator)
+add_subdirectory(ThirdParty/VkBootstrap)
 #find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME}
 PRIVATE

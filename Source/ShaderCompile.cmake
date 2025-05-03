@@ -25,14 +25,15 @@ FetchContent_MakeAvailable(glslcc)
 
 
 FUNCTION(TARGET_PRECOMPILE_SHADERS)
-	set(oneValueArgs TARGET API)
+	set(oneValueArgs TARGET API SHADERS_DIRECTORY)
 	set(multiValueArgs SHADERS)
 	cmake_parse_arguments(PARSED_ARG "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
 	message(STATUS "Compile shaders for ${PARSED_ARG_TARGET} using ${PARSED_ARG_API} backend")
 	string(TOLOWER ${PARSED_ARG_API} API_FOLDER)
-	set(RESULT_FOLDER ${APP_DIR}/.${API_FOLDER}/Shaders)
 
+	get_target_property(TARGET_DIR ${PARSED_ARG_TARGET} RUNTIME_OUTPUT_DIRECTORY)
+	set(RESULT_FOLDER ${TARGET_DIR}/.${API_FOLDER})
 	file(MAKE_DIRECTORY ${RESULT_FOLDER})
 
 	if (${API_FOLDER} STREQUAL "vulkan")
