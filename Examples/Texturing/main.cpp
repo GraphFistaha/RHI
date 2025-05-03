@@ -134,10 +134,8 @@ int main()
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
-                                std::filesystem::path(SHADERS_FOLDER) / "textures.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                std::filesystem::path(SHADERS_FOLDER) / "textures.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "textures.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "textures.frag");
   trianglePipeline.DefinePushConstant(sizeof(PushConstant),
                                       RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
 

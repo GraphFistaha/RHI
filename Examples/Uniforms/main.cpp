@@ -91,10 +91,8 @@ int main()
   auto * subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
-                                std::filesystem::path(SHADERS_FOLDER) / "uniform.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                std::filesystem::path(SHADERS_FOLDER) / "uniform.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "uniform.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "uniform.frag");
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
   trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
   trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);

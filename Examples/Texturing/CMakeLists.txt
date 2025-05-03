@@ -1,21 +1,29 @@
-project(Texturing)
+set(this_target "Texturing")
+set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
-add_executable(${PROJECT_NAME} 
+add_executable(${this_target} 
 	"main.cpp"
-	"stb_image.h"
+	# shaders
+	"textures.frag"
+	"textures.vert"
 )
 
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${this_target} 
 PRIVATE
 	RHI
 	glfw
 )
 
-TARGET_PRECOMPILE_SHADERS(TARGET ${PROJECT_NAME} API Vulkan
+set_target_properties(${this_target} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
+	LIBRARY_OUTPUT_DIRECTORY ${APP_DIR}/Obj
+	ARCHIVE_OUTPUT_DIRECTORY ${APP_DIR}/Obj
+)
+
+TARGET_PRECOMPILE_SHADERS(TARGET ${this_target} API Vulkan
 SHADERS
 	"textures.frag"
 	"textures.vert"
-SHADERS_DIRECTORY ${PROJECT_NAME}
 )
 file(COPY texture.png DESTINATION ${APP_DIR})
 file(COPY jackal.jpg DESTINATION ${APP_DIR})

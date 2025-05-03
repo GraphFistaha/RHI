@@ -1,6 +1,6 @@
 add_subdirectory(ThirdParty/glfw)
 
-add_custom_target("ExampleShaders" )
+add_custom_target("ExampleShaders")
 
 add_subdirectory(HelloWindow)
 add_subdirectory(HelloTriangle)

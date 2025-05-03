@@ -97,10 +97,8 @@ int main()
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   trianglePipeline.BindAttachment(1, RHI::ShaderAttachmentSlot::DepthStencil);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
-                                std::filesystem::path(SHADERS_FOLDER) / "colored_quad.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                std::filesystem::path(SHADERS_FOLDER) / "colored_quad.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "colored_quad.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "colored_quad.frag");
   trianglePipeline.DefinePushConstant(sizeof(PushConstant),
                                       RHI::ShaderType::Vertex | RHI::ShaderType::Fragment);
   trianglePipeline.EnableDepthTest(true);
@@ -130,7 +128,7 @@ int main()
         constant.color = {1.0, 0.0, 0.0, 1.0};
         constant.transform = {0.25, 0,    0.0, 0.25, //
                               0.0,  0.25, 0.0, 0.25, //
-                              0.0,  0.0,  1.0, 0.25,  //
+                              0.0,  0.0,  1.0, 0.25, //
                               0.0,  0.0,  0.0, 1.0};
         // draw first quad
         subpass->PushConstant(&constant, sizeof(constant));
@@ -138,8 +136,8 @@ int main()
 
         //draw second quad - Green quad
         constant.color = {0.0, 1.0, 0.0, 1.0};
-        constant.transform = {0.25, 0,    0.0, 0.0,  //
-                              0.0,  0.25, 0.0, 0.0,  //
+        constant.transform = {0.25, 0,    0.0, 0.0, //
+                              0.0,  0.25, 0.0, 0.0, //
                               0.0,  0.0,  1.0, 0.5, //
                               0.0,  0.0,  0.0, 1.0};
         subpass->PushConstant(&constant, sizeof(constant));

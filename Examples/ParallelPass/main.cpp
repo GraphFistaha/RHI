@@ -156,10 +156,8 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwin
   auto && trianglePipeline = m_subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // set shaders
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
-                                std::filesystem::path(SHADERS_FOLDER) / "triangle.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                std::filesystem::path(SHADERS_FOLDER) / "triangle.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "triangle.vert");
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "triangle.frag");
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
   trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
   trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
