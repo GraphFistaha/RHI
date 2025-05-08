@@ -291,6 +291,7 @@ struct IFramebuffer
   virtual void SetFramesCount(uint32_t frames_count) = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
+  virtual RHI::ImageExtent GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;

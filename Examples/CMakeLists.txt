@@ -1,4 +1,5 @@
 add_subdirectory(ThirdParty/glfw)
+add_subdirectory(ThirdParty/glm)
 
 add_custom_target("ExampleShaders")
 
@@ -9,6 +10,9 @@ add_subdirectory(ParallelPass)
 add_subdirectory(Texturing)
 add_subdirectory(DownloadImages)
 add_subdirectory(TextureArray)
-#add_subdirectory(OffscreenRendering)
 #add_subdirectory(OffscreenQuad)
 add_subdirectory(DepthStencilTest)
+
+
+# hard examples
+add_subdirectory(Cube)

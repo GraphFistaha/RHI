@@ -101,9 +101,12 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
+  VkPhysicalDeviceFeatures features{};
+  features.geometryShader = VK_TRUE;
   auto phys_ret =
     selector.set_surface(surface)
       .require_present(surface != VK_NULL_HANDLE)
+      .set_required_features(features)
       //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
       .select();
 
