@@ -20,8 +20,8 @@ constexpr float g_SceneExtent = 100; ///< quad radius of scene
 constexpr glm::uvec2 g_defaultWindowSize{800, 600};
 constexpr double g_mouseSensetive = 0.01;
 constexpr float g_FOV = glm::radians(45.0f);
-constexpr float g_cameraSpeed = 0.05f; // adjust accordingly
-constexpr glm::vec3 g_cameraUp(0.0f, 1.0f, 0.0f);
+constexpr float g_cameraSpeed = 0.1f; // adjust accordingly
+constexpr glm::vec3 g_cameraUp(0.0f, -1.0f, 0.0f);
 
 
 class CubesRenderer final
@@ -168,12 +168,17 @@ void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
 
   g_cursorPos = {xpos, ypos};
 
-  glm::mat4 rotYaw = glm::rotate(glm::identity<glm::mat4>(), -offset.x, glm::vec3(0, 1, 0));
-  glm::mat4 rotPitch = glm::identity<glm::mat4>();
+  glm::vec4 newCamDirection = glm::vec4(g_cameraDirection, 0.0);
+  glm::mat4 rotYaw = glm::rotate(glm::identity<glm::mat4>(), offset.x, glm::vec3(0, 1, 0));
+  newCamDirection = rotYaw * newCamDirection;
   if (glm::abs(glm::dot(g_cameraDirection, g_cameraUp) - glm::radians(89.0f)) > 0.01f)
-    rotPitch = glm::rotate(glm::identity<glm::mat4>(), -offset.y, glm::vec3(1, 0, 0));
-
-  g_cameraDirection = glm::normalize(rotYaw * rotPitch * glm::vec4(g_cameraDirection, 0.0));
+  {
+    auto right = OrthogonalVector(newCamDirection, g_cameraUp);
+    glm::mat4 rotPitch =
+      glm::rotate(glm::identity<glm::mat4>(), offset.y, -right);
+    newCamDirection = rotPitch * newCamDirection;
+  }
+  g_cameraDirection = glm::normalize(newCamDirection);
   OnCameraTransformUpdated();
 }
 
@@ -310,7 +315,7 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     /*subpassConfig.AddInputAttribute(0, 3, 7 * sizeof(float), 1,
                                         RHI::InputAttributeElementType::UINT);*/
 
-    auto * uniform = subpassConfig.DeclareUniform(0, RHI::ShaderType::Geometry);
+    auto * uniform = subpassConfig.DeclareUniform(0, RHI::ShaderType::Vertex);
     uniform->AssignBuffer(*m_uniformBuffer);
   }
   DestroyHandles();
