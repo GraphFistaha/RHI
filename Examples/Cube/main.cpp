@@ -249,9 +249,18 @@ int main()
 
   g_renderer = std::make_unique<CubesRenderer>(*ctx);
   g_renderer->BindDrawSurface(framebuffer);
-  CubesRenderer::CubeDescription cube;
-  cube.pos = {0, 0, -10};
-  g_renderer->AddCubeToScene(cube);
+  {
+      CubesRenderer::CubeDescription cube;
+      cube.pos = { 0, 0, -10 };
+      g_renderer->AddCubeToScene(cube);
+  }
+  {
+      CubesRenderer::CubeDescription cube;
+      cube.pos = { 0, 5, -5 };
+      cube.axis = { -1, 1, 0 };
+      cube.scale = 2.0;
+      g_renderer->AddCubeToScene(cube);
+  }
 
   while (!glfwWindowShouldClose(window))
   {
@@ -261,7 +270,7 @@ int main()
 
     if (auto * renderTarget = framebuffer->BeginFrame())
     {
-      renderTarget->SetClearValue(0, 0.1f, 0.7f, 0.4f, 1.0f);
+      renderTarget->SetClearValue(0, 0.1f, 0.2f, 0.4f, 1.0f);
       renderTarget->SetClearValue(1, 1.0f, 0);
       framebuffer->EndFrame();
     }
