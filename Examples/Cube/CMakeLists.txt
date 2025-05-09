@@ -3,18 +3,25 @@ set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
 add_executable(${this_target} 
 	"main.cpp"
+	"Renderer.hpp"
+	"Renderer.cpp"
 	#shaders
 	"cube.vert"
 	"cube.frag"
 	"cube.geom"
 
-)
+ "Renderer.cpp" )
 
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
 	glfw
 	glm
+)
+
+target_include_directories(${this_target}
+PRIVATE
+	"../ThirdParty/stb"
 )
 
 set_target_properties(${this_target} PROPERTIES
@@ -29,3 +36,5 @@ SHADERS
 	"cube.vert"
 	"cube.geom"
 )
+
+file(COPY "container.png" DESTINATION ${APP_DIR})
