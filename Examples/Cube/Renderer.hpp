@@ -5,7 +5,6 @@
 
 class CubesRenderer final
 {
-  static constexpr size_t g_MaxCubesCount = 20; ///< max cubes count in scene
   static constexpr size_t g_MaxTexturesCount = 8;
 
   /// global data for all cubes
@@ -15,13 +14,14 @@ class CubesRenderer final
   };
 
 public:
+  static constexpr size_t g_MaxCubesCount = 100; ///< max cubes count in scene
   /// describes one cube in scene
   struct CubeDescription
   {
     glm::vec3 pos{};
     glm::vec3 axis{0, 0, 1};
     glm::vec3 scale{1.0f};
-    int32_t textureIndex = -1;
+    int32_t textureIndex = 0;
   };
 
   explicit CubesRenderer(RHI::IContext & ctx);

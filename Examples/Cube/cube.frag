@@ -9,6 +9,6 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform sampler2D texturePalette[8];
 
 void main() {
-    vec4 texel = fragTextureIndex > 0 ? texture(texturePalette[fragTextureIndex], fragUV) : vec4(fragUV, 0, 1.0);
+    vec4 texel = texture(texturePalette[fragTextureIndex], fragUV);
     outColor = texel;
 }

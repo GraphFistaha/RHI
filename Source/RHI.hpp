@@ -131,6 +131,20 @@ enum class CompareOperation
   Always = 7
 };
 
+enum class TextureWrapping
+{
+  Repeat,
+  MirroredRepeat,
+  ClampToEdge,
+  ClampToBorder
+};
+
+enum class TextureFilteration
+{
+  Nearest,
+  Linear
+};
+
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -205,6 +219,10 @@ struct ISamplerUniformDescriptor : public IUniformDescriptor
 {
   virtual void AssignImage(ITexture * texture) = 0;
   virtual bool IsImageAssigned() const noexcept = 0;
+  virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
+                           RHI::TextureWrapping wWrap) noexcept = 0;
+  virtual void SetFilter(RHI::TextureFilteration minFilter,
+                         RHI::TextureFilteration magFilter) noexcept = 0;
 };
 
 struct IBufferUniformDescriptor : public IUniformDescriptor

@@ -108,7 +108,10 @@ IRenderTarget * Framebuffer::BeginFrame()
   {
     auto [imageView, imgAvailSemaphore] = attachment->AcquireForRendering();
     if (!imageView)
+    {
+      m_attachmentsChanged = true;
       return nullptr;
+    }
     if (imgAvailSemaphore)
       m_imagesAvailabilitySemaphores.push_back(imgAvailSemaphore);
     renderingImages.push_back(imageView);

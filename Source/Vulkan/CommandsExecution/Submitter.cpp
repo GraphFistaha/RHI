@@ -48,6 +48,10 @@ AsyncTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore>
 
   if (!m_isFirstSubmit && waitPrevSubmitOnGPU)
     waitSemaphores.push_back(m_oldBarrier.GetSemaphore());
+
+  assert(std::all_of(waitSemaphores.begin(), waitSemaphores.end(),
+                     [](VkSemaphore sem) { return !!sem; }));
+
   std::vector<VkPipelineStageFlags> waitStages(waitSemaphores.size(), m_waitStages);
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

@@ -4,8 +4,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../../Images/TextureInterface.hpp"
+#include "../../Utils/SamplerBuilder.hpp"
 #include "BaseUniform.hpp"
-
 
 namespace RHI::vulkan
 {
@@ -22,6 +22,10 @@ struct SamplerUniform final : public ISamplerUniformDescriptor,
 public: // ISamplerUniformDescriptor interface
   virtual void AssignImage(ITexture * image) override;
   virtual bool IsImageAssigned() const noexcept override;
+  virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
+                           RHI::TextureWrapping wWrap) noexcept override;
+  virtual void SetFilter(RHI::TextureFilteration minFilter,
+                         RHI::TextureFilteration magFilter) noexcept override;
 
 public:
   virtual uint32_t GetBinding() const noexcept override;
@@ -40,6 +44,7 @@ public: // public internal API
 private:
   IInternalTexture * m_boundTexture = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
+  utils::SamplerBuilder m_builder;
   bool m_invalidSampler = true;
 };
 

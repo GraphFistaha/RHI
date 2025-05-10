@@ -37,13 +37,15 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     subpassConfig.AddInputAttribute(0, 2, 6 * sizeof(float), 3,
                                     RHI::InputAttributeElementType::FLOAT);
     subpassConfig.AddInputAttribute(0, 3, 9 * sizeof(float), 1,
-                                            RHI::InputAttributeElementType::SINT);
+                                    RHI::InputAttributeElementType::SINT);
 
 
     auto * uniform = subpassConfig.DeclareUniform(0, RHI::ShaderType::Vertex);
     uniform->AssignBuffer(*m_uniformBuffer);
-    subpassConfig.DeclareSamplersArray(1, RHI::ShaderType::Fragment, m_textures.size(),
-                                       m_textures.data());
+    subpassConfig.DeclareSamplersArray(1, RHI::ShaderType::Fragment,
+                                       static_cast<uint32_t>(m_textures.size()), m_textures.data());
+    for (auto * texture : m_textures)
+      texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
   }
   DestroyHandles();
   m_renderPass = newSubpass;
@@ -94,7 +96,7 @@ void CubesRenderer::Draw()
     m_renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
     m_renderPass->BindVertexBuffer(0, *m_cubesBuffer);
-    m_renderPass->DrawVertices(m_cubesCount, 1);
+    m_renderPass->DrawVertices(static_cast<uint32_t>(m_cubesCount), 1);
 
     m_renderPass->EndPass();
     m_invalidScene = false;

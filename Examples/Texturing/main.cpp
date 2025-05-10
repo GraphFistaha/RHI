@@ -28,6 +28,9 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
     case RHI::LogMessageStatus::LOG_ERROR:
       std::printf("ERROR: - %s\n", message.c_str());
       break;
+    case RHI::LogMessageStatus::LOG_DEBUG:
+        std::printf("DEBUG: - %s\n", message.c_str());
+        break;
   }
 }
 
@@ -144,6 +147,7 @@ int main()
   for (uint32_t i = 0; i < 8; ++i)
   {
     auto * texture = trianglePipeline.DeclareSampler(i, RHI::ShaderType::Fragment);
+    texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     texture->AssignImage(*it);
     samplers.push_back(texture);
     it = std::next(it);

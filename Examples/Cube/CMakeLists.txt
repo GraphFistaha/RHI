@@ -38,3 +38,4 @@ SHADERS
 )
 
 file(COPY "container.png" DESTINATION ${APP_DIR})
+file(COPY "floor.jpg" DESTINATION ${APP_DIR})

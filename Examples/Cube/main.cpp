@@ -52,6 +52,7 @@ glm::mat4 g_projectionMatrix;
 glm::vec3 g_cameraPos{0};
 glm::vec3 g_cameraDirection{0, 0, -1};
 bool g_pressedKeys[1024];
+bool g_cursorHidden = true;
 
 void OnCameraTransformUpdated()
 {
@@ -79,10 +80,11 @@ void ProcessCameraMovement()
 
     if (g_pressedKeys[GLFW_KEY_W])
       newCameraPos += cameraFront * g_cameraSpeed;
-    else if (g_pressedKeys[GLFW_KEY_A])
-      newCameraPos -= cameraRight * g_cameraSpeed;
     else if (g_pressedKeys[GLFW_KEY_S])
       newCameraPos -= cameraFront * g_cameraSpeed;
+
+    if (g_pressedKeys[GLFW_KEY_A])
+      newCameraPos -= cameraRight * g_cameraSpeed;
     else if (g_pressedKeys[GLFW_KEY_D])
       newCameraPos += cameraRight * g_cameraSpeed;
     g_cameraPos = newCameraPos;
@@ -138,6 +140,13 @@ void OnKeyAction(GLFWwindow * window, int key, int scancode, int action, int mod
     return;
   }
 
+  if (key == GLFW_KEY_E && action == GLFW_PRESS)
+  {
+    g_cursorHidden = !g_cursorHidden;
+    glfwSetInputMode(window, GLFW_CURSOR,
+                     g_cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+  }
+
   if (action == GLFW_PRESS)
     g_pressedKeys[key] = true;
   else if (action == GLFW_RELEASE)
@@ -190,6 +199,7 @@ int main()
   glfwSetWindowSizeCallback(window, OnResizeWindow);
   glfwSetCursorPosCallback(window, OnCursorMoved);
   glfwSetKeyCallback(window, OnKeyAction);
+  g_cursorHidden = true;
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   g_projectionMatrix =
@@ -226,17 +236,22 @@ int main()
 
   g_renderer = std::make_unique<CubesRenderer>(*ctx);
   g_renderer->BindDrawSurface(framebuffer);
-  g_renderer->BindTexture(0, UploadAndCreateTexture("container.png", *ctx, false));
+  g_renderer->BindTexture(0, UploadAndCreateTexture("floor.jpg", *ctx, false));
+  g_renderer->BindTexture(1, UploadAndCreateTexture("container.png", *ctx, false));
   {
     CubesRenderer::CubeDescription cube;
-    cube.pos = {0, 0, -10};
+    cube.pos = {0, 0, 0};
+    cube.scale = {10.0, 0.1, 10.0};
+    cube.textureIndex = 0;
     g_renderer->AddCubeToScene(cube);
   }
+  for (size_t i = 1; i < CubesRenderer::g_MaxCubesCount; ++i)
   {
     CubesRenderer::CubeDescription cube;
-    cube.pos = {0, 5, -5};
-    cube.axis = {-1, 1, 0};
-    cube.scale = {0.5, 2.0, 1.0};
+    cube.pos = glm::ballRand(10.0);
+    cube.pos.y = glm::abs(cube.pos.y);
+    cube.scale = glm::vec3(glm::gaussRand(0.5f, 0.49f));
+    cube.textureIndex = 1;
     g_renderer->AddCubeToScene(cube);
   }
 
