@@ -210,21 +210,17 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
     std::make_unique<SurfacedAttachment>(*this, m_impl->GetSurface(), SamplesCount::One);
   m_attachments.emplace_back(std::move(surfaceTexture));
 
+  // alloc null texture
   RHI::ImageCreateArguments args{};
   {
-    args.extent = {64, 64, 1};
+    args.extent = {1, 1, 1};
     args.format = RHI::ImageFormat::RGBA8;
     args.mipLevels = 1;
     args.samples = RHI::SamplesCount::One;
     args.type = RHI::ImageType::Image2D;
     args.shared = false;
   }
-  //uint8_t color[]{0xFF, 00, 00, 0xFF, 0xFF, 00, 00, 0xFF, 0xFF, 00, 00, 0xFF, 0xFF, 00, 00, 0xFF};
-  //CopyImageArguments copyArgs{};
-  //copyArgs.hostFormat = RHI::HostImageFormat::RGBA8;
-  //copyArgs.src.extent = {2, 2, 1};
-  //copyArgs.dst.extent = {2, 2, 1};
-  AllocImage(args)/*->UploadImage(color, copyArgs)*/;
+  AllocImage(args);
 }
 
 Context::~Context()
