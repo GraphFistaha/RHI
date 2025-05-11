@@ -115,6 +115,7 @@ void SurfacedAttachment::Invalidate()
                                             m_surface, renderIndex, m_presentQueueIndex);
     if (m_desiredBuffering != g_InvalidImageIndex)
       swapchain_builder.set_desired_min_image_count(m_desiredBuffering);
+    swapchain_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
     auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
     if (!swap_ret)
       throw std::runtime_error("Failed to create Vulkan swapchain - " + swap_ret.error().message());

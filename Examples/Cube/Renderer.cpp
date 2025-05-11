@@ -1,5 +1,7 @@
 #include "Renderer.hpp"
 
+#include <glm/ext.hpp>
+
 CubesRenderer::CubesRenderer(RHI::IContext & ctx)
   : m_context(ctx)
   , m_uniformBuffer(ctx.AllocBuffer(sizeof(UniformBlock), RHI::BufferGPUUsage::UniformBuffer, true))
@@ -111,4 +113,9 @@ void CubesRenderer::InvalidateScene()
 void CubesRenderer::DestroyHandles()
 {
   //TODO: Destroy buffers, renderPass
+}
+
+CubesRenderer::UniformBlock::UniformBlock()
+  : vp(glm::identity<glm::mat4>())
+{
 }

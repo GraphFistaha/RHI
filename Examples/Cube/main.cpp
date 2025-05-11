@@ -4,16 +4,24 @@
 #include <cstring>
 #include <iostream>
 
-#include <GLFW/glfw3.h>
+#include <Camera.hpp>
+#include <glm/ext.hpp>
 #include <RHI.hpp>
+
+//clang-format off
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(__linux__)
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
+#include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
+// clang-format on
+
+// clang-format off
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+// clang-format on
 
 #include "Renderer.hpp"
 
@@ -37,58 +45,31 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
   }
 }
 
-/// global constants
-constexpr glm::uvec2 g_defaultWindowSize{800, 600};
-constexpr double g_mouseSensetive = 0.01;
-constexpr float g_cameraFOV = glm::radians(45.0f);
-constexpr float g_cameraNearestPlane = 0.01f;
-constexpr float g_cameraViewDistance = 100.0f;
-constexpr float g_cameraSpeed = 0.1f; // adjust accordingly
-constexpr glm::vec3 g_cameraUp(0.0f, -1.0f, 0.0f);
 /// global state
+constexpr glm::vec3 g_cameraUp(0.0f, -1.0f, 0.0f);
 RHI::IFramebuffer * g_defaultFramebuffer = nullptr;
 std::unique_ptr<CubesRenderer> g_renderer = nullptr;
-glm::mat4 g_projectionMatrix;
-glm::vec3 g_cameraPos{0};
-glm::vec3 g_cameraDirection{0, 0, -1};
 bool g_pressedKeys[1024];
 bool g_cursorHidden = true;
-
-void OnCameraTransformUpdated()
-{
-  auto viewMatrix = glm::lookAt(g_cameraPos, g_cameraDirection + g_cameraPos, g_cameraUp);
-  auto vp = g_projectionMatrix * viewMatrix;
-  g_renderer->SetCameraTransform(vp);
-}
-
-glm::vec3 OrthogonalVector(const glm::vec3 & v1, const glm::vec3 & v2)
-{
-  return glm::normalize(glm::cross(v1, v2));
-}
+RHI::test_examples::Camera g_camera(g_cameraUp);
 
 void ProcessCameraMovement()
 {
-  auto newCameraPos = g_cameraPos;
   constexpr std::array<int, 4> movement_keys{GLFW_KEY_W, GLFW_KEY_A, GLFW_KEY_S, GLFW_KEY_D};
   bool has_action = std::any_of(movement_keys.begin(), movement_keys.end(),
                                 [](int key) { return g_pressedKeys[key]; });
 
   if (has_action)
   {
-    const auto cameraFront = g_cameraDirection;
-    const auto cameraRight = OrthogonalVector(cameraFront, g_cameraUp);
-
     if (g_pressedKeys[GLFW_KEY_W])
-      newCameraPos += cameraFront * g_cameraSpeed;
+      g_camera.MoveCamera(g_camera.GetFrontVector());
     else if (g_pressedKeys[GLFW_KEY_S])
-      newCameraPos -= cameraFront * g_cameraSpeed;
+      g_camera.MoveCamera(-g_camera.GetFrontVector());
 
     if (g_pressedKeys[GLFW_KEY_A])
-      newCameraPos -= cameraRight * g_cameraSpeed;
+      g_camera.MoveCamera(-g_camera.GetRightVector());
     else if (g_pressedKeys[GLFW_KEY_D])
-      newCameraPos += cameraRight * g_cameraSpeed;
-    g_cameraPos = newCameraPos;
-    OnCameraTransformUpdated();
+      g_camera.MoveCamera(g_camera.GetRightVector());
   }
 }
 
@@ -96,9 +77,7 @@ void ProcessCameraMovement()
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
   g_defaultFramebuffer->Resize(width, height);
-  g_projectionMatrix = glm::perspectiveZO(g_cameraFOV, static_cast<float>(width) / height,
-                                          g_cameraNearestPlane, g_cameraViewDistance);
-  OnCameraTransformUpdated();
+  g_camera.OnResolutionChanged({width, height});
   g_renderer->InvalidateScene();
 }
 
@@ -113,23 +92,9 @@ void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
     return;
   }
 
-  glm::fvec2 offset{(xpos - g_cursorPos.x) * g_mouseSensetive,
-                    // reversed since y-coordinates range from bottom to top
-                    (g_cursorPos.y - ypos) * g_mouseSensetive};
-
+  // reversed since y-coordinates range from bottom to top
+  g_camera.OnCursorMoved({xpos - g_cursorPos.x, ypos - g_cursorPos.y});
   g_cursorPos = {xpos, ypos};
-
-  glm::vec4 newCamDirection = glm::vec4(g_cameraDirection, 0.0);
-  glm::mat4 rotYaw = glm::rotate(glm::identity<glm::mat4>(), offset.x, glm::vec3(0, 1, 0));
-  newCamDirection = rotYaw * newCamDirection;
-  if (glm::abs(glm::dot(g_cameraDirection, g_cameraUp) - glm::radians(89.0f)) > 0.01f)
-  {
-    auto right = OrthogonalVector(newCamDirection, g_cameraUp);
-    glm::mat4 rotPitch = glm::rotate(glm::identity<glm::mat4>(), offset.y, -right);
-    newCamDirection = rotPitch * newCamDirection;
-  }
-  g_cameraDirection = glm::normalize(newCamDirection);
-  OnCameraTransformUpdated();
 }
 
 void OnKeyAction(GLFWwindow * window, int key, int scancode, int action, int mods)
@@ -185,6 +150,7 @@ int main()
 {
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  constexpr glm::uvec2 g_defaultWindowSize{800, 600};
 
   // Create GLFW window
   GLFWwindow * window =
@@ -202,10 +168,7 @@ int main()
   g_cursorHidden = true;
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  g_projectionMatrix =
-    glm::perspectiveZO(g_cameraFOV,
-                       static_cast<float>(g_defaultWindowSize.x) / g_defaultWindowSize.y,
-                       g_cameraNearestPlane, g_cameraViewDistance);
+  g_camera.OnResolutionChanged(g_defaultWindowSize);
 
   // fill structure for surface with OS handles
   RHI::SurfaceConfig surface{};
@@ -259,6 +222,7 @@ int main()
   {
     glfwPollEvents();
     ProcessCameraMovement();
+    g_renderer->SetCameraTransform(g_camera.GetVP());
     const auto start{std::chrono::steady_clock::now()};
     ctx->Flush();
 

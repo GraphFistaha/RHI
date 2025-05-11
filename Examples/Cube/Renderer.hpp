@@ -1,5 +1,4 @@
 #pragma once
-#include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <RHI.hpp>
 
@@ -10,7 +9,8 @@ class CubesRenderer final
   /// global data for all cubes
   struct UniformBlock
   {
-    glm::mat4 vp = glm::identity<glm::mat4>(); ///< camera transform: view + projection
+    glm::mat4 vp; ///< camera transform: view + projection
+    UniformBlock();
   };
 
 public:

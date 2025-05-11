@@ -9,14 +9,14 @@ add_executable(${this_target}
 	"cube.vert"
 	"cube.frag"
 	"cube.geom"
-
- "Renderer.cpp" )
+)
 
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
 	glfw
 	glm
+	test_utils
 )
 
 target_include_directories(${this_target}
