@@ -52,6 +52,7 @@ std::unique_ptr<CubesRenderer> g_renderer = nullptr;
 bool g_pressedKeys[1024];
 bool g_cursorHidden = true;
 RHI::test_examples::Camera g_camera(g_cameraUp);
+std::atomic_bool g_isRunning = false;
 
 void ProcessCameraMovement()
 {
@@ -101,6 +102,7 @@ void OnKeyAction(GLFWwindow * window, int key, int scancode, int action, int mod
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
   {
+    g_isRunning = false;
     glfwSetWindowShouldClose(window, GLFW_TRUE);
     return;
   }
@@ -144,6 +146,60 @@ RHI::ITexture * UploadAndCreateTexture(const char * path, RHI::IContext & ctx, b
   texture->UploadImage(pixel_data, copyArgs);
   stbi_image_free(pixel_data);
   return texture;
+}
+
+void game_thread_main()
+{
+  constexpr double st_sceneActionChance = 0.3;
+  g_isRunning = true;
+
+  {
+    CubesRenderer::CubeDescription cube;
+    cube.pos = {0, 0, 0};
+    cube.scale = {10.0, 0.1, 10.0};
+    cube.textureIndex = 0;
+    g_renderer->AddCubeToScene(cube);
+  }
+
+  for (int i = 0; i < 25; ++i)
+  {
+    CubesRenderer::CubeDescription cube;
+    cube.pos = glm::ballRand(10.0);
+    cube.pos.y = glm::abs(cube.pos.y);
+    cube.scale = glm::vec3(glm::gaussRand(0.5f, 0.49f));
+    cube.textureIndex = 1;
+    g_renderer->AddCubeToScene(cube);
+  }
+
+
+  while (g_isRunning)
+  {
+    double chanceValue = glm::linearRand(0.0, 1.0);
+    if (chanceValue < st_sceneActionChance)
+    {
+      bool isRemove = g_renderer->GetCubesCount() > 1 &&
+                      (g_renderer->GetCubesCount() >= CubesRenderer::g_MaxCubesCount ||
+                       static_cast<bool>(std::rand() % 2));
+      if (isRemove)
+      {
+        // we shouldn't remove first cube because it's floor
+        size_t randCubeIdx = std::rand() % (g_renderer->GetCubesCount() - 1);
+        g_renderer->DeleteCubeFromScene(randCubeIdx + 1);
+      }
+      else if (g_renderer->GetCubesCount() < CubesRenderer::g_MaxCubesCount)
+      {
+        CubesRenderer::CubeDescription cube;
+        cube.pos = glm::ballRand(10.0);
+        cube.pos.y = glm::abs(cube.pos.y);
+        cube.scale = glm::vec3(glm::gaussRand(0.5f, 0.49f));
+        cube.textureIndex = 1;
+        g_renderer->AddCubeToScene(cube);
+      }
+    }
+
+    g_renderer->Draw();
+    std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(10));
+  }
 }
 
 int main()
@@ -201,22 +257,8 @@ int main()
   g_renderer->BindDrawSurface(framebuffer);
   g_renderer->BindTexture(0, UploadAndCreateTexture("floor.jpg", *ctx, false));
   g_renderer->BindTexture(1, UploadAndCreateTexture("container.png", *ctx, false));
-  {
-    CubesRenderer::CubeDescription cube;
-    cube.pos = {0, 0, 0};
-    cube.scale = {10.0, 0.1, 10.0};
-    cube.textureIndex = 0;
-    g_renderer->AddCubeToScene(cube);
-  }
-  for (size_t i = 1; i < CubesRenderer::g_MaxCubesCount; ++i)
-  {
-    CubesRenderer::CubeDescription cube;
-    cube.pos = glm::ballRand(10.0);
-    cube.pos.y = glm::abs(cube.pos.y);
-    cube.scale = glm::vec3(glm::gaussRand(0.5f, 0.49f));
-    cube.textureIndex = 1;
-    g_renderer->AddCubeToScene(cube);
-  }
+
+  std::thread game_thread(game_thread_main);
 
   while (!glfwWindowShouldClose(window))
   {
@@ -232,13 +274,14 @@ int main()
       renderTarget->SetClearValue(1, 1.0f, 0);
       framebuffer->EndFrame();
     }
-    g_renderer->Draw(); //TODO: call it in separate thread
 
     ctx->ClearResources();
     const auto finish{std::chrono::steady_clock::now()};
     const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};
-    std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());
+    //std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());
   }
+
+  game_thread.join();
 
   glfwTerminate();
   return 0;

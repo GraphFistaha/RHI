@@ -87,13 +87,14 @@ void CubesRenderer::Draw()
   {
     m_cubesBuffer->UploadAsync(m_cubes.data(), m_cubesCount * sizeof(CubeDescription));
     m_invalidGeometry = false;
+    m_invalidScene = true;
   }
 
   if (m_invalidScene || m_renderPass->ShouldBeInvalidated())
   {
+    m_renderPass->BeginPass();
     auto extent = m_drawSurface->GetExtent();
     uint32_t width = extent[0], height = extent[1];
-    m_renderPass->BeginPass();
     m_renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
     m_renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 

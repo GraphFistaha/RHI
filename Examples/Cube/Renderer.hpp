@@ -34,6 +34,7 @@ public: // Client API
   void SetCameraTransform(const glm::mat4 & vp);
   void BindTexture(uint32_t idx, RHI::ITexture * texture);
   void InvalidateScene();
+  size_t GetCubesCount() const noexcept { return m_cubesCount; }
 
 public: // RenderThread API
   void Draw();
