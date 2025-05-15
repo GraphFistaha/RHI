@@ -190,6 +190,7 @@ void game_thread_main()
       {
         CubesRenderer::CubeDescription cube;
         cube.pos = glm::ballRand(10.0);
+        cube.axis = glm::ballRand(1.0);
         cube.pos.y = glm::abs(cube.pos.y);
         cube.scale = glm::vec3(glm::gaussRand(0.5f, 0.49f));
         cube.textureIndex = 1;
