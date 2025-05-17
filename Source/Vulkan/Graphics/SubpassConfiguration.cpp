@@ -135,8 +135,6 @@ void SubpassConfiguration::Invalidate()
     m_invalidPipeline = false;
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline has been rebuilt");
   }
-
-  GetSubpass().SetDirtyCacheCommands();
 }
 
 void SubpassConfiguration::SetInvalid()
@@ -148,7 +146,7 @@ void SubpassConfiguration::SetInvalid()
 void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
                                                VkPipelineBindPoint bindPoint)
 {
-  assert(m_pipeline);
+  assert(!!m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
   m_descriptors.BindToCommandBuffer(buffer, m_layout, bindPoint);
 }
