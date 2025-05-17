@@ -13,6 +13,7 @@ add_subdirectory(DownloadImages)
 add_subdirectory(TextureArray)
 #add_subdirectory(OffscreenQuad)
 add_subdirectory(DepthStencilTest)
+add_subdirectory(MultiWindow)
 
 
 # hard examples
