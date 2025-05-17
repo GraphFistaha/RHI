@@ -79,11 +79,13 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
+  RHI::GpuTraits gpuTraits{};
+  gpuTraits.require_presentation = true;
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto subpass = framebuffer->CreateSubpass();

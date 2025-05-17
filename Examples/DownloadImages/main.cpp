@@ -57,7 +57,8 @@ RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool 
 
 int main()
 {
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(nullptr, ConsoleLog);
+  RHI::GpuTraits gpuTraits{};
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   auto texture = CreateAndLoadImage(*ctx, "mike_wazowski.jpg", false);
   RHI::ImageRegion region2Download;

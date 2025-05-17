@@ -19,7 +19,7 @@ SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface
   , m_swapchain(std::make_unique<vkb::Swapchain>())
   , m_samplesCount(samplesCount)
 {
-  std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Present);
+  std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Graphics);
 }
 
 SurfacedAttachment::~SurfacedAttachment()

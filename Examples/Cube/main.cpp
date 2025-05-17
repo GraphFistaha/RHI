@@ -237,7 +237,10 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
+  RHI::GpuTraits gpuTraits{};
+  gpuTraits.require_presentation = true;
+  gpuTraits.require_geometry_shaders = true;
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::ImageCreateArguments depthStencilAttachmentDescription{};
@@ -251,7 +254,7 @@ int main()
   }
 
   RHI::IFramebuffer * framebuffer = g_defaultFramebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
   framebuffer->AddAttachment(1, ctx->AllocAttachment(depthStencilAttachmentDescription));
 
   g_renderer = std::make_unique<CubesRenderer>(*ctx);
