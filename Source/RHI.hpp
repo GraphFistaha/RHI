@@ -6,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,18 @@ struct SurfaceConfig
   ExternalHandle hInstance;
 };
 
+/// @brief requirements for GPU selector
+struct GpuTraits
+{
+  /// desired name of GPU
+  std::optional<std::string> name;
+  /// GPU must have presentation
+  bool require_presentation = false;
+  /// GPU must support geometry shaders
+  bool require_geometry_shaders = false;
+
+  // add new flags or requirenets if you need it
+};
 
 /// @brief types of shader which can be attached to pipeline
 enum class ShaderType : uint8_t
@@ -375,7 +388,7 @@ struct IContext
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-  virtual IAttachment * GetSurfaceImage() = 0;
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) = 0;
   virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
@@ -384,7 +397,7 @@ struct IContext
 };
 
 /// @brief Factory-function to create context
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config = nullptr,
+std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
                                         LoggingFunc loggingFunc = nullptr);
 
 namespace details

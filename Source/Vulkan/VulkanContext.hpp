@@ -31,13 +31,13 @@ enum class QueueType : uint8_t
 struct Context final : public IContext
 {
   /// @brief constructor
-  explicit Context(const SurfaceConfig * config, LoggingFunc log);
+  explicit Context(const GpuTraits & gpuTraits, LoggingFunc log);
   /// @brief destructor
   virtual ~Context() override;
   RESTRICTED_COPY(Context);
 
 public: // IContext interface
-  virtual IAttachment * GetSurfaceImage() override;
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) override;
   virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) override;
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
                                    bool allowHostAccess) override;

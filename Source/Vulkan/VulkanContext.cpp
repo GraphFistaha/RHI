@@ -96,16 +96,19 @@ VkSurfaceKHR CreateSurface(vkb::Instance inst, const RHI::SurfaceConfig & config
   return VkSurfaceKHR(surface);
 }
 
-vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
-                                         VkSurfaceKHR surface /* = VK_NULL_HANDLE*/,
+vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTraits & gpuTraits,
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
   VkPhysicalDeviceFeatures features{};
-  features.geometryShader = VK_TRUE;
+  if (gpuTraits.require_geometry_shaders)
+    features.geometryShader = VK_TRUE;
+  if (gpuTraits.name.has_value())
+    selector.set_name(*gpuTraits.name);
+  if (gpuTraits.require_presentation)
+    selector.defer_surface_initialization();
   auto phys_ret =
-    selector.set_surface(surface)
-      .require_present(surface != VK_NULL_HANDLE)
+    selector
       .set_required_features(features)
       //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
       .select();
@@ -129,26 +132,17 @@ constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 struct Context::Impl final
 {
-  explicit Impl(const char * appName, const SurfaceConfig * config, LoggingFunc logFunc)
+  explicit Impl(const char * appName, const GpuTraits & gpuTraits, LoggingFunc logFunc)
+    : m_logFunc(logFunc)
   {
     m_instance = CreateInstance("AppName", VulkanAPIVersion, logFunc);
-    logFunc(LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
-    if (config)
-    {
-      m_surface = CreateSurface(m_instance, *config);
-      logFunc(LogMessageStatus::LOG_DEBUG, "VkSurfaceKHR has been created successfully");
-    }
-    else
-    {
-      m_surface = VK_NULL_HANDLE;
-      logFunc(LogMessageStatus::LOG_DEBUG, "Context doesn't have VkSurvaceKHR");
-    }
-    m_gpu = SelectPhysicalDevice(m_instance, m_surface, VulkanAPIVersionPair);
-    logFunc(LogMessageStatus::LOG_DEBUG,
-            "VkPhysicalDevice has been selected successfully" + m_gpu.name);
+    m_logFunc(LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
+    m_gpu = SelectPhysicalDevice(m_instance, gpuTraits, VulkanAPIVersionPair);
+    m_logFunc(LogMessageStatus::LOG_DEBUG,
+              "VkPhysicalDevice has been selected successfully - " + m_gpu.name);
     vkb::DeviceBuilder device_builder{m_gpu};
     auto dev_ret = device_builder.build();
-    logFunc(LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
+    m_logFunc(LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
     if (!dev_ret)
     {
       std::string msg =
@@ -161,7 +155,9 @@ struct Context::Impl final
 
   ~Impl()
   {
-    vkb::destroy_surface(m_instance, m_surface);
+    for (auto && surface : m_surfaces)
+      vkb::destroy_surface(m_instance, surface);
+    m_surfaces.clear();
     vkb::destroy_device(m_device);
     vkb::destroy_instance(m_instance);
   }
@@ -169,7 +165,6 @@ struct Context::Impl final
   VkDevice GetDevice() const noexcept { return m_device; }
   VkInstance GetInstance() const noexcept { return m_instance; }
   VkPhysicalDevice GetGPU() const noexcept { return m_gpu; }
-  VkSurfaceKHR GetSurface() const noexcept { return m_surface; }
   const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept
   {
     return m_gpu.properties;
@@ -190,25 +185,31 @@ struct Context::Impl final
     return std::make_pair(familly_index.value(), queue_ret.value());
   }
 
+  VkSurfaceKHR AllocSurface(const SurfaceConfig & surfaceTraits)
+  {
+    VkSurfaceKHR result = CreateSurface(m_instance, surfaceTraits);
+    m_logFunc(LogMessageStatus::LOG_DEBUG, "VkSurfaceKHR has been created successfully");
+    m_surfaces.push_back(result);
+    return result;
+  }
+
 private:
+  LoggingFunc m_logFunc;
   vkb::Instance m_instance;
   vkb::PhysicalDevice m_gpu;
   vkb::Device m_device;
   vkb::DispatchTable m_dispatchTable;
-  VkSurfaceKHR m_surface;
+  std::vector<VkSurfaceKHR> m_surfaces;
 };
 
 
-Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
+Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
-  m_impl = std::make_unique<Impl>("appName", config, m_logFunc);
+  m_impl = std::make_unique<Impl>("appName", gpuTraits, m_logFunc);
   m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
                                                           m_impl->GetDevice(), GetVulkanVersion());
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
-  auto surfaceTexture =
-    std::make_unique<SurfacedAttachment>(*this, m_impl->GetSurface(), SamplesCount::One);
-  m_attachments.emplace_back(std::move(surfaceTexture));
 
   // alloc null texture
   RHI::ImageCreateArguments args{};
@@ -227,9 +228,13 @@ Context::~Context()
 {
 }
 
-IAttachment * Context::GetSurfaceImage()
+IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits)
 {
-  return m_attachments[0].get();
+  auto surface = m_impl->AllocSurface(surfaceTraits);
+  auto surfaceTexture =
+    std::make_unique<SurfacedAttachment>(*this, surface, RHI::SamplesCount::One);
+  auto && result = m_attachments.emplace_back(std::move(surfaceTexture));
+  return result.get();
 }
 
 IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
@@ -347,12 +352,12 @@ RHI::ITexture * Context::GetNullTexture() const noexcept
 
 namespace RHI
 {
-std::unique_ptr<IContext> CreateContext(const SurfaceConfig * config /* = nullptr*/,
+std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
                                         LoggingFunc loggingFunc /* = nullptr*/)
 {
   try
   {
-    return std::make_unique<vulkan::Context>(config, loggingFunc);
+    return std::make_unique<vulkan::Context>(gpuTraits, loggingFunc);
   }
   catch (const std::exception & e)
   {

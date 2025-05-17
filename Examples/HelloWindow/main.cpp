@@ -65,7 +65,9 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
+  RHI::GpuTraits gpuTraits{};
+  gpuTraits.require_presentation = true;
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   if (!ctx)
   {
     assert(false);
@@ -75,7 +77,7 @@ int main()
   glfwSetWindowUserPointer(window, ctx.get());
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))

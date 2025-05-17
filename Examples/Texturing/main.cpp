@@ -29,8 +29,8 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
       std::printf("ERROR: - %s\n", message.c_str());
       break;
     case RHI::LogMessageStatus::LOG_DEBUG:
-        std::printf("DEBUG: - %s\n", message.c_str());
-        break;
+      std::printf("DEBUG: - %s\n", message.c_str());
+      break;
   }
 }
 
@@ -119,7 +119,9 @@ int main()
   surface.hInstance = glfwGetX11Display();
 #endif
 
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(&surface, ConsoleLog);
+  RHI::GpuTraits gpuTraits{};
+  gpuTraits.require_presentation = true;
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
   std::vector<RHI::ITexture *> textures;
@@ -132,7 +134,7 @@ int main()
   auto image_it = textures.begin();
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->GetSurfaceImage());
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
   auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
