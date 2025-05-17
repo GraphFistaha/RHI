@@ -19,6 +19,7 @@ struct IInternalAttachment : public IInternalTexture
   virtual uint32_t GetBuffering() const noexcept = 0;
   virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
   virtual void TransferLayout(VkImageLayout layout) noexcept = 0;
+  virtual void Resize(const VkExtent2D & new_extent) noexcept = 0;
 };
 
 } // namespace RHI::vulkan

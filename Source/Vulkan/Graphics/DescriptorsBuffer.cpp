@@ -171,15 +171,21 @@ void DescriptorBuffer::Invalidate()
   for (auto && [type, oneTypeDescriptors] : m_bufferUniformDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
+    {
+      descriptor.Invalidate();
       if (descriptor.IsBufferAssigned())
         details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
+    }
   }
 
   for (auto && [type, oneTypeDescriptors] : m_samplerDescriptors)
   {
     for (auto && descriptor : oneTypeDescriptors)
-      if (descriptor.IsImageAssigned())
-        details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
+    {
+      descriptor.Invalidate();
+      //if (descriptor.IsImageAssigned())
+      details::UpdateDescriptorResource(GetContext(), m_set, descriptor);
+    }
   }
 
   GetConfiguration().GetSubpass().SetDirtyCacheCommands();

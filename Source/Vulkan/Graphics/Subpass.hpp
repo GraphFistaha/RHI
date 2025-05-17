@@ -72,6 +72,8 @@ public:
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
 
+  void Invalidate();
+
   void LockWriting(bool lock) const noexcept;
   void SetDirtyCacheCommands() noexcept;
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
@@ -83,7 +85,8 @@ private:
   SubpassConfiguration m_pipeline;
   mutable std::mutex m_write_lock;
   std::atomic_bool m_enabled = true;
-  std::atomic_bool m_shouldBeInvalidated = true;
+  std::atomic_bool m_dirtyCommands = true;
+  std::atomic_bool m_invalidPipeline = true;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
 };

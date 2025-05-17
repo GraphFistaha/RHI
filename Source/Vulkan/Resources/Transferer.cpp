@@ -11,78 +11,94 @@ namespace RHI::vulkan
 static constexpr uint32_t g_stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                            VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-namespace details
+/// Submits transfer commands to one queue (transfer or graphic)
+struct Transferer::PendingTasksContainer final : public OwnedBy<Context>
 {
-TransferSubmitter::TransferSubmitter(Context & ctx, VkQueue queue, uint32_t queueFamilyIndex)
-  : OwnedBy<Context>(ctx)
-  , m_queueFamilyIndex(queueFamilyIndex)
-  , m_queue(queue)
-  , m_writingTransferBuffer(ctx, m_queue, m_queueFamilyIndex)
-  , m_executingTransferBuffer(ctx, m_queue, m_queueFamilyIndex)
-{
-  m_writingTransferBuffer.submitter.BeginWriting();
-}
+  PendingTasksContainer(Context & ctx);
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  void ProcessSubmittedTasks();
 
-TransferSubmitter::TransferSubmitter(TransferSubmitter && rhs) noexcept
-  : OwnedBy<Context>(std::move(rhs))
-  , m_writingTransferBuffer(std::move(rhs.m_writingTransferBuffer))
-  , m_executingTransferBuffer(std::move(rhs.m_executingTransferBuffer))
-{
-  std::swap(m_queue, rhs.m_queue);
-  std::swap(m_queueFamilyIndex, rhs.m_queueFamilyIndex);
-}
+public:
+  /// pushes task to upload buffer from host to GPU (asynchronous)
+  std::future<UploadResult> UploadBuffer(details::CommandBuffer & commands, VkBuffer dstBuffer,
+                                         const uint8_t * srcData, size_t size, size_t offset = 0);
+  /// pushes task to download buffer from GPU to host (asynchronous)
+  std::future<DownloadResult> DownloadBuffer(details::CommandBuffer & commands, VkBuffer srcBuffer,
+                                             size_t size, size_t offset = 0);
 
-TransferSubmitter & TransferSubmitter::operator=(TransferSubmitter && rhs) noexcept
-{
-  if (this != &rhs)
+  /// pushes task to upload image from host to GPU (asynchronous)
+  std::future<UploadResult> UploadImage(details::CommandBuffer & commands,
+                                        IInternalTexture & dstImage, const uint8_t * srcData,
+                                        const CopyImageArguments & args);
+  /// pushes task to download image from GPU to host (asynchronous)
+  std::future<DownloadResult> DownloadImage(details::CommandBuffer & commands,
+                                            IInternalTexture & srcImage, HostImageFormat format,
+                                            const ImageRegion & region);
+  /// pushes task to blit image to another image
+  std::future<BlitResult> BlitImageToImage(details::CommandBuffer & commands,
+                                           IInternalTexture & dst, IInternalTexture & src,
+                                           const ImageRegion & region);
+
+private:
+  /// function to copy texels from downloaded staging buffer to host memory
+  using CreateDownloadResultFunc = std::function<DownloadResult(BufferGPU &)>;
+  /// queued data for uploading
+  using UploadTask = std::pair<BufferGPU /*stagingBuffer*/, std::promise<UploadResult>>;
+  /// queued data for downloading
+  using DownloadTask =
+    std::tuple<BufferGPU /*stagingBuffer*/, std::promise<DownloadResult>, CreateDownloadResultFunc>;
+  /// queued data for blitting
+  using BlitTask = std::promise<BlitResult>;
+
+  struct PendingTasksBatch final
   {
-    OwnedBy<Context>::operator=(std::move(rhs));
-    std::swap(m_queue, rhs.m_queue);
-    std::swap(m_queueFamilyIndex, rhs.m_queueFamilyIndex);
-    std::swap(m_writingTransferBuffer, rhs.m_writingTransferBuffer);
-    std::swap(m_executingTransferBuffer, rhs.m_executingTransferBuffer);
-  }
-  return *this;
+    std::vector<UploadTask> upload_tasks;     ///< promises to complete upload tasks
+    std::vector<DownloadTask> download_tasks; ///< promises to complete download tasks
+    std::vector<BlitTask> blit_tasks;         ///< promises to complete blit tasks
+  };
+
+  PendingTasksBatch m_writingBatch;
+  PendingTasksBatch m_executingBatch;
+};
+
+
+Transferer::PendingTasksContainer::PendingTasksContainer(Context & ctx)
+  : OwnedBy<Context>(ctx)
+{
 }
 
-IAwaitable * TransferSubmitter::Submit()
+void Transferer::PendingTasksContainer::ProcessSubmittedTasks()
 {
-  m_writingTransferBuffer.submitter.EndWriting();
-  std::swap(m_executingTransferBuffer, m_writingTransferBuffer);
-  auto * awaitable = m_executingTransferBuffer.submitter.Submit(true, {});
-  m_writingTransferBuffer.submitter.WaitForSubmitCompleted();
-
   // process upload data
-  for (auto && [stagingBuffer, promise] : m_writingTransferBuffer.upload_data)
+  for (auto && [stagingBuffer, promise] : m_executingBatch.upload_tasks)
   {
     UploadResult result = stagingBuffer.Size();
     promise.set_value(result);
   }
-  m_writingTransferBuffer.upload_data.clear();
+  m_executingBatch.upload_tasks.clear();
 
   // process download data
-  for (auto && [stagingBuffer, promise, createDownloadResult] :
-       m_writingTransferBuffer.download_data)
+  for (auto && [stagingBuffer, promise, createDownloadResult] : m_executingBatch.download_tasks)
   {
     DownloadResult result = createDownloadResult(stagingBuffer);
     promise.set_value(std::move(result));
   }
-  m_writingTransferBuffer.download_data.clear();
+  m_executingBatch.download_tasks.clear();
 
-  for (auto && promise : m_writingTransferBuffer.blit_data)
+  // process blitting commands
+  for (auto && promise : m_executingBatch.blit_tasks)
   {
     BlitResult result = 0;
     promise.set_value(result);
   }
+  m_executingBatch.blit_tasks.clear();
 
-  m_writingTransferBuffer.submitter.Reset();
-  m_writingTransferBuffer.submitter.BeginWriting();
-  return awaitable;
+  std::swap(m_executingBatch, m_writingBatch);
 }
 
-std::future<UploadResult> TransferSubmitter::UploadBuffer(VkBuffer dstBuffer,
-                                                          const uint8_t * srcData, size_t size,
-                                                          size_t offset)
+std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
+  details::CommandBuffer & commands, VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
+  size_t offset)
 {
   std::promise<UploadResult> promise;
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
@@ -92,15 +108,14 @@ std::future<UploadResult> TransferSubmitter::UploadBuffer(VkBuffer dstBuffer,
   copy.dstOffset = 0;
   copy.srcOffset = 0;
   copy.size = stagingBuffer.Size();
-  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(),
-                                                dstBuffer, 1, &copy);
+  commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
   auto && data =
-    m_writingTransferBuffer.upload_data.emplace_back(std::move(stagingBuffer), std::move(promise));
+    m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSubmitter::DownloadBuffer(VkBuffer srcBuffer, size_t size,
-                                                              size_t offset)
+std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
+  details::CommandBuffer & commands, VkBuffer srcBuffer, size_t size, size_t offset)
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
@@ -108,8 +123,7 @@ std::future<DownloadResult> TransferSubmitter::DownloadBuffer(VkBuffer srcBuffer
   copy.dstOffset = 0;
   copy.srcOffset = offset;
   copy.size = size;
-  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyBuffer, srcBuffer,
-                                                stagingBuffer.GetHandle(), 1, &copy);
+  commands.PushCommand(vkCmdCopyBuffer, srcBuffer, stagingBuffer.GetHandle(), 1, &copy);
   auto createDownloadResult = [](BufferGPU & stagingBuffer) -> DownloadResult
   {
     DownloadResult result(stagingBuffer.Size(), 0);
@@ -117,15 +131,15 @@ std::future<DownloadResult> TransferSubmitter::DownloadBuffer(VkBuffer srcBuffer
       std::memcpy(result.data(), scopedPtr.get(), stagingBuffer.Size());
     return result;
   };
-  auto && data =
-    m_writingTransferBuffer.download_data.emplace_back(std::move(stagingBuffer), std::move(promise),
-                                                       std::move(createDownloadResult));
+  auto && data = m_writingBatch.download_tasks.emplace_back(std::move(stagingBuffer),
+                                                            std::move(promise),
+                                                            std::move(createDownloadResult));
   return std::get<1>(data).get_future();
 }
 
-std::future<UploadResult> TransferSubmitter::UploadImage(IInternalTexture & dstImage,
-                                                         const uint8_t * srcData,
-                                                         const CopyImageArguments & args)
+std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
+  details::CommandBuffer & commands, IInternalTexture & dstImage, const uint8_t * srcData,
+  const CopyImageArguments & args)
 {
   std::promise<UploadResult> promise;
   const size_t copyingRegionSize =
@@ -160,19 +174,18 @@ std::future<UploadResult> TransferSubmitter::UploadImage(IInternalTexture & dstI
   }
 
   VkImageLayout oldLayout = dstImage.GetLayout();
-  dstImage.TransferLayout(m_writingTransferBuffer.submitter, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(),
-                                                dstImage.GetHandle(),
-                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  dstImage.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  commands.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(), dstImage.GetHandle(),
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
   auto && data =
-    m_writingTransferBuffer.upload_data.emplace_back(std::move(stagingBuffer), std::move(promise));
-  dstImage.TransferLayout(m_writingTransferBuffer.submitter, oldLayout);
+    m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
+  dstImage.TransferLayout(commands, oldLayout);
   return data.second.get_future();
 }
 
-std::future<DownloadResult> TransferSubmitter::DownloadImage(IInternalTexture & srcImage,
-                                                             HostImageFormat format,
-                                                             const ImageRegion & imgRegion)
+std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
+  details::CommandBuffer & commands, IInternalTexture & srcImage, HostImageFormat format,
+  const ImageRegion & imgRegion)
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(),
@@ -208,20 +221,19 @@ std::future<DownloadResult> TransferSubmitter::DownloadImage(IInternalTexture & 
   };
 
   VkImageLayout oldLayout = srcImage.GetLayout();
-  srcImage.TransferLayout(m_writingTransferBuffer.submitter, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyImageToBuffer, srcImage.GetHandle(),
-                                                srcImage.GetLayout(), stagingBuffer.GetHandle(), 1,
-                                                &region);
-  auto && data =
-    m_writingTransferBuffer.download_data.emplace_back(std::move(stagingBuffer), std::move(promise),
-                                                       std::move(createDownloadResult));
-  srcImage.TransferLayout(m_writingTransferBuffer.submitter, oldLayout);
+  srcImage.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  commands.PushCommand(vkCmdCopyImageToBuffer, srcImage.GetHandle(), srcImage.GetLayout(),
+                       stagingBuffer.GetHandle(), 1, &region);
+  auto && data = m_writingBatch.download_tasks.emplace_back(std::move(stagingBuffer),
+                                                            std::move(promise),
+                                                            std::move(createDownloadResult));
+  srcImage.TransferLayout(commands, oldLayout);
   return std::get<1>(data).get_future();
 }
 
-std::future<BlitResult> TransferSubmitter::BlitImageToImage(IInternalTexture & dst,
-                                                           IInternalTexture & src,
-                                                           const ImageRegion & region)
+std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
+  details::CommandBuffer & commands, IInternalTexture & dst, IInternalTexture & src,
+  const ImageRegion & region)
 {
   std::promise<BlitResult> promise;
   VkImageCopy copy{};
@@ -230,67 +242,107 @@ std::future<BlitResult> TransferSubmitter::BlitImageToImage(IInternalTexture & d
     copy.extent = src.GetInternalExtent();
     //copy.dstOffset =
   }
-  m_writingTransferBuffer.submitter.PushCommand(vkCmdCopyImage, src.GetHandle(), src.GetLayout(),
-                                                dst.GetHandle(), dst.GetLayout(), 1, &copy);
-  auto && data = m_writingTransferBuffer.blit_data.emplace_back(std::move(promise));
+  commands.PushCommand(vkCmdCopyImage, src.GetHandle(), src.GetLayout(), dst.GetHandle(),
+                       dst.GetLayout(), 1, &copy);
+  auto && data = m_writingBatch.blit_tasks.emplace_back(std::move(promise));
   return data.get_future();
 }
-
-TransferSubmitter::TransferBuffer::TransferBuffer(Context & ctx, VkQueue queue,
-                                                  uint32_t queueFamilyIndex)
-  : submitter(ctx, queue, queueFamilyIndex, VK_PIPELINE_STAGE_TRANSFER_BIT)
-{
-}
-
-} // namespace details
 
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_genericSwapchain(ctx, ctx.GetQueue(QueueType::Transfer).second,
-                       ctx.GetQueue(QueueType::Transfer).first)
-  , m_graphicsSwapchain(ctx, ctx.GetQueue(QueueType::Graphics).second,
-                        ctx.GetQueue(QueueType::Graphics).first)
+  , m_transferSubmitter(ctx, QueueType::Transfer)
+  , m_graphicsSubmitter(ctx, QueueType::Graphics)
+  , m_computeSubmitter(ctx, QueueType::Compute)
+  , m_pendingTasks(new Transferer::PendingTasksContainer(ctx))
 {
 }
 
+
+Transferer::Transferer(Transferer && rhs)
+  : Transferer(rhs.GetOwner())
+{
+  std::swap(m_transferSubmitter, rhs.m_transferSubmitter);
+  std::swap(m_graphicsSubmitter, rhs.m_graphicsSubmitter);
+  std::swap(m_computeSubmitter, rhs.m_computeSubmitter);
+  std::swap(m_awaitable, rhs.m_awaitable);
+  std::swap(m_pendingTasks, rhs.m_pendingTasks);
+}
+
+Transferer::~Transferer() = default;
+
 IAwaitable * Transferer::DoTransfer()
 {
-  std::vector<IAwaitable *> tasks{m_genericSwapchain.Submit(), m_graphicsSwapchain.Submit()};
+  std::lock_guard lk{m_submittingMutex};
+  std::vector<IAwaitable *> tasks{m_transferSubmitter.SubmitAndSwap(),
+                                  m_graphicsSubmitter.SubmitAndSwap(),
+                                  m_computeSubmitter.SubmitAndSwap()};
   m_awaitable.SetTasks(std::move(tasks));
+  m_pendingTasks->ProcessSubmittedTasks();
   return &m_awaitable;
 }
 
 std::future<UploadResult> Transferer::UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData,
                                                    size_t size, size_t offset)
 {
-  return m_genericSwapchain.UploadBuffer(dstBuffer, srcData, size, offset);
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->UploadBuffer(m_transferSubmitter.GetWritingBuffer(), dstBuffer, srcData,
+                                      size, offset);
 }
 
 std::future<DownloadResult> Transferer::DownloadBuffer(VkBuffer srcBuffer, size_t size,
                                                        size_t offset)
 {
-  return m_genericSwapchain.DownloadBuffer(srcBuffer, size, offset);
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->DownloadBuffer(m_transferSubmitter.GetWritingBuffer(), srcBuffer, size,
+                                        offset);
 }
 
 std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
                                                   const uint8_t * srcData,
                                                   const CopyImageArguments & args)
 {
-  return m_genericSwapchain.UploadImage(dstImage, srcData, args);
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, srcData,
+                                     args);
 }
 
 std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
                                                       HostImageFormat format,
                                                       const ImageRegion & region)
 {
-  return m_graphicsSwapchain.DownloadImage(srcImage, format, region);
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->DownloadImage(m_graphicsSubmitter.GetWritingBuffer(), srcImage, format,
+                                       region);
 }
 
 std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                                      const ImageRegion & region)
 {
-  return m_graphicsSwapchain.BlitImageToImage(dst, src, region);
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->BlitImageToImage(m_graphicsSubmitter.GetWritingBuffer(), dst, src, region);
+}
+
+Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)
+  : m_writingBuffer(ctx, ctx.GetQueue(type).second, ctx.GetQueue(type).first,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_executingBuffer(ctx, ctx.GetQueue(type).second, ctx.GetQueue(type).first,
+                      VK_PIPELINE_STAGE_TRANSFER_BIT)
+{
+  m_writingBuffer.BeginWriting();
+}
+
+IAwaitable * Transferer::Bufferchain::SubmitAndSwap()
+{
+  if (m_writingBuffer.IsEmpty())
+    return nullptr;
+  m_writingBuffer.EndWriting();
+  IAwaitable * result = m_writingBuffer.Submit(true, {});
+  std::swap(m_writingBuffer, m_executingBuffer);
+  m_writingBuffer.WaitForSubmitCompleted();
+  m_writingBuffer.Reset();
+  m_writingBuffer.BeginWriting();
+  return result;
 }
 
 } // namespace RHI::vulkan

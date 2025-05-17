@@ -6,42 +6,14 @@
 
 namespace RHI::vulkan
 {
-namespace details
-{
-VkSampler CreateSampler(const VkDevice & device)
-{
-  VkSamplerCreateInfo samplerInfo{};
-  samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  samplerInfo.magFilter = VK_FILTER_LINEAR;
-  samplerInfo.minFilter = VK_FILTER_LINEAR;
-  samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.anisotropyEnable = VK_FALSE;
-  samplerInfo.maxAnisotropy = 0;
-
-  samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-  samplerInfo.unnormalizedCoordinates = VK_FALSE;
-  samplerInfo.compareEnable = VK_FALSE;
-  samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-  samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  samplerInfo.mipLodBias = 0.0f;
-  samplerInfo.minLod = 0.0f;
-  samplerInfo.maxLod = 0.0f;
-
-  VkSampler resultSampler;
-  if (vkCreateSampler(device, &samplerInfo, nullptr, &resultSampler) != VK_SUCCESS)
-    throw std::invalid_argument("failed to create texture sampler!");
-  return VkSampler(resultSampler);
-}
-} // namespace details
-
 
 SamplerUniform::SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
                                uint32_t binding, uint32_t arrayIndex)
   : BaseUniform(ctx, owner, type, binding, arrayIndex)
   , ISamplerUniformDescriptor()
 {
+  m_builder.Reset();
+  AssignImage(nullptr);
 }
 
 SamplerUniform::~SamplerUniform()
@@ -56,6 +28,7 @@ SamplerUniform::SamplerUniform(SamplerUniform && rhs) noexcept
   std::swap(rhs.m_boundTexture, m_boundTexture);
   std::swap(rhs.m_sampler, m_sampler);
   std::swap(rhs.m_invalidSampler, m_invalidSampler);
+  std::swap(rhs.m_builder, m_builder);
 }
 
 SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
@@ -66,6 +39,7 @@ SamplerUniform & SamplerUniform::operator=(SamplerUniform && rhs) noexcept
     std::swap(rhs.m_boundTexture, m_boundTexture);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);
+    std::swap(rhs.m_builder, m_builder);
   }
   return *this;
 }
@@ -90,7 +64,8 @@ void SamplerUniform::Invalidate()
 {
   if (m_invalidSampler || !m_sampler)
   {
-    auto new_sampler = details::CreateSampler(GetContext().GetDevice());
+    auto new_sampler = m_builder.Make(GetContext().GetDevice());
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "new VkSampler has been created");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
     m_sampler = new_sampler;
     m_invalidSampler = false;
@@ -104,15 +79,26 @@ void SamplerUniform::SetInvalid()
 
 void SamplerUniform::AssignImage(ITexture * image)
 {
-  auto * internalImage = dynamic_cast<IInternalTexture *>(image);
-  m_boundTexture = internalImage;
-  Invalidate();
-  GetDescriptorsBuffer().OnDescriptorChanged(*this);
+  m_boundTexture = image ? dynamic_cast<IInternalTexture *>(image)
+                         : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept
 {
-  return m_boundTexture != nullptr;
+  return m_boundTexture != dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture()) ||
+         !m_boundTexture;
+}
+
+void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
+                                 RHI::TextureWrapping wWrap) noexcept
+{
+  m_builder.SetTextureWrapping(uWrap, vWrap, wWrap);
+}
+
+void SamplerUniform::SetFilter(RHI::TextureFilteration minFilter,
+                               RHI::TextureFilteration magFilter) noexcept
+{
+  m_builder.SetFilter(minFilter, magFilter);
 }
 
 uint32_t SamplerUniform::GetBinding() const noexcept

@@ -143,6 +143,11 @@ void RenderPass::Invalidate()
     UpdateRenderingReadyFlag();
     m_invalidRenderPass = false;
   }
+
+  for (auto && subpass : m_subpasses)
+  {
+    subpass.Invalidate();
+  }
 }
 
 void RenderPass::SetInvalid()

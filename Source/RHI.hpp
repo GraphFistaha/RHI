@@ -131,6 +131,20 @@ enum class CompareOperation
   Always = 7
 };
 
+enum class TextureWrapping
+{
+  Repeat,
+  MirroredRepeat,
+  ClampToEdge,
+  ClampToBorder
+};
+
+enum class TextureFilteration
+{
+  Nearest,
+  Linear
+};
+
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -205,6 +219,10 @@ struct ISamplerUniformDescriptor : public IUniformDescriptor
 {
   virtual void AssignImage(ITexture * texture) = 0;
   virtual bool IsImageAssigned() const noexcept = 0;
+  virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
+                           RHI::TextureWrapping wWrap) noexcept = 0;
+  virtual void SetFilter(RHI::TextureFilteration minFilter,
+                         RHI::TextureFilteration magFilter) noexcept = 0;
 };
 
 struct IBufferUniformDescriptor : public IUniformDescriptor
@@ -290,6 +308,8 @@ struct IFramebuffer
   virtual IAwaitable * EndFrame() = 0;
   virtual void SetFramesCount(uint32_t frames_count) = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
+  virtual void Resize(uint32_t width, uint32_t height) = 0;
+  virtual RHI::ImageExtent GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;

@@ -27,7 +27,8 @@ void Subpass::BeginPass()
   GetRenderPass().WaitForReadyToRendering();
   assert(GetRenderPass().GetHandle());
   m_cachedRenderPass = GetRenderPass().GetHandle();
-  m_pipeline.Invalidate();
+  // wait while Pipeline has been invalidated
+  std::atomic_wait(&m_invalidPipeline, true);
   m_writingBuffer.Reset();
   m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
   m_pipeline.BindToCommandBuffer(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -41,7 +42,7 @@ void Subpass::EndPass()
     std::lock_guard lk{m_write_lock};
     std::swap(m_executableBuffer, m_writingBuffer);
   }
-  m_shouldBeInvalidated = false;
+  m_dirtyCommands = false;
 }
 
 ISubpassConfiguration & Subpass::GetConfiguration() & noexcept
@@ -61,7 +62,7 @@ bool Subpass::IsEnabled() const noexcept
 
 bool Subpass::ShouldBeInvalidated() const noexcept
 {
-  return m_shouldBeInvalidated;
+  return m_dirtyCommands;
 }
 
 void Subpass::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
@@ -125,7 +126,7 @@ void Subpass::LockWriting(bool lock) const noexcept
 
 void Subpass::SetDirtyCacheCommands() noexcept
 {
-  m_shouldBeInvalidated = true;
+  m_dirtyCommands = true;
 }
 
 void Subpass::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
@@ -141,6 +142,17 @@ const SubpassLayout & Subpass::GetLayout() const & noexcept
 SubpassLayout & Subpass::GetLayout() & noexcept
 {
   return m_layout;
+}
+
+void Subpass::Invalidate()
+{
+  if (m_invalidPipeline)
+  {
+    m_pipeline.Invalidate();
+    SetDirtyCacheCommands();
+    m_invalidPipeline = false;
+    m_invalidPipeline.notify_one();
+  }
 }
 
 } // namespace RHI::vulkan

@@ -42,6 +42,8 @@ PRIVATE
 	Utils/PipelineLayoutBuilder.hpp
 	Utils/RenderPassBuilder.cpp
 	Utils/RenderPassBuilder.hpp
+	Utils/SamplerBuilder.cpp
+	Utils/SamplerBuilder.hpp
 	Utils/ShaderCompiler.hpp
 
 	

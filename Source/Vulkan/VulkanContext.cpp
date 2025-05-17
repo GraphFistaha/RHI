@@ -101,9 +101,12 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst,
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
+  VkPhysicalDeviceFeatures features{};
+  features.geometryShader = VK_TRUE;
   auto phys_ret =
     selector.set_surface(surface)
       .require_present(surface != VK_NULL_HANDLE)
+      .set_required_features(features)
       //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
       .select();
 
@@ -206,6 +209,18 @@ Context::Context(const SurfaceConfig * config, LoggingFunc logFunc)
   auto surfaceTexture =
     std::make_unique<SurfacedAttachment>(*this, m_impl->GetSurface(), SamplesCount::One);
   m_attachments.emplace_back(std::move(surfaceTexture));
+
+  // alloc null texture
+  RHI::ImageCreateArguments args{};
+  {
+    args.extent = {1, 1, 1};
+    args.format = RHI::ImageFormat::RGBA8;
+    args.mipLevels = 1;
+    args.samples = RHI::SamplesCount::One;
+    args.type = RHI::ImageType::Image2D;
+    args.shared = false;
+  }
+  AllocImage(args);
 }
 
 Context::~Context()
@@ -321,6 +336,11 @@ const memory::MemoryAllocator & Context::GetBuffersAllocator() const & noexcept
 const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const & noexcept
 {
   return *m_gc;
+}
+
+RHI::ITexture * Context::GetNullTexture() const noexcept
+{
+  return m_textures[0].get();
 }
 
 } // namespace RHI::vulkan

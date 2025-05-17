@@ -190,6 +190,7 @@ void CommandBuffer::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, u
 void CommandBuffer::Reset()
 {
   vkResetCommandBuffer(m_buffer, 0);
+  m_commandsCount = 0;
 }
 
 void CommandBuffer::AddCommands(const std::vector<VkCommandBuffer> & buffers)

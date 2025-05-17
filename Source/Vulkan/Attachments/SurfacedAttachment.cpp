@@ -115,6 +115,7 @@ void SurfacedAttachment::Invalidate()
                                             m_surface, renderIndex, m_presentQueueIndex);
     if (m_desiredBuffering != g_InvalidImageIndex)
       swapchain_builder.set_desired_min_image_count(m_desiredBuffering);
+    swapchain_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
     auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
     if (!swap_ret)
       throw std::runtime_error("Failed to create Vulkan swapchain - " + swap_ret.error().message());
@@ -165,7 +166,7 @@ bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
   const VkSwapchainKHR swapchains[] = {m_swapchain->swapchain};
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.waitSemaphoreCount = !!waitSemaphore ? 1 : 0;
   presentInfo.pWaitSemaphores = &waitSemaphore;
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapchains;
@@ -222,6 +223,12 @@ VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept
 void SurfacedAttachment::TransferLayout(VkImageLayout newLayout) noexcept
 {
   m_layouts[m_activeImage].TransferLayout(newLayout);
+}
+
+void SurfacedAttachment::Resize(const VkExtent2D & new_extent) noexcept
+{
+  // do nothing because resizing handled in AcquireForRend
+  m_invalidSwapchain = true;
 }
 
 // ---------------------------- Private -----------------

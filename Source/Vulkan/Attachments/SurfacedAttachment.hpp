@@ -50,6 +50,7 @@ public: // IInternalAttachment interface
   virtual uint32_t GetBuffering() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
+  virtual void Resize(const VkExtent2D & new_extent) noexcept;
 
 protected:
   void DestroySwapchain() noexcept;

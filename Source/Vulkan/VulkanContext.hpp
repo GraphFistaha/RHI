@@ -61,6 +61,8 @@ public: // RHI-only API
   const memory::MemoryAllocator & GetBuffersAllocator() const & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
+  RHI::ITexture * GetNullTexture() const noexcept;
+
 private:
   static constexpr size_t kValidationMark = 0xABCDEF00ABCDEF00;
   size_t m_validatationMark = kValidationMark;
