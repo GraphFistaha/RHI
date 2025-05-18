@@ -22,3 +22,10 @@ SHADERS
 	"uniform.frag"
 	"uniform.vert"
 )
+
+#copy RHI.dll into example's dir
+add_custom_command(TARGET ${this_target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${BASE_APP_DIR}/${PROJECT_NAME}.dll
+        ${APP_DIR}/.
+)
