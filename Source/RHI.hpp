@@ -1,4 +1,6 @@
 #pragma once
+#include "RHI_def.h"
+
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -397,8 +399,8 @@ struct IContext
 };
 
 /// @brief Factory-function to create context
-std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
-                                        LoggingFunc loggingFunc = nullptr);
+RHI_API std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
+                                                LoggingFunc loggingFunc = nullptr);
 
 namespace details
 {
