@@ -60,7 +60,7 @@ void RenderTarget::SetClearValue(uint32_t attachmentIndex, float depth, uint32_t
   m_clearValues[attachmentIndex].depthStencil = VkClearDepthStencilValue{depth, stencil};
 }
 
-ImageExtent RenderTarget::GetExtent() const noexcept
+TexelIndex RenderTarget::GetExtent() const noexcept
 {
   return {m_extent.width, m_extent.height, m_extent.depth};
 }

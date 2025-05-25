@@ -28,7 +28,7 @@ SurfacedAttachment::~SurfacedAttachment()
 }
 
 std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat format,
-                                                              const ImageRegion & region)
+                                                              const TextureRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }

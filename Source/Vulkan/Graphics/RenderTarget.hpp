@@ -30,7 +30,7 @@ public: // IRenderTarget interface
                              float a) noexcept override;
   virtual void SetClearValue(uint32_t attachmentIndex, float depth,
                              uint32_t stencil) noexcept override;
-  virtual ImageExtent GetExtent() const noexcept override;
+  virtual TexelIndex GetExtent() const noexcept override;
 
 public:
   void Invalidate();

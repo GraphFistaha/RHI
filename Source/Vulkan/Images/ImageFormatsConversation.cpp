@@ -12,9 +12,9 @@ void CopyTexelsArray(const srcTexel * src, dstTexel * dst, uint32_t texelsCount)
 template<typename SrcFormatT, typename DstFormatT, SrcFormatT srcFormat, DstFormatT dstFormat,
          typename srcTexel = RHI::utils::texel_type_t<SrcFormatT, srcFormat>,
          typename dstTexel = RHI::utils::texel_type_t<DstFormatT, dstFormat>>
-void CopyImage(const srcTexel * srcPixelData, const ImageExtent & srcExtent,
-               const ImageRegion & srcRegion, dstTexel * dstPixelData,
-               const ImageExtent & dstExtent, const ImageRegion & dstRegion)
+void CopyImage(const srcTexel * srcPixelData, const TexelIndex & srcExtent,
+               const TextureRegion & srcRegion, dstTexel * dstPixelData,
+               const TexelIndex & dstExtent, const TextureRegion & dstRegion)
 {
   if (srcRegion.extent != dstRegion.extent)
     throw std::invalid_argument("Images have different extents. Copying is impossible");
@@ -47,10 +47,10 @@ void CopyImage(const srcTexel * srcPixelData, const ImageExtent & srcExtent,
 namespace RHI::vulkan
 {
 
-void CopyImageFromHost(const uint8_t * srcPixelData, const ImageExtent & srcExtent,
-                       const ImageRegion & srcRegion, HostImageFormat srcFormat,
-                       uint8_t * dstPixelData, const ImageExtent & dstExtent,
-                       const ImageRegion & dstRegion, VkFormat dstFormat)
+void CopyImageFromHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
+                       const TextureRegion & srcRegion, HostImageFormat srcFormat,
+                       uint8_t * dstPixelData, const TexelIndex & dstExtent,
+                       const TextureRegion & dstRegion, VkFormat dstFormat)
 {
   switch (srcFormat)
   {
@@ -88,9 +88,9 @@ void CopyImageFromHost(const uint8_t * srcPixelData, const ImageExtent & srcExte
   }
 }
 
-void CopyImageToHost(const uint8_t * srcPixelData, const ImageExtent & srcExtent,
-                     const ImageRegion & srcRegion, VkFormat srcFormat, uint8_t * dstPixelData,
-                     const ImageExtent & dstExtent, const ImageRegion & dstRegion,
+void CopyImageToHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
+                     const TextureRegion & srcRegion, VkFormat srcFormat, uint8_t * dstPixelData,
+                     const TexelIndex & dstExtent, const TextureRegion & dstRegion,
                      HostImageFormat dstFormat)
 {
   switch (dstFormat)

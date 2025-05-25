@@ -57,7 +57,7 @@ inline uint32_t GetSizeOfTexel<HostImageFormat>(HostImageFormat format) noexcept
 
 /// Get size of image
 template<typename FormatT>
-inline size_t GetSizeOfImage(const ImageExtent & extent, FormatT format) noexcept
+inline size_t GetSizeOfImage(const TexelIndex & extent, FormatT format) noexcept
 {
   return extent[0] * extent[1] * extent[2] * utils::GetSizeOfTexel<FormatT>(format);
 }

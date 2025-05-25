@@ -81,30 +81,26 @@ enum ShaderAttachmentSlot
 /// For Image1D used 0 and 1 index as width and i-th array element
 /// For Image2D used all 3 indices as width, height and i-th array element
 /// For Cubemap used all 3 indices as width, height and i-th surface of cube
-using ImageExtent = std::array<uint32_t, 3>;
+using TexelIndex = std::array<uint32_t, 3>;
 
-struct ImageRegion
+/// Gabarit of texture
+using TextureExtent = TexelIndex;
+
+struct TextureRegion
 {
-  ImageExtent offset;
-  ImageExtent extent;
+  TexelIndex offset;
+  TextureExtent extent;
 };
 
 
 struct ImageCreateArguments final
 {
-  ImageExtent extent;
+  TextureExtent extent;
   uint32_t mipLevels;
   ImageType type;
   ImageFormat format;
   SamplesCount samples;
   bool shared;
-};
-
-struct CopyImageArguments
-{
-  HostImageFormat hostFormat;
-  ImageRegion src;
-  ImageRegion dst;
 };
 
 } // namespace RHI

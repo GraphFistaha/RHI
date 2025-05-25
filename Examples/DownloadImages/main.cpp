@@ -36,7 +36,7 @@ RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool 
     throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
   }
 
-  RHI::ImageExtent extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+  RHI::TexelIndex extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
 
   RHI::ImageCreateArguments imageArgs{};
   imageArgs.extent = extent;
@@ -46,11 +46,9 @@ RHI::ITexture * CreateAndLoadImage(RHI::IContext & ctx, const char * path, bool 
   imageArgs.mipLevels = 1;
   imageArgs.samples = RHI::SamplesCount::One;
   auto texture = ctx.AllocImage(imageArgs);
-  RHI::CopyImageArguments copyArgs{};
-  copyArgs.hostFormat = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
-  copyArgs.src.extent = extent;
-  copyArgs.dst.extent = extent;
-  texture->UploadImage(pixel_data, copyArgs);
+  texture->UploadImage(pixel_data, extent,
+      with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8,
+      { {}, extent }, { {}, extent });
   stbi_image_free(pixel_data);
   return texture;
 }
@@ -61,7 +59,7 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   auto texture = CreateAndLoadImage(*ctx, "mike_wazowski.jpg", false);
-  RHI::ImageRegion region2Download;
+  RHI::TextureRegion region2Download;
   region2Download.extent = texture->GetDescription().extent;
   region2Download.offset = {0, 0, 0};
   auto future = texture->DownloadImage(RHI::HostImageFormat::RGB8, region2Download);

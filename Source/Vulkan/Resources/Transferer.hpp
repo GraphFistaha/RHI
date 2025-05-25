@@ -31,11 +31,13 @@ struct Transferer final : public OwnedBy<Context>
   std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
 
   std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const uint8_t * srcData,
-                                        const CopyImageArguments & args);
+                                        const TextureExtent & srcExtent, HostImageFormat hostFormat,
+                                        const TextureRegion & srcRegion,
+                                        const TextureRegion & dstRegion);
   std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage, HostImageFormat format,
-                                            const ImageRegion & region);
+                                            const TextureRegion & region);
   std::future<BlitResult> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
-                                           const ImageRegion & region);
+                                           const TextureRegion & region);
 
 private:
   struct Bufferchain final

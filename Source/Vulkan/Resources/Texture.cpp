@@ -28,13 +28,17 @@ Texture::~Texture()
 }
 
 std::future<UploadResult> Texture::UploadImage(const uint8_t * srcPixelData,
-                                               const CopyImageArguments & args)
+                                               const TextureExtent & srcExtent,
+                                               HostImageFormat hostFormat,
+                                               const TextureRegion & srcRegion,
+                                               const TextureRegion & dstRegion)
 {
-  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
+  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, srcExtent, hostFormat,
+                                                  srcRegion, dstRegion);
 }
 
 std::future<DownloadResult> Texture::DownloadImage(HostImageFormat format,
-                                                   const ImageRegion & region)
+                                                   const TextureRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
@@ -52,7 +56,7 @@ size_t Texture::Size() const
 void Texture::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::ImageRegion{});
+    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 VkImageView Texture::GetImageView() const noexcept

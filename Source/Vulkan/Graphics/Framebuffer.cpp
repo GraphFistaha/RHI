@@ -175,7 +175,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   m_attachmentsChanged = true;
 }
 
-RHI::ImageExtent Framebuffer::GetExtent() const
+RHI::TexelIndex Framebuffer::GetExtent() const
 {
   auto internalExtent = m_attachments[0]->GetInternalExtent();
   return {internalExtent.width, internalExtent.height, internalExtent.depth};

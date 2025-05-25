@@ -280,7 +280,7 @@ struct ISubpassConfiguration : public IInvalidable
 struct IRenderTarget
 {
   virtual ~IRenderTarget() = default;
-  virtual ImageExtent GetExtent() const noexcept = 0;
+  virtual TexelIndex GetExtent() const noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
                              float a) noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
@@ -324,7 +324,7 @@ struct IFramebuffer
   virtual void SetFramesCount(uint32_t frames_count) = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
-  virtual RHI::ImageExtent GetExtent() const = 0;
+  virtual RHI::TexelIndex GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
@@ -362,9 +362,12 @@ struct ITexture
 {
   virtual ~ITexture() = default;
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const CopyImageArguments & args) = 0;
+                                                const TextureExtent & srcExtent,
+                                                HostImageFormat hostFormat,
+                                                const TextureRegion & srcRegion,
+                                                const TextureRegion & dstRegion) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) = 0;
+                                                    const TextureRegion & region) = 0;
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
@@ -376,7 +379,7 @@ struct IAttachment
 {
   virtual ~IAttachment() = default;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) = 0;
+                                                    const TextureRegion & region) = 0;
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   virtual void BlitTo(ITexture * texture) = 0;

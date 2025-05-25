@@ -25,7 +25,7 @@ struct GenericAttachment : public IAttachment,
 
 public: // IAttachment interface
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) override;
+                                                    const TextureRegion & region) override;
   virtual ImageCreateArguments GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;

@@ -77,7 +77,7 @@ GenericAttachment::~GenericAttachment()
 
 
 std::future<DownloadResult> GenericAttachment::DownloadImage(HostImageFormat format,
-                                                             const ImageRegion & region)
+                                                             const TextureRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
@@ -91,7 +91,7 @@ size_t GenericAttachment::Size() const
 void GenericAttachment::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::ImageRegion{});
+    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 ImageCreateArguments GenericAttachment::GetDescription() const noexcept

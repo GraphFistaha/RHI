@@ -26,7 +26,7 @@ struct SurfacedAttachment final : public IAttachment,
 
 public: // ITexture interface
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) override;
+                                                    const TextureRegion & region) override;
   virtual ImageCreateArguments GetDescription() const noexcept override;
   virtual size_t Size() const override;
 
