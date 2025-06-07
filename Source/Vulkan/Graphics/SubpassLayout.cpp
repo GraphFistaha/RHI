@@ -40,6 +40,9 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
     case ShaderAttachmentSlot::Color:
       assignOrInsert(m_colorAttachments,
                      VkAttachmentReference{idx, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+      assignOrInsert(m_resolveAttachments,
+                     VkAttachmentReference{VK_ATTACHMENT_UNUSED,
+                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
       break;
     case ShaderAttachmentSlot::Input:
       assignOrInsert(m_inputAttachments,
@@ -47,12 +50,17 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
       break;
     case ShaderAttachmentSlot::DepthStencil:
       m_depthStencilAttachment =
-        VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+        VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
       break;
     default:
       throw std::invalid_argument("Unknown ShaderAttachmentSlot");
       break;
   }
+}
+
+void SubpassLayout::BindAttachmentAsResolver(uint32_t idx, uint32_t resolveIdx)
+{
+  m_resolveAttachments[resolveIdx].attachment = idx;
 }
 
 VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
@@ -65,9 +73,17 @@ VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
   subpassDescription.pInputAttachments = m_inputAttachments.data();
   subpassDescription.pDepthStencilAttachment = UseDepthStencil() ? &m_depthStencilAttachment
                                                                  : nullptr;
+  // here must be attachments that should be MSAA resolved
+  subpassDescription.pResolveAttachments = m_resolveAttachments.data();
   subpassDescription.pPreserveAttachments = m_preservedAttachments.data();
   subpassDescription.preserveAttachmentCount = static_cast<uint32_t>(m_preservedAttachments.size());
   return subpassDescription;
+}
+
+void SubpassLayout::ForEachColorAttachment(std::function<void(uint32_t attachmentIdx)> && func)
+{
+  std::for_each(m_colorAttachments.begin(), m_colorAttachments.end(),
+                [&func](const VkAttachmentReference & ref) { func(ref.attachment); });
 }
 
 } // namespace RHI::vulkan

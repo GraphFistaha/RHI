@@ -44,9 +44,9 @@ MemoryBlock MemoryAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage,
 }
 
 MemoryBlock MemoryAllocator::AllocImage(const ImageCreateArguments & description,
-                                        VkImageUsageFlags usage) const
+                                        VkImageUsageFlags usage, VkSampleCountFlagBits samples) const
 {
-  return MemoryBlock(m_allocator, description, usage);
+  return MemoryBlock(m_allocator, description, usage, samples);
 }
 
 } // namespace RHI::vulkan::memory

@@ -81,6 +81,11 @@ void CubesRenderer::BindTexture(uint32_t idx, RHI::ITexture * texture)
     m_textures[idx]->AssignImage(texture);
 }
 
+void CubesRenderer::SetMSAA(RHI::SamplesCount samplesCount)
+{
+  m_renderPass->GetConfiguration().SetSamplesCount(samplesCount);
+}
+
 void CubesRenderer::Draw()
 {
   if (m_invalidGeometry && m_cubesCount > 0)

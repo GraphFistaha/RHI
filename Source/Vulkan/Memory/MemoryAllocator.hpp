@@ -20,7 +20,8 @@ public:
 
   MemoryBlock AllocBuffer(size_t size, VkBufferUsageFlags usage, bool allowHostAccess) const;
 
-  MemoryBlock AllocImage(const ImageCreateArguments & description, VkImageUsageFlags usage) const;
+  MemoryBlock AllocImage(const ImageCreateArguments & description, VkImageUsageFlags usage,
+                         VkSampleCountFlagBits samples) const;
 
 private:
   AllocatorHandle m_allocator;

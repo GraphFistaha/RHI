@@ -12,7 +12,8 @@ static constexpr uint32_t g_TextureUsageFlags =
 Texture::Texture(Context & ctx, const ImageCreateArguments & args)
   : OwnedBy<Context>(ctx)
   , m_description(args)
-  , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags))
+  , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags,
+                                                             VK_SAMPLE_COUNT_1_BIT))
   , m_layout(m_memBlock.GetImage())
 {
   m_view =

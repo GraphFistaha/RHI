@@ -40,6 +40,13 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
   GetSubpass().GetRenderPass().SetInvalid();
 }
 
+void SubpassConfiguration::BindAttachmentForResolvingMSAA(uint32_t binding,
+                                                          uint32_t multisampled_binding)
+{
+  GetSubpass().GetLayout().BindAttachmentAsResolver(binding, multisampled_binding);
+  GetSubpass().GetRenderPass().SetInvalid();
+}
+
 void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
 {
   m_pipelineBuilder.AddInputBinding(slot, stride, type);
@@ -105,6 +112,20 @@ void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
 {
   m_pipelineBuilder.SetDepthTestCompareOperator(op);
   m_invalidPipeline = true;
+}
+
+void SubpassConfiguration::SetSamplesCount(RHI::SamplesCount samplesCount) noexcept
+{
+  m_pipelineBuilder.SetSamplesCount(samplesCount);
+  m_invalidPipeline = true;
+  // all color attachments must have the same SamplesCount value
+  GetSubpass().GetLayout().ForEachColorAttachment(
+    [this, samplesCount](uint32_t idx)
+    {
+      auto * attachment = GetSubpass().GetRenderPass().GetFramebuffer().GetAttachment(idx);
+      if (attachment)
+        attachment->SetSamplesCount(samplesCount);
+    });
 }
 
 void SubpassConfiguration::Invalidate()

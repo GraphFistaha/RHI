@@ -4,7 +4,7 @@
 
 #include "../CommandsExecution/AsyncTask.hpp"
 #include "../Images/ImageLayoutTransferer.hpp"
-#include "Attachment.hpp"
+#include "GenericAttachment.hpp"
 
 namespace vkb
 {
@@ -19,8 +19,7 @@ struct SurfacedAttachment final : public IAttachment,
                                   public IInternalAttachment,
                                   public OwnedBy<Context>
 {
-  explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
-                              RHI::SamplesCount samplesCount);
+  explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface);
   virtual ~SurfacedAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
@@ -48,6 +47,7 @@ public: // IInternalAttachment interface
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual void SetBuffering(uint32_t framesCount) override;
   virtual uint32_t GetBuffering() const noexcept override;
+  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept;
@@ -59,8 +59,9 @@ private:
   std::mutex m_renderingMutex;
   VkQueue m_presentQueue = VK_NULL_HANDLE;
   uint32_t m_presentQueueIndex;
-  uint32_t m_desiredBuffering = g_InvalidImageIndex;         ///< desired instances of image
-  RHI::SamplesCount m_samplesCount = RHI::SamplesCount::One; ///< samples count for MSAA
+  uint32_t m_desiredBuffering = g_InvalidImageIndex; ///< desired instances of image
+  static constexpr RHI::SamplesCount g_samplesCount =
+    RHI::SamplesCount::One; ///< samples count for MSAA
 
   std::vector<VkImage> m_images;                          ///< swapchain images
   std::vector<VkImageView> m_imageViews;                  /// attachment image view

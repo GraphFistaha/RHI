@@ -217,7 +217,6 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.extent = {1, 1, 1};
     args.format = RHI::ImageFormat::RGBA8;
     args.mipLevels = 1;
-    args.samples = RHI::SamplesCount::One;
     args.type = RHI::ImageType::Image2D;
     args.shared = false;
   }
@@ -231,8 +230,7 @@ Context::~Context()
 IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits)
 {
   auto surface = m_impl->AllocSurface(surfaceTraits);
-  auto surfaceTexture =
-    std::make_unique<SurfacedAttachment>(*this, surface, RHI::SamplesCount::One);
+  auto surfaceTexture = std::make_unique<SurfacedAttachment>(*this, surface);
   auto && result = m_attachments.emplace_back(std::move(surfaceTexture));
   return result.get();
 }

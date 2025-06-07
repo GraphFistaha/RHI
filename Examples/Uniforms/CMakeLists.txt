@@ -27,5 +27,6 @@ SHADERS
 add_custom_command(TARGET ${this_target} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${BASE_APP_DIR}/${PROJECT_NAME}.dll
+		$<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
         ${APP_DIR}/.
 )

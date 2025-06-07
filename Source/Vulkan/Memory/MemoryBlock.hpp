@@ -16,7 +16,7 @@ struct MemoryBlock final
 private:
   /// create memory block for image
   explicit MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
-                       VkImageUsageFlags usage);
+                       VkImageUsageFlags usage, VkSampleCountFlagBits samples);
   /// Create memory block for buffer
   explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
                        bool allowHostAccess);

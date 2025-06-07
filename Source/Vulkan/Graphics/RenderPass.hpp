@@ -36,6 +36,7 @@ public: // IFramebuffer Interface
   AsyncTask * Draw(RenderTarget & renderTarget,
                    std::vector<VkSemaphore> && imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
+  const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
 public: // IInvalidable Interface

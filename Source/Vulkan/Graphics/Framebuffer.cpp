@@ -93,6 +93,11 @@ void Framebuffer::ForEachAttachment(AttachmentProcessFunc && func)
   std::for_each(m_attachments.begin(), m_attachments.end(), std::move(func));
 }
 
+IInternalAttachment * Framebuffer::GetAttachment(uint32_t idx) const
+{
+  return m_attachments[idx];
+}
+
 IRenderTarget * Framebuffer::BeginFrame()
 {
   if (m_attachments.empty())

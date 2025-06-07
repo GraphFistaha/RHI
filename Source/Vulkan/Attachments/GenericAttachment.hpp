@@ -29,7 +29,7 @@ public: // IAttachment interface
   virtual ImageCreateArguments GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;
-  virtual void BlitTo(ITexture* texture) override;
+  virtual void BlitTo(ITexture * texture) override;
 
 public: //IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
@@ -46,9 +46,10 @@ public: // IInternalAttachment interface
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual void SetBuffering(uint32_t framesCount) override;
   virtual uint32_t GetBuffering() const noexcept override;
+  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
-  virtual void Resize(const VkExtent2D& new_extent) noexcept override;
+  virtual void Resize(const VkExtent2D & new_extent) noexcept override;
 
 protected:
   std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
@@ -60,8 +61,10 @@ protected:
   uint32_t m_activeImage = 0;
 
   uint32_t m_desiredInstancesCount = 0;
+  RHI::SamplesCount m_desiredSamplesCount = RHI::SamplesCount::One;
   bool m_changedImagesCount = false;
   bool m_changedSize = false;
+  bool m_changedMSAA = false;
 };
 
 } // namespace RHI::vulkan

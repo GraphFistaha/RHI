@@ -87,7 +87,6 @@ int main()
     args.format = RHI::ImageFormat::DEPTH_STENCIL;
     args.extent = {800, 600, 1};
     args.mipLevels = 1;
-    args.samples = RHI::SamplesCount::One;
     args.shared = false;
     args.type = RHI::ImageType::Image2D;
   }

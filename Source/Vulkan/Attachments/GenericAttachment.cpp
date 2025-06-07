@@ -34,15 +34,56 @@ constexpr VkImageLayout MakeAttachmentFinalLayout(RHI::ImageFormat format)
   }
 }
 
-VkAttachmentDescription BuildAttachmentDescription(
-  const RHI::ImageCreateArguments & description) noexcept
+constexpr VkImageUsageFlagBits CalcImageUsageByFormat(RHI::ImageFormat format)
+{
+  switch (format)
+  {
+    case RHI::ImageFormat::A8:
+    case RHI::ImageFormat::R8:
+    case RHI::ImageFormat::RG8:
+    case RHI::ImageFormat::RGB8:
+    case RHI::ImageFormat::RGBA8:
+    case RHI::ImageFormat::BGR8:
+    case RHI::ImageFormat::BGRA8:
+      return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    case RHI::ImageFormat::DEPTH:
+    case RHI::ImageFormat::DEPTH_STENCIL:
+      return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    default:
+      return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
+  }
+}
+
+constexpr VkImageAspectFlags CalcImageAspectByFormat(RHI::ImageFormat format)
+{
+  switch (format)
+  {
+    case RHI::ImageFormat::A8:
+    case RHI::ImageFormat::R8:
+    case RHI::ImageFormat::RG8:
+    case RHI::ImageFormat::RGB8:
+    case RHI::ImageFormat::RGBA8:
+    case RHI::ImageFormat::BGR8:
+    case RHI::ImageFormat::BGRA8:
+      return VK_IMAGE_ASPECT_COLOR_BIT;
+    case RHI::ImageFormat::DEPTH:
+      return VK_IMAGE_ASPECT_DEPTH_BIT;
+    case RHI::ImageFormat::DEPTH_STENCIL:
+      return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    default:
+      return VK_IMAGE_ASPECT_NONE;
+  }
+}
+
+VkAttachmentDescription BuildAttachmentDescription(const RHI::ImageCreateArguments & description,
+                                                   RHI::SamplesCount samplesCount) noexcept
 {
   VkAttachmentDescription attachmentDescription{};
   {
     attachmentDescription.format =
       RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
     attachmentDescription.samples =
-      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
+      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(samplesCount);
     attachmentDescription.initialLayout = MakeAttachmentInitialLayout(description.format);
     attachmentDescription.finalLayout = MakeAttachmentFinalLayout(description.format);
     attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -61,7 +102,6 @@ GenericAttachment::GenericAttachment(Context & ctx, const ImageCreateArguments &
   , m_description(args)
 {
   SetBuffering(3);
-  Invalidate();
 }
 
 GenericAttachment::~GenericAttachment()
@@ -135,7 +175,7 @@ VkExtent3D GenericAttachment::GetInternalExtent() const noexcept
 
 void GenericAttachment::Invalidate()
 {
-  if (m_changedSize)
+  if (m_changedSize || m_changedMSAA)
   {
     for (auto && view : m_views)
       GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(view), nullptr);
@@ -145,6 +185,7 @@ void GenericAttachment::Invalidate()
     m_views.clear();
 
     m_changedSize = false;
+    m_changedMSAA = false;
     m_changedImagesCount = true;
   }
 
@@ -157,16 +198,18 @@ void GenericAttachment::Invalidate()
       m_views.pop_back();
     }
 
+    auto desiredMSAA =
+      utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_desiredSamplesCount);
     while (m_images.size() < m_desiredInstancesCount)
     {
       auto memoryBlock =
         GetContext().GetBuffersAllocator().AllocImage(m_description,
-                                                      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                                                      CalcImageUsageByFormat(m_description.format),
+                                                      desiredMSAA);
       m_layouts.emplace_back(memoryBlock.GetImage());
-      m_views.emplace_back(
-        utils::CreateImageView(GetContext().GetDevice(), memoryBlock.GetImage(),
-                               GetInternalFormat(), VK_IMAGE_VIEW_TYPE_2D,
-                               VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT));
+      m_views.emplace_back(utils::CreateImageView(GetContext().GetDevice(), memoryBlock.GetImage(),
+                                                  GetInternalFormat(), VK_IMAGE_VIEW_TYPE_2D,
+                                                  CalcImageAspectByFormat(m_description.format)));
       m_images.push_back(std::move(memoryBlock));
     }
     m_changedImagesCount = false;
@@ -203,9 +246,16 @@ uint32_t GenericAttachment::GetBuffering() const noexcept
   return static_cast<uint32_t>(m_images.size());
 }
 
+void GenericAttachment::SetSamplesCount(RHI::SamplesCount samplesCount)
+{
+  m_desiredSamplesCount = samplesCount;
+  m_changedMSAA = true;
+}
+
 VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
 {
-  return BuildAttachmentDescription(m_description);
+  assert(!m_changedMSAA && !m_changedSize && !m_changedImagesCount);
+  return BuildAttachmentDescription(m_description, m_desiredSamplesCount);
 }
 
 void GenericAttachment::TransferLayout(VkImageLayout layout) noexcept

@@ -122,6 +122,11 @@ void RenderPass::SetAttachments(const std::vector<VkAttachmentDescription> & att
   }
 }
 
+const VkAttachmentDescription & RenderPass::GetAttachmentDescription(uint32_t idx) const & noexcept
+{
+  return m_cachedAttachments[idx];
+}
+
 void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
 {
   std::for_each(m_subpasses.begin(), m_subpasses.end(), std::move(func));

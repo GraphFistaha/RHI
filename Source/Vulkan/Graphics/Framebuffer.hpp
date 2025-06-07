@@ -48,6 +48,7 @@ public: // RHI-only API
 
   using AttachmentProcessFunc = std::function<void(IInternalAttachment *)>;
   void ForEachAttachment(AttachmentProcessFunc && func);
+  IInternalAttachment * GetAttachment(uint32_t idx) const;
 
 protected:
   std::vector<RenderTarget> m_targets;

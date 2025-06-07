@@ -30,6 +30,8 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) override;
+  virtual void BindAttachmentForResolvingMSAA(uint32_t binding,
+                                              uint32_t multisampled_binding) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
@@ -46,6 +48,8 @@ public: // ISubpassConfiguration interface
 
   virtual void EnableDepthTest(bool enabled) noexcept override;
   virtual void SetDepthFunc(CompareOperation op) noexcept override;
+
+  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) noexcept override;
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;

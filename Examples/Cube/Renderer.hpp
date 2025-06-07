@@ -33,6 +33,7 @@ public: // Client API
   void DeleteCubeFromScene(size_t cubeId);
   void SetCameraTransform(const glm::mat4 & vp);
   void BindTexture(uint32_t idx, RHI::ITexture * texture);
+  void SetMSAA(RHI::SamplesCount samplesCount);
   void InvalidateScene();
   size_t GetCubesCount() const noexcept { return m_cubesCount; }
 

@@ -53,7 +53,7 @@ namespace RHI::vulkan::memory
 {
 
 MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
-                         VkImageUsageFlags usage)
+                         VkImageUsageFlags usage, VkSampleCountFlagBits samples)
   : m_allocator(allocator)
 {
   VkImageCreateInfo imageInfo{};
@@ -71,7 +71,7 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
                        :*/ VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
-    imageInfo.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(description.samples);
+    imageInfo.samples = samples;
     imageInfo.sharingMode = description.shared ? VK_SHARING_MODE_CONCURRENT
                                                : VK_SHARING_MODE_EXCLUSIVE;
   }

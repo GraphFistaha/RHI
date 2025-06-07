@@ -12,12 +12,10 @@
 namespace RHI::vulkan
 {
 
-SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
-                                       RHI::SamplesCount samplesCount)
+SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface)
   : OwnedBy<Context>(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
-  , m_samplesCount(samplesCount)
 {
   std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Graphics);
 }
@@ -37,7 +35,6 @@ ImageCreateArguments SurfacedAttachment::GetDescription() const noexcept
 {
   ImageCreateArguments description{};
   {
-    description.samples = m_samplesCount;
     description.mipLevels = 1;
     description.shared = false;
     description.type = RHI::ImageType::Image2D;
@@ -204,12 +201,17 @@ uint32_t SurfacedAttachment::GetBuffering() const noexcept
   return static_cast<uint32_t>(m_images.size());
 }
 
+void SurfacedAttachment::SetSamplesCount(RHI::SamplesCount samplesCount)
+{
+  // do nothing, because VkSwapchainKHR can have only single-sampled images
+}
+
 VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept
 {
   VkAttachmentDescription description{};
   {
     description.format = GetInternalFormat();
-    description.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_samplesCount);
+    description.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(g_samplesCount);
     description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;

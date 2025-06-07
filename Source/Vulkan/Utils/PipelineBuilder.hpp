@@ -24,6 +24,8 @@ public:
   // shaders
   void AttachShader(RHI::ShaderType type, const std::filesystem::path & path);
 
+  void SetSamplesCount(RHI::SamplesCount samplesCount);
+
   // assembly
   void SetMeshTopology(MeshTopology topology);
   void SetPrimitiveRestartEnabled(bool value);

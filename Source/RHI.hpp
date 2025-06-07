@@ -257,6 +257,8 @@ struct ISubpassConfiguration : public IInvalidable
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
+  virtual void BindAttachmentForResolvingMSAA(uint32_t binding, uint32_t multisampled_binding) = 0;
+  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) noexcept = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -375,6 +377,7 @@ struct ITexture
 };
 
 /// swapchained image sequence to attach it to framebuffer
+// TODO: remove it. Only renderTarget should stay
 struct IAttachment
 {
   virtual ~IAttachment() = default;

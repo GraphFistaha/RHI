@@ -91,6 +91,7 @@ int main()
   auto subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  trianglePipeline.SetSamplesCount(RHI::SamplesCount::Eight);
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "triangle.vert");
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "triangle.frag");

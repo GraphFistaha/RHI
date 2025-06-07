@@ -99,7 +99,6 @@ struct ImageCreateArguments final
   uint32_t mipLevels;
   ImageType type;
   ImageFormat format;
-  SamplesCount samples;
   bool shared;
 };
 
