@@ -25,6 +25,7 @@ public:
   void AttachShader(RHI::ShaderType type, const std::filesystem::path & path);
 
   void SetSamplesCount(RHI::SamplesCount samplesCount);
+  RHI::SamplesCount GetSamplesCount() const noexcept;
 
   // assembly
   void SetMeshTopology(MeshTopology topology);
@@ -52,6 +53,7 @@ public:
                          InputAttributeElementType type);
 
 private:
+  RHI::SamplesCount m_cachedSamplesCount = RHI::SamplesCount::One;
   VkPipelineDynamicStateCreateInfo m_dynamicStatesInfo{};
   VkPipelineVertexInputStateCreateInfo m_vertexInputInfo{};
   VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyInfo{};

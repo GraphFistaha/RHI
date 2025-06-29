@@ -19,7 +19,8 @@ struct GenericAttachment : public IAttachment,
                            public IInternalAttachment,
                            public OwnedBy<Context>
 {
-  explicit GenericAttachment(Context & ctx, const ImageCreateArguments & m_description);
+  explicit GenericAttachment(Context & ctx, const ImageCreateArguments & m_description,
+                             RHI::RenderBuffering buffering, RHI::SamplesCount samplesCount);
   virtual ~GenericAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
@@ -44,9 +45,8 @@ public: // IInternalAttachment interface
   virtual void Invalidate() override;
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
-  virtual void SetBuffering(uint32_t framesCount) override;
   virtual uint32_t GetBuffering() const noexcept override;
-  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) override;
+  virtual RHI::SamplesCount GetSamplesCount() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept override;
@@ -60,9 +60,9 @@ protected:
   std::vector<VkImageView> m_views;
   uint32_t m_activeImage = 0;
 
-  uint32_t m_desiredInstancesCount = 0;
-  RHI::SamplesCount m_desiredSamplesCount = RHI::SamplesCount::One;
-  bool m_changedImagesCount = false;
+  uint32_t m_instancesCount = 0;
+  const RHI::SamplesCount m_samplesCount = RHI::SamplesCount::One;
+  bool m_changedImagesCount = true;
   bool m_changedSize = false;
   bool m_changedMSAA = false;
 };

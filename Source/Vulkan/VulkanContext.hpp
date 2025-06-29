@@ -37,12 +37,15 @@ struct Context final : public IContext
   RESTRICTED_COPY(Context);
 
 public: // IContext interface
-  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) override;
-  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) override;
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                 RenderBuffering buffering) override;
+  virtual IFramebuffer * CreateFramebuffer() override;
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
                                    bool allowHostAccess) override;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) override;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args) override;
+  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args,
+                                        RenderBuffering buffering,
+                                        RHI::SamplesCount samplesCount) override;
   virtual void ClearResources() override;
   virtual void Flush() override;
 

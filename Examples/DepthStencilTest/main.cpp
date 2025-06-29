@@ -93,7 +93,7 @@ int main()
 
   auto * framebuffer = defaultFramebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
-  framebuffer->AddAttachment(1, ctx->AllocAttachment(args));
+  framebuffer->AddAttachment(1, ctx->AllocAttachment(args, RHI::SamplesCount::One)); 
 
   auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering

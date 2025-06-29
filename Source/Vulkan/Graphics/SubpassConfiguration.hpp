@@ -30,8 +30,7 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) override;
-  virtual void BindAttachmentForResolvingMSAA(uint32_t binding,
-                                              uint32_t multisampled_binding) override;
+  virtual void BindResolver(uint32_t binding, uint32_t resolve_for) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
@@ -73,6 +72,9 @@ private:
   utils::PipelineBuilder m_pipelineBuilder;
   bool m_invalidPipeline = false;
   bool m_invalidPipelineLayout = false;
+
+private:
+  bool CheckMSAA() const noexcept;
 };
 
 } // namespace RHI::vulkan

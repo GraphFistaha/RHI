@@ -10,9 +10,9 @@ struct SubpassLayout final
 
   bool UseDepthStencil() const noexcept;
   void BindAttachment(ShaderAttachmentSlot slot, uint32_t idx);
-  void BindAttachmentAsResolver(uint32_t idx, uint32_t resolveIdx);
+  void BindResolver(uint32_t idx, uint32_t resolve_idx);
   VkSubpassDescription BuildDescription() const noexcept;
-  void ForEachColorAttachment(std::function<void(uint32_t attachmentIdx)> && func);
+  void ForEachAttachment(std::function<void(uint32_t attachmentIdx)> && func) const;
 
 private:
   VkPipelineBindPoint m_bindPoint;

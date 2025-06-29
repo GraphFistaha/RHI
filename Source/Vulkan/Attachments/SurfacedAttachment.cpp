@@ -12,10 +12,16 @@
 namespace RHI::vulkan
 {
 
-SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface)
+static constexpr VkSurfaceFormatKHR g_vkFormat{utils::CastInterfaceEnum2Vulkan<VkFormat>(
+                                                 SurfacedAttachment::g_imagesFormat),
+                                               VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+
+SurfacedAttachment::SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
+                                       RHI::RenderBuffering buffering)
   : OwnedBy<Context>(ctx)
   , m_surface(surface)
   , m_swapchain(std::make_unique<vkb::Swapchain>())
+  , m_desiredBuffering(static_cast<uint32_t>(buffering))
 {
   std::tie(m_presentQueueIndex, m_presentQueue) = ctx.GetQueue(QueueType::Graphics);
 }
@@ -38,15 +44,9 @@ ImageCreateArguments SurfacedAttachment::GetDescription() const noexcept
     description.mipLevels = 1;
     description.shared = false;
     description.type = RHI::ImageType::Image2D;
-    if (m_swapchain)
-    {
-      description.extent = {m_swapchain->extent.width, m_swapchain->extent.height, 1};
-      description.format = RHI::ImageFormat::RGBA8; // TODO: take from m_swapchain
-    }
-    else
-    {
-      description.format = RHI::ImageFormat::UNDEFINED;
-    }
+    auto extent = GetInternalExtent();
+    description.extent = {extent.width, extent.height, extent.depth};
+    description.format = g_imagesFormat;
   }
   return description;
 }
@@ -81,18 +81,24 @@ VkImage SurfacedAttachment::GetHandle() const noexcept
 
 VkFormat SurfacedAttachment::GetInternalFormat() const noexcept
 {
-  return m_swapchain ? m_swapchain->image_format : VK_FORMAT_UNDEFINED;
+  return m_swapchain && m_swapchain->swapchain ? m_swapchain->image_format : g_vkFormat.format;
 }
 
 VkExtent3D SurfacedAttachment::GetInternalExtent() const noexcept
 {
-  VkExtent3D result{0, 0, 0};
-  if (m_swapchain)
+  VkExtent2D result{0, 0};
+  if (m_swapchain && m_swapchain->swapchain)
   {
-    VkExtent2D tmp = m_swapchain->extent;
-    result = {tmp.width, tmp.height, 1};
+    result = m_swapchain->extent;
   }
-  return result;
+  else
+  {
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(GetContext().GetGPU(), m_surface,
+                                              &surfaceCapabilities);
+    result = surfaceCapabilities.currentExtent;
+  }
+  return {result.width, result.height, 1};
 }
 
 void SurfacedAttachment::BlitTo(ITexture * texture)
@@ -111,7 +117,8 @@ void SurfacedAttachment::Invalidate()
     vkb::SwapchainBuilder swapchain_builder(GetContext().GetGPU(), GetContext().GetDevice(),
                                             m_surface, renderIndex, m_presentQueueIndex);
     if (m_desiredBuffering != g_InvalidImageIndex)
-      swapchain_builder.set_desired_min_image_count(m_desiredBuffering);
+      swapchain_builder.set_required_min_image_count(m_desiredBuffering);
+    swapchain_builder.set_desired_format(g_vkFormat);
     swapchain_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
     auto swap_ret = swapchain_builder.set_old_swapchain(*m_swapchain).build();
     if (!swap_ret)
@@ -187,23 +194,14 @@ bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
   return true;
 }
 
-void SurfacedAttachment::SetBuffering(uint32_t framesCount)
-{
-  if (!m_swapchain || framesCount != m_swapchain->image_count)
-  {
-    m_desiredBuffering = framesCount;
-    m_invalidSwapchain = true;
-  }
-}
-
 uint32_t SurfacedAttachment::GetBuffering() const noexcept
 {
-  return static_cast<uint32_t>(m_images.size());
+  return m_desiredBuffering;
 }
 
-void SurfacedAttachment::SetSamplesCount(RHI::SamplesCount samplesCount)
+RHI::SamplesCount SurfacedAttachment::GetSamplesCount() const noexcept
 {
-  // do nothing, because VkSwapchainKHR can have only single-sampled images
+  return g_samplesCount;
 }
 
 VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept

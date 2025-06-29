@@ -40,10 +40,9 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
   GetSubpass().GetRenderPass().SetInvalid();
 }
 
-void SubpassConfiguration::BindAttachmentForResolvingMSAA(uint32_t binding,
-                                                          uint32_t multisampled_binding)
+void SubpassConfiguration::BindResolver(uint32_t binding, uint32_t resolve_for)
 {
-  GetSubpass().GetLayout().BindAttachmentAsResolver(binding, multisampled_binding);
+  GetSubpass().GetLayout().BindResolver(binding, resolve_for);
   GetSubpass().GetRenderPass().SetInvalid();
 }
 
@@ -118,14 +117,6 @@ void SubpassConfiguration::SetSamplesCount(RHI::SamplesCount samplesCount) noexc
 {
   m_pipelineBuilder.SetSamplesCount(samplesCount);
   m_invalidPipeline = true;
-  // all color attachments must have the same SamplesCount value
-  GetSubpass().GetLayout().ForEachColorAttachment(
-    [this, samplesCount](uint32_t idx)
-    {
-      auto * attachment = GetSubpass().GetRenderPass().GetFramebuffer().GetAttachment(idx);
-      if (attachment)
-        attachment->SetSamplesCount(samplesCount);
-    });
 }
 
 void SubpassConfiguration::Invalidate()
@@ -147,6 +138,8 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
+    assert(CheckMSAA());
+
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(),
                                                GetSubpass().GetRenderPass().GetHandle(),
                                                m_subpassIndex, m_layout);
@@ -175,6 +168,22 @@ void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
 void SubpassConfiguration::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
 {
   m_descriptors.TransitLayoutForUsedImages(commandBuffer);
+}
+
+bool SubpassConfiguration::CheckMSAA() const noexcept
+{
+  bool result = true;
+  GetSubpass().GetLayout().ForEachAttachment(
+    [this, &result](uint32_t idx)
+    {
+      IInternalAttachment * attachment =
+        GetSubpass().GetRenderPass().GetFramebuffer().GetAttachment(idx);
+      if (attachment)
+      {
+        result = result && attachment->GetSamplesCount() == m_pipelineBuilder.GetSamplesCount();
+      }
+    });
+  return result;
 }
 
 } // namespace RHI::vulkan

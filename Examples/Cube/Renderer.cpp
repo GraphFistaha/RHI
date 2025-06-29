@@ -25,6 +25,7 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     auto && subpassConfig = newSubpass->GetConfiguration();
     subpassConfig.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     subpassConfig.BindAttachment(1, RHI::ShaderAttachmentSlot::DepthStencil);
+    subpassConfig.SetSamplesCount(RHI::SamplesCount::One);
     subpassConfig.EnableDepthTest(true);
     // set shaders
     subpassConfig.AttachShader(RHI::ShaderType::Vertex, "cube.vert");

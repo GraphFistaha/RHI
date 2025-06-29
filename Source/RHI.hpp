@@ -42,6 +42,14 @@ struct SurfaceConfig
   ExternalHandle hInstance;
 };
 
+/// @brief How many buffers can be in one attachment
+enum class RenderBuffering : uint8_t
+{
+  Single = 1,
+  Double = 2,
+  Triple = 3
+};
+
 /// @brief requirements for GPU selector
 struct GpuTraits
 {
@@ -257,7 +265,7 @@ struct ISubpassConfiguration : public IInvalidable
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
-  virtual void BindAttachmentForResolvingMSAA(uint32_t binding, uint32_t multisampled_binding) = 0;
+  virtual void BindResolver(uint32_t binding, uint32_t resolve_for) = 0;
   virtual void SetSamplesCount(RHI::SamplesCount samplesCount) noexcept = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
@@ -323,7 +331,6 @@ struct IFramebuffer
   virtual ~IFramebuffer() = default;
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
-  virtual void SetFramesCount(uint32_t frames_count) = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
   virtual RHI::TexelIndex GetExtent() const = 0;
@@ -396,12 +403,15 @@ struct IContext
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) = 0;
-  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                 RenderBuffering buffering) = 0;
+  virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args) = 0;
+  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args,
+                                        RenderBuffering buffering,
+                                        RHI::SamplesCount samplesCount) = 0;
 };
 
 /// @brief Factory-function to create context

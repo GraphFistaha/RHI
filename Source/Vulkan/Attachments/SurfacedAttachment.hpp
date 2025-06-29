@@ -19,7 +19,8 @@ struct SurfacedAttachment final : public IAttachment,
                                   public IInternalAttachment,
                                   public OwnedBy<Context>
 {
-  explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface);
+  explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
+                              RHI::RenderBuffering buffering);
   virtual ~SurfacedAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
@@ -45,9 +46,8 @@ public: // IInternalAttachment interface
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
   virtual void Invalidate() override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
-  virtual void SetBuffering(uint32_t framesCount) override;
   virtual uint32_t GetBuffering() const noexcept override;
-  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) override;
+  virtual RHI::SamplesCount GetSamplesCount() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void TransferLayout(VkImageLayout layout) noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept;
@@ -55,13 +55,17 @@ public: // IInternalAttachment interface
 protected:
   void DestroySwapchain() noexcept;
 
+public:
+  /// samples count for MSAA
+  static constexpr RHI::SamplesCount g_samplesCount = RHI::SamplesCount::One;
+  /// desired format for swapchain
+  static constexpr RHI::ImageFormat g_imagesFormat = RHI::ImageFormat::RGBA8;
+
 private:
   std::mutex m_renderingMutex;
   VkQueue m_presentQueue = VK_NULL_HANDLE;
   uint32_t m_presentQueueIndex;
-  uint32_t m_desiredBuffering = g_InvalidImageIndex; ///< desired instances of image
-  static constexpr RHI::SamplesCount g_samplesCount =
-    RHI::SamplesCount::One; ///< samples count for MSAA
+  uint32_t m_desiredBuffering = 2; ///< desired instances of image
 
   std::vector<VkImage> m_images;                          ///< swapchain images
   std::vector<VkImageView> m_imageViews;                  /// attachment image view

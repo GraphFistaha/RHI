@@ -35,9 +35,6 @@ public: // IFramebuffer interface
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) override;
   /// @brief removes all images from all frames
   virtual void ClearAttachments() noexcept override;
-  /// @brief operation which add or remove some frames from swapchain
-  /// @param frames_count
-  virtual void SetFramesCount(uint32_t frames_count) override;
 
   virtual void Resize(uint32_t width, uint32_t height) override;
   virtual RHI::TexelIndex GetExtent() const override;

@@ -339,8 +339,14 @@ void PipelineBuilder::AttachShader(RHI::ShaderType type, const std::filesystem::
 
 void PipelineBuilder::SetSamplesCount(RHI::SamplesCount samplesCount)
 {
+  m_cachedSamplesCount = samplesCount;
   m_multisampleInfo.rasterizationSamples =
     utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(samplesCount);
+}
+
+RHI::SamplesCount PipelineBuilder::GetSamplesCount() const noexcept
+{
+  return m_cachedSamplesCount;
 }
 
 void PipelineBuilder::SetMeshTopology(MeshTopology topology)

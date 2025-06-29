@@ -249,9 +249,12 @@ int main()
     depthStencilAttachmentDescription.type = RHI::ImageType::Image2D;
   }
 
-  RHI::IFramebuffer * framebuffer = g_defaultFramebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
-  framebuffer->AddAttachment(1, ctx->AllocAttachment(depthStencilAttachmentDescription));
+  RHI::IFramebuffer * framebuffer = g_defaultFramebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(0,
+                             ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Triple));
+  framebuffer->AddAttachment(1, ctx->AllocAttachment(depthStencilAttachmentDescription,
+                                                     RHI::RenderBuffering::Triple,
+                                                     RHI::SamplesCount::One));
 
   g_renderer = std::make_unique<CubesRenderer>(*ctx);
   g_renderer->BindDrawSurface(framebuffer);

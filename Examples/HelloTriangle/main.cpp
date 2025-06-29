@@ -84,13 +84,18 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  auto * surfaceAttachment = ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Triple);
+  framebuffer->AddAttachment(0, ctx->AllocAttachment(surfaceAttachment->GetDescription(),
+                                                     RHI::RenderBuffering::Triple,
+                                                     RHI::SamplesCount::Eight));
+  framebuffer->AddAttachment(1, surfaceAttachment);
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  trianglePipeline.BindResolver(1, 0);
   trianglePipeline.SetSamplesCount(RHI::SamplesCount::Eight);
   // set shaders
   trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "triangle.vert");

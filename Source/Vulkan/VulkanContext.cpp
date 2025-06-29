@@ -227,18 +227,18 @@ Context::~Context()
 {
 }
 
-IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits)
+IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                RenderBuffering buffering)
 {
   auto surface = m_impl->AllocSurface(surfaceTraits);
-  auto surfaceTexture = std::make_unique<SurfacedAttachment>(*this, surface);
+  auto surfaceTexture = std::make_unique<SurfacedAttachment>(*this, surface, buffering);
   auto && result = m_attachments.emplace_back(std::move(surfaceTexture));
   return result.get();
 }
 
-IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
+IFramebuffer * Context::CreateFramebuffer()
 {
   auto & result = m_framebuffers.emplace_back(*this);
-  result.SetFramesCount(frames_count);
   return &result;
 }
 
@@ -255,9 +255,10 @@ ITexture * Context::AllocImage(const ImageCreateArguments & args)
   return result.get();
 }
 
-IAttachment * Context::AllocAttachment(const ImageCreateArguments & args)
+IAttachment * Context::AllocAttachment(const ImageCreateArguments & args, RenderBuffering buffering,
+                                       RHI::SamplesCount samplesCount)
 {
-  auto && attachment = std::make_unique<GenericAttachment>(*this, args);
+  auto && attachment = std::make_unique<GenericAttachment>(*this, args, buffering, samplesCount);
   return m_attachments.emplace_back(std::move(attachment)).get();
 }
 

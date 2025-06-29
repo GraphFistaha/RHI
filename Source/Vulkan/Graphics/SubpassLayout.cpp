@@ -58,9 +58,9 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
   }
 }
 
-void SubpassLayout::BindAttachmentAsResolver(uint32_t idx, uint32_t resolveIdx)
+void SubpassLayout::BindResolver(uint32_t idx, uint32_t resolve_idx)
 {
-  m_resolveAttachments[resolveIdx].attachment = idx;
+  m_resolveAttachments[resolve_idx].attachment = idx;
 }
 
 VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
@@ -80,10 +80,14 @@ VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
   return subpassDescription;
 }
 
-void SubpassLayout::ForEachColorAttachment(std::function<void(uint32_t attachmentIdx)> && func)
+void SubpassLayout::ForEachAttachment(std::function<void(uint32_t attachmentIdx)> && func) const
 {
   std::for_each(m_colorAttachments.begin(), m_colorAttachments.end(),
                 [&func](const VkAttachmentReference & ref) { func(ref.attachment); });
+  std::for_each(m_inputAttachments.begin(), m_inputAttachments.end(),
+                [&func](const VkAttachmentReference & ref) { func(ref.attachment); });
+  if (UseDepthStencil())
+    func(m_depthStencilAttachment.attachment);
 }
 
 } // namespace RHI::vulkan

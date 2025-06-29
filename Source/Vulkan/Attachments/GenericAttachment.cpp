@@ -97,11 +97,16 @@ VkAttachmentDescription BuildAttachmentDescription(const RHI::ImageCreateArgumen
 
 namespace RHI::vulkan
 {
-GenericAttachment::GenericAttachment(Context & ctx, const ImageCreateArguments & args)
+GenericAttachment::GenericAttachment(Context & ctx, const ImageCreateArguments & args,
+                                     RHI::RenderBuffering buffering, RHI::SamplesCount samplesCount)
   : OwnedBy<Context>(ctx)
   , m_description(args)
+  , m_samplesCount(samplesCount)
+  , m_instancesCount(static_cast<uint32_t>(buffering))
 {
-  SetBuffering(3);
+  m_images.reserve(m_instancesCount);
+  m_views.reserve(m_instancesCount);
+  m_layouts.reserve(m_instancesCount);
 }
 
 GenericAttachment::~GenericAttachment()
@@ -191,16 +196,15 @@ void GenericAttachment::Invalidate()
 
   if (m_changedImagesCount)
   {
-    while (m_images.size() > m_desiredInstancesCount)
+    while (m_images.size() > m_instancesCount)
     {
       m_images.pop_back();
       m_layouts.pop_back();
       m_views.pop_back();
     }
 
-    auto desiredMSAA =
-      utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_desiredSamplesCount);
-    while (m_images.size() < m_desiredInstancesCount)
+    auto desiredMSAA = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(m_samplesCount);
+    while (m_images.size() < m_instancesCount)
     {
       auto memoryBlock =
         GetContext().GetBuffersAllocator().AllocImage(m_description,
@@ -232,30 +236,20 @@ bool GenericAttachment::FinalRendering(VkSemaphore waitSemaphore)
   return true;
 }
 
-void GenericAttachment::SetBuffering(uint32_t framesCount)
-{
-  if (GetBuffering() != framesCount)
-  {
-    m_desiredInstancesCount = framesCount;
-    m_changedImagesCount = true;
-  }
-}
-
 uint32_t GenericAttachment::GetBuffering() const noexcept
 {
-  return static_cast<uint32_t>(m_images.size());
+  return m_instancesCount;
 }
 
-void GenericAttachment::SetSamplesCount(RHI::SamplesCount samplesCount)
+RHI::SamplesCount GenericAttachment::GetSamplesCount() const noexcept
 {
-  m_desiredSamplesCount = samplesCount;
-  m_changedMSAA = true;
+  return m_samplesCount;
 }
 
 VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
 {
   assert(!m_changedMSAA && !m_changedSize && !m_changedImagesCount);
-  return BuildAttachmentDescription(m_description, m_desiredSamplesCount);
+  return BuildAttachmentDescription(m_description, m_samplesCount);
 }
 
 void GenericAttachment::TransferLayout(VkImageLayout layout) noexcept

@@ -76,8 +76,9 @@ int main()
   }
   glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(0,
+                             ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Double));
 
   float t = 0.0;
   while (!glfwWindowShouldClose(window))
