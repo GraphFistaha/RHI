@@ -1,5 +1,7 @@
 #include "AsyncTask.hpp"
 
+#include "../Utils/FenceBuilder.hpp"
+#include "../Utils/SemaphoreBuilder.hpp"
 #include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
@@ -8,8 +10,8 @@ namespace RHI::vulkan
 AsyncTask::AsyncTask(Context & ctx)
   : OwnedBy<Context>(ctx)
 {
-  m_semaphore = utils::CreateVkSemaphore(ctx.GetDevice());
-  m_fence = utils::CreateFence(ctx.GetDevice(), true);
+  m_semaphore = utils::SemaphoreBuilder().Make(ctx.GetDevice());
+  m_fence = utils::FenceBuilder().SetLocked().Make(ctx.GetDevice());
 }
 
 AsyncTask::~AsyncTask()

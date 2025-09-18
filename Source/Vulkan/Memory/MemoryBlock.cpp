@@ -52,9 +52,9 @@ constexpr VmaAllocationCreateFlags CalcAllocationFlags<VkImageUsageFlagBits>(
 namespace RHI::vulkan::memory
 {
 
-MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
+MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
                          VkImageUsageFlags usage, VkSampleCountFlagBits samples)
-  : m_allocator(allocator)
+  : OwnedBy<MemoryAllocator>(allocator)
 {
   VkImageCreateInfo imageInfo{};
   {
@@ -68,7 +68,8 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
     imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
     imageInfo.tiling = /*description.format == RHI::ImageFormat::DEPTH_STENCIL
                        ? VK_IMAGE_TILING_LINEAR
-                       :*/ VK_IMAGE_TILING_OPTIMAL;
+                       :*/
+      VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.samples = samples;
@@ -85,7 +86,7 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
   VkImage image;
   VmaAllocation allocation;
   VmaAllocationInfo allocInfo;
-  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   if (auto res = vmaCreateImage(allocatorHandle, &imageInfo, &allocCreateInfo, &image, &allocation,
                                 &allocInfo);
       res != VK_SUCCESS)
@@ -98,9 +99,9 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, const ImageCreateArgume
   m_size = allocInfo.size;
 }
 
-MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
+MemoryBlock::MemoryBlock(MemoryAllocator & allocator, size_t size, VkBufferUsageFlags usage,
                          bool allowHostAccess)
-  : m_allocator(allocator)
+  : OwnedBy<MemoryAllocator>(allocator)
 {
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -115,7 +116,7 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUs
   VkBuffer buffer;
   VmaAllocation allocation;
   VmaAllocationInfo allocInfo;
-  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
 
   if (auto res = vmaCreateBuffer(allocatorHandle, &bufferInfo, &allocCreateInfo, &buffer,
                                  &allocation, &allocInfo);
@@ -130,8 +131,8 @@ MemoryBlock::MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUs
 }
 
 MemoryBlock::MemoryBlock(MemoryBlock && rhs) noexcept
+  : OwnedBy<MemoryAllocator>(std::move(rhs))
 {
-  std::swap(m_allocator, rhs.m_allocator);
   std::swap(m_buffer, rhs.m_buffer);
   std::swap(m_image, rhs.m_image);
   std::swap(m_allocInfo, rhs.m_allocInfo);
@@ -144,7 +145,7 @@ MemoryBlock & MemoryBlock::operator=(MemoryBlock && rhs) noexcept
 {
   if (this != &rhs)
   {
-    std::swap(m_allocator, rhs.m_allocator);
+    OwnedBy<MemoryAllocator>::operator=(std::move(rhs));
     std::swap(m_buffer, rhs.m_buffer);
     std::swap(m_image, rhs.m_image);
     std::swap(m_allocInfo, rhs.m_allocInfo);
@@ -162,7 +163,7 @@ MemoryBlock::operator bool() const noexcept
 
 MemoryBlock::~MemoryBlock()
 {
-  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto * allocatorHandle = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   if (m_buffer)
     vmaDestroyBuffer(allocatorHandle, m_buffer, reinterpret_cast<VmaAllocation>(m_memBlock));
   if (m_image)
@@ -171,14 +172,14 @@ MemoryBlock::~MemoryBlock()
 
 bool MemoryBlock::UploadSync(const void * data, size_t size, size_t offset)
 {
-  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto allocator = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
   return vmaCopyMemoryToAllocation(allocator, data, allocation, offset, size) == VK_SUCCESS;
 }
 
 bool MemoryBlock::DownloadSync(size_t offset, void * data, size_t size) const
 {
-  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto allocator = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   auto allocation = reinterpret_cast<VmaAllocation>(m_memBlock);
   return vmaCopyAllocationToMemory(allocator, allocation, offset, data, size) == VK_SUCCESS;
 }
@@ -187,7 +188,7 @@ IBufferGPU::ScopedPointer MemoryBlock::Map()
 {
   void * mapped_memory = nullptr;
   const bool is_mapped = IsMapped();
-  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto allocator = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   if (!is_mapped)
   {
     if (VkResult res =
@@ -211,7 +212,7 @@ IBufferGPU::ScopedPointer MemoryBlock::Map()
 
 void MemoryBlock::Flush() const noexcept
 {
-  auto allocator = reinterpret_cast<VmaAllocator>(m_allocator);
+  auto allocator = reinterpret_cast<VmaAllocator>(GetAllocator().GetHandle());
   vmaFlushAllocation(allocator, reinterpret_cast<VmaAllocation>(m_memBlock), 0, m_size);
 }
 

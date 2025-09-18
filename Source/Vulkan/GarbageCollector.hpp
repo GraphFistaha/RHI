@@ -6,7 +6,6 @@
 
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
 
 #include "Memory/MemoryBlock.hpp"
 
@@ -17,12 +16,8 @@ struct Context;
 
 namespace RHI::vulkan::details
 {
-struct VkObjectsGarbageCollector final : public OwnedBy<Context>
+class VkObjectsGarbageCollector final : public OwnedBy<Context>
 {
-  explicit VkObjectsGarbageCollector(Context & ctx);
-  ~VkObjectsGarbageCollector();
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-
   struct VkObjectDestroyData
   {
     std::type_index objectType;
@@ -31,6 +26,11 @@ struct VkObjectsGarbageCollector final : public OwnedBy<Context>
   };
 
   using DestroyData = std::variant<VkObjectDestroyData, memory::MemoryBlock>;
+
+public:
+  explicit VkObjectsGarbageCollector(Context & ctx);
+  virtual ~VkObjectsGarbageCollector() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
   template<typename ObjT>
   void PushVkObjectToDestroy(ObjT && object, InternalObjectHandle allocator) const noexcept

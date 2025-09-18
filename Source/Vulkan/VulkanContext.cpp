@@ -207,8 +207,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", gpuTraits, m_logFunc);
-  m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
-                                                          m_impl->GetDevice(), GetVulkanVersion());
+  m_allocator = std::make_unique<memory::MemoryAllocator>(*this);
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
 
   // alloc null texture
@@ -332,7 +331,7 @@ Transferer & Context::GetTransferer() & noexcept
   return it->second;
 }
 
-const memory::MemoryAllocator & Context::GetBuffersAllocator() const & noexcept
+memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept
 {
   return *m_allocator;
 }
@@ -370,32 +369,3 @@ std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
   }
 }
 } // namespace RHI
-
-
-namespace RHI::vulkan::utils
-{
-
-VkSemaphore CreateVkSemaphore(VkDevice device)
-{
-  VkSemaphore result = VK_NULL_HANDLE;
-  VkSemaphoreCreateInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  // Don't use createSemaphore in dispatchTable because it's broken
-  if (vkCreateSemaphore(device, &info, nullptr, &result) != VK_SUCCESS)
-    throw std::runtime_error("failed to create semaphore");
-  return VkSemaphore(result);
-}
-
-VkFence CreateFence(VkDevice device, bool locked)
-{
-  VkFenceCreateInfo info{};
-  VkFence result = VK_NULL_HANDLE;
-  info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  if (locked)
-    info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  // Don't use createFence in dispatchTable because it's broken
-  if (vkCreateFence(device, &info, nullptr, &result) != VK_SUCCESS)
-    throw std::runtime_error("failed to create fence");
-  return VkFence(result);
-}
-} // namespace RHI::vulkan::utils

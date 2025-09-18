@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include <vk_mem_alloc.h>
+#include <vulkan/vulkan.hpp>
 
 #include "Memory/MemoryBlock.hpp"
 #include "VulkanContext.hpp"

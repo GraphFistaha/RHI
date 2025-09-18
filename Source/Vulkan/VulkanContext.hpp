@@ -61,7 +61,7 @@ public: // RHI-only API
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   Transferer & GetTransferer() & noexcept;
-  const memory::MemoryAllocator & GetBuffersAllocator() const & noexcept;
+  memory::MemoryAllocator & GetBuffersAllocator() & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
   RHI::ITexture * GetNullTexture() const noexcept;
@@ -84,13 +84,3 @@ private:
 };
 
 } // namespace RHI::vulkan
-
-namespace RHI::vulkan::utils
-{
-
-/// @brief creates semaphore, doesn't own it
-VkSemaphore CreateVkSemaphore(VkDevice device);
-/// @brief creates fence, doesn't own it
-VkFence CreateFence(VkDevice device, bool locked = false);
-
-} // namespace RHI::vulkan::utils

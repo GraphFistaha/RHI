@@ -1,24 +1,30 @@
 #pragma once
+#include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+namespace RHI::vulkan::memory
+{
+struct MemoryAllocator;
+}
 
 namespace RHI::vulkan::memory
 {
-struct MemoryBlock final
+struct MemoryBlock final : public OwnedBy<MemoryAllocator>
 {
   MemoryBlock() = default;
-  ~MemoryBlock();
+  virtual ~MemoryBlock() override;
   MemoryBlock(MemoryBlock && rhs) noexcept;
   MemoryBlock & operator=(MemoryBlock && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(MemoryAllocator, GetAllocator);
   RESTRICTED_COPY(MemoryBlock);
 
 private:
   /// create memory block for image
-  explicit MemoryBlock(InternalObjectHandle allocator, const ImageCreateArguments & description,
+  explicit MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
                        VkImageUsageFlags usage, VkSampleCountFlagBits samples);
   /// Create memory block for buffer
-  explicit MemoryBlock(InternalObjectHandle allocator, size_t size, VkBufferUsageFlags usage,
+  explicit MemoryBlock(MemoryAllocator & allocator, size_t size, VkBufferUsageFlags usage,
                        bool allowHostAccess);
 
 public:
@@ -36,7 +42,6 @@ private:
   friend struct MemoryAllocator;
   using AllocInfoRawMemory = std::array<uint32_t, 16>;
 
-  InternalObjectHandle m_allocator = nullptr;
   AllocInfoRawMemory m_allocInfo{};
   InternalObjectHandle m_memBlock = nullptr;
   VkImage m_image = VK_NULL_HANDLE;

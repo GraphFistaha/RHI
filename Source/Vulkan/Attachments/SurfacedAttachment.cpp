@@ -7,6 +7,7 @@
 #include "../Graphics/RenderPass.hpp"
 #include "../Images/InternalImageTraits.hpp"
 #include "../Utils/CastHelper.hpp"
+#include "../Utils/SemaphoreBuilder.hpp"
 #include "../VulkanContext.hpp"
 
 namespace RHI::vulkan
@@ -130,7 +131,8 @@ void SurfacedAttachment::Invalidate()
     m_images = m_swapchain->get_images().value();
     m_imageViews = m_swapchain->get_image_views().value();
     for (auto && view : m_imageViews)
-      m_imageAvailabilitySemaphores.push_back(utils::CreateVkSemaphore(GetContext().GetDevice()));
+      m_imageAvailabilitySemaphores.push_back(
+        utils::SemaphoreBuilder().Make(GetContext().GetDevice()));
 
     m_layouts.reserve(m_images.size());
     for (auto image : m_images)
