@@ -113,11 +113,6 @@ void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline = true;
 }
 
-void SubpassConfiguration::SetSamplesCount(RHI::SamplesCount samplesCount) noexcept
-{
-  m_pipelineBuilder.SetSamplesCount(samplesCount);
-  m_invalidPipeline = true;
-}
 
 void SubpassConfiguration::Invalidate()
 {
@@ -138,8 +133,8 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    assert(CheckMSAA());
-
+    m_pipelineBuilder.SetSamplesCount(
+      GetSubpass().GetRenderPass().GetFramebuffer().CalcSamplesCount());
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(),
                                                GetSubpass().GetRenderPass().GetHandle(),
                                                m_subpassIndex, m_layout);
@@ -168,22 +163,6 @@ void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
 void SubpassConfiguration::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
 {
   m_descriptors.TransitLayoutForUsedImages(commandBuffer);
-}
-
-bool SubpassConfiguration::CheckMSAA() const noexcept
-{
-  bool result = true;
-  GetSubpass().GetLayout().ForEachAttachment(
-    [this, &result](uint32_t idx)
-    {
-      IInternalAttachment * attachment =
-        GetSubpass().GetRenderPass().GetFramebuffer().GetAttachment(idx);
-      if (attachment)
-      {
-        result = result && attachment->GetSamplesCount() == m_pipelineBuilder.GetSamplesCount();
-      }
-    });
-  return result;
 }
 
 } // namespace RHI::vulkan

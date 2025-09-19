@@ -48,8 +48,6 @@ public: // ISubpassConfiguration interface
   virtual void EnableDepthTest(bool enabled) noexcept override;
   virtual void SetDepthFunc(CompareOperation op) noexcept override;
 
-  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) noexcept override;
-
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;
@@ -72,9 +70,6 @@ private:
   utils::PipelineBuilder m_pipelineBuilder;
   bool m_invalidPipeline = false;
   bool m_invalidPipelineLayout = false;
-
-private:
-  bool CheckMSAA() const noexcept;
 };
 
 } // namespace RHI::vulkan

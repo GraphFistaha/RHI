@@ -25,7 +25,7 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     auto && subpassConfig = newSubpass->GetConfiguration();
     subpassConfig.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     subpassConfig.BindAttachment(1, RHI::ShaderAttachmentSlot::DepthStencil);
-    subpassConfig.SetSamplesCount(RHI::SamplesCount::One);
+    subpassConfig.BindResolver(2, 0);
     subpassConfig.EnableDepthTest(true);
     // set shaders
     subpassConfig.AttachShader(RHI::ShaderType::Vertex, "cube.vert");
@@ -80,11 +80,6 @@ void CubesRenderer::BindTexture(uint32_t idx, RHI::ITexture * texture)
 {
   if (m_textures[idx])
     m_textures[idx]->AssignImage(texture);
-}
-
-void CubesRenderer::SetMSAA(RHI::SamplesCount samplesCount)
-{
-  m_renderPass->GetConfiguration().SetSamplesCount(samplesCount);
 }
 
 void CubesRenderer::Draw()

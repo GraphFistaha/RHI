@@ -97,6 +97,17 @@ IInternalAttachment * Framebuffer::GetAttachment(uint32_t idx) const
   return m_attachments[idx];
 }
 
+RHI::SamplesCount Framebuffer::CalcSamplesCount() const noexcept
+{
+  // find first not SurfacedAttachment and return it's value
+  for (auto * attachment : m_attachments)
+  {
+    if (dynamic_cast<GenericAttachment *>(attachment) != nullptr)
+      return attachment->GetSamplesCount();
+  }
+  return RHI::SamplesCount::One;
+}
+
 IRenderTarget * Framebuffer::BeginFrame()
 {
   if (m_attachments.empty())

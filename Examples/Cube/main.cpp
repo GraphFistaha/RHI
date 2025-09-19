@@ -249,12 +249,24 @@ int main()
     depthStencilAttachmentDescription.type = RHI::ImageType::Image2D;
   }
 
+  RHI::ImageCreateArguments colorAttachmentDescription{};
+  {
+    colorAttachmentDescription.format = RHI::ImageFormat::RGBA8;
+    colorAttachmentDescription.extent = {g_defaultWindowSize.x, g_defaultWindowSize.y, 1};
+    colorAttachmentDescription.mipLevels = 1;
+    colorAttachmentDescription.shared = false;
+    colorAttachmentDescription.type = RHI::ImageType::Image2D;
+  }
+
   RHI::IFramebuffer * framebuffer = g_defaultFramebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0,
+  framebuffer->AddAttachment(2,
                              ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Triple));
   framebuffer->AddAttachment(1, ctx->AllocAttachment(depthStencilAttachmentDescription,
                                                      RHI::RenderBuffering::Triple,
-                                                     RHI::SamplesCount::One));
+                                                     RHI::SamplesCount::Eight));
+  framebuffer->AddAttachment(0, ctx->AllocAttachment(colorAttachmentDescription,
+                                                     RHI::RenderBuffering::Triple,
+                                                     RHI::SamplesCount::Eight));
 
   g_renderer = std::make_unique<CubesRenderer>(*ctx);
   g_renderer->BindDrawSurface(framebuffer);

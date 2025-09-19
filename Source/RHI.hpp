@@ -266,7 +266,6 @@ struct ISubpassConfiguration : public IInvalidable
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
   virtual void BindResolver(uint32_t binding, uint32_t resolve_for) = 0;
-  virtual void SetSamplesCount(RHI::SamplesCount samplesCount) noexcept = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
