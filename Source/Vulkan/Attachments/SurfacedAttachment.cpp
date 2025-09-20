@@ -197,7 +197,7 @@ bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
 
 uint32_t SurfacedAttachment::GetBuffering() const noexcept
 {
-  return m_desiredBuffering;
+  return m_swapchain ? m_swapchain->image_count : 0;
 }
 
 RHI::SamplesCount SurfacedAttachment::GetSamplesCount() const noexcept

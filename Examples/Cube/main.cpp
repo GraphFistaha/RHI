@@ -5,18 +5,10 @@
 #include <iostream>
 
 #include <Camera.hpp>
-#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 #include <RHI.hpp>
-
-//clang-format off
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(__linux__)
-#define GLFW_EXPOSE_NATIVE_X11
-#endif
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-// clang-format on
+#include <TestUtils.hpp>
+#include <Window.hpp>
 
 // clang-format off
 #define STB_IMAGE_IMPLEMENTATION
@@ -25,100 +17,59 @@
 
 #include "Renderer.hpp"
 
-// Custom log function used by RHI::Context
-void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
-{
-  switch (status)
-  {
-    case RHI::LogMessageStatus::LOG_INFO:
-      std::printf("INFO: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_WARNING:
-      std::printf("WARNING: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_ERROR:
-      std::printf("ERROR: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_DEBUG:
-      std::printf("DEBUG: - %s\n", message.c_str());
-      break;
-  }
-}
-
 /// global state
 constexpr glm::vec3 g_cameraUp(0.0f, -1.0f, 0.0f);
 RHI::IFramebuffer * g_defaultFramebuffer = nullptr;
 std::unique_ptr<CubesRenderer> g_renderer = nullptr;
-bool g_pressedKeys[1024];
-bool g_cursorHidden = true;
 RHI::test_examples::Camera g_camera(g_cameraUp);
 std::atomic_bool g_isRunning = false;
 
-void ProcessCameraMovement()
+void ProcessInput(RHI::test_examples::Window & window)
 {
-  constexpr std::array<int, 4> movement_keys{GLFW_KEY_W, GLFW_KEY_A, GLFW_KEY_S, GLFW_KEY_D};
-  bool has_action = std::any_of(movement_keys.begin(), movement_keys.end(),
-                                [](int key) { return g_pressedKeys[key]; });
+  using namespace RHI::test_examples;
 
-  if (has_action)
-  {
-    if (g_pressedKeys[GLFW_KEY_W])
-      g_camera.MoveCamera(g_camera.GetFrontVector());
-    else if (g_pressedKeys[GLFW_KEY_S])
-      g_camera.MoveCamera(-g_camera.GetFrontVector());
+  if (window.IsKeyPressed(Keycode::KEY_ESCAPE))
+    window.Close();
 
-    if (g_pressedKeys[GLFW_KEY_A])
-      g_camera.MoveCamera(-g_camera.GetRightVector());
-    else if (g_pressedKeys[GLFW_KEY_D])
-      g_camera.MoveCamera(g_camera.GetRightVector());
-  }
+  if (window.IsKeyPressed(Keycode::KEY_E))
+    window.SetCursorHidden(false);
+  else
+    window.SetCursorHidden();
+
+  if (window.IsKeyPressed(Keycode::KEY_W))
+    g_camera.MoveCamera(g_camera.GetFrontVector());
+  else if (window.IsKeyPressed(Keycode::KEY_S))
+    g_camera.MoveCamera(-g_camera.GetFrontVector());
+
+  if (window.IsKeyPressed(Keycode::KEY_A))
+    g_camera.MoveCamera(-g_camera.GetRightVector());
+  else if (window.IsKeyPressed(Keycode::KEY_D))
+    g_camera.MoveCamera(g_camera.GetRightVector());
 }
 
 // Resize window callback
-void OnResizeWindow(GLFWwindow * window, int width, int height)
-{
-  g_defaultFramebuffer->Resize(width, height);
-  g_camera.OnResolutionChanged({width, height});
-  g_renderer->InvalidateScene();
-}
+//void OnResizeWindow(GLFWwindow * window, int width, int height)
+//{
+//  g_defaultFramebuffer->Resize(width, height);
+//  g_camera.OnResolutionChanged({width, height});
+//  g_renderer->InvalidateScene();
+//}
 
-void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
-{
-  static bool st_firstCursorMovement = true;
-  static glm::dvec2 g_cursorPos{0.0};
-  if (st_firstCursorMovement)
-  {
-    g_cursorPos = {xpos, ypos};
-    st_firstCursorMovement = false;
-    return;
-  }
-
-  // reversed since y-coordinates range from bottom to top
-  g_camera.OnCursorMoved({xpos - g_cursorPos.x, ypos - g_cursorPos.y});
-  g_cursorPos = {xpos, ypos};
-}
-
-void OnKeyAction(GLFWwindow * window, int key, int scancode, int action, int mods)
-{
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-  {
-    g_isRunning = false;
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-    return;
-  }
-
-  if (key == GLFW_KEY_E && action == GLFW_PRESS)
-  {
-    g_cursorHidden = !g_cursorHidden;
-    glfwSetInputMode(window, GLFW_CURSOR,
-                     g_cursorHidden ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-  }
-
-  if (action == GLFW_PRESS)
-    g_pressedKeys[key] = true;
-  else if (action == GLFW_RELEASE)
-    g_pressedKeys[key] = false;
-}
+//void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
+//{
+//  static bool st_firstCursorMovement = true;
+//  static glm::dvec2 g_cursorPos{0.0};
+//  if (st_firstCursorMovement)
+//  {
+//    g_cursorPos = {xpos, ypos};
+//    st_firstCursorMovement = false;
+//    return;
+//  }
+//
+//  // reversed since y-coordinates range from bottom to top
+//  g_camera.OnCursorMoved({xpos - g_cursorPos.x, ypos - g_cursorPos.y});
+//  g_cursorPos = {xpos, ypos};
+//}
 
 RHI::ITexture * UploadAndCreateTexture(const char * path, RHI::IContext & ctx, bool with_alpha)
 {
@@ -201,47 +152,23 @@ void game_thread_main()
 
 int main()
 {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  constexpr glm::uvec2 g_defaultWindowSize{800, 600};
+  RHI::test_examples::GlfwInstance instance;
 
   // Create GLFW window
-  GLFWwindow * window =
-    glfwCreateWindow(g_defaultWindowSize.x, g_defaultWindowSize.y, "Cube_RHI", NULL, NULL);
-  if (window == NULL)
-  {
-    std::printf("Failed to create GLFW window\n");
-    glfwTerminate();
-    return -1;
-  }
-  // set callback on resize
-  glfwSetWindowSizeCallback(window, OnResizeWindow);
-  glfwSetCursorPosCallback(window, OnCursorMoved);
-  glfwSetKeyCallback(window, OnKeyAction);
-  g_cursorHidden = true;
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  RHI::test_examples::Window window("Cubes", 800, 600);
+  window.SetCursorHidden();
 
   g_camera.OnResolutionChanged(g_defaultWindowSize);
-
-  // fill structure for surface with OS handles
-  RHI::SurfaceConfig surface{};
-#ifdef _WIN32
-  surface.hWnd = glfwGetWin32Window(window);
-  surface.hInstance = GetModuleHandle(nullptr);
-#elif defined(__linux__)
-  surface.hWnd = reinterpret_cast<void *>(glfwGetX11Window(window));
-  surface.hInstance = glfwGetX11Display();
-#endif
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
   gpuTraits.require_geometry_shaders = true;
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
-  glfwSetWindowUserPointer(window, ctx.get());
+  std::unique_ptr<RHI::IContext> ctx =
+    RHI::CreateContext(gpuTraits, RHI::test_examples::ConsoleLog);
 
-  RHI::IFramebuffer * framebuffer = g_defaultFramebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(2,
-                             ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Triple));
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(2, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
+                                                              RHI::RenderBuffering::Triple));
   framebuffer->AddAttachment(1,
                              ctx->AllocAttachment(RHI::ImageFormat::DEPTH_STENCIL,
                                                   {g_defaultWindowSize.x, g_defaultWindowSize.y, 1},
@@ -260,29 +187,27 @@ int main()
 
   std::thread game_thread(game_thread_main);
 
-  while (!glfwWindowShouldClose(window))
-  {
-    glfwPollEvents();
-    ProcessCameraMovement();
-    g_renderer->SetCameraTransform(g_camera.GetVP());
-    const auto start{std::chrono::steady_clock::now()};
-    ctx->Flush();
-
-    if (auto * renderTarget = framebuffer->BeginFrame())
+  window.MainLoop(
+    [&](float delta)
     {
-      renderTarget->SetClearValue(0, 0.1f, 0.2f, 0.4f, 1.0f);
-      renderTarget->SetClearValue(1, 1.0f, 0);
-      framebuffer->EndFrame();
-    }
+      ProcessInput(window);
+      g_renderer->SetCameraTransform(g_camera.GetVP());
+      const auto start{std::chrono::steady_clock::now()};
+      ctx->Flush();
 
-    ctx->ClearResources();
-    const auto finish{std::chrono::steady_clock::now()};
-    const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};
-    //std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());
-  }
+      if (auto * renderTarget = framebuffer->BeginFrame())
+      {
+        renderTarget->SetClearValue(0, 0.1f, 0.2f, 0.4f, 1.0f);
+        renderTarget->SetClearValue(1, 1.0f, 0);
+        framebuffer->EndFrame();
+      }
+
+      ctx->ClearResources();
+      const auto finish{std::chrono::steady_clock::now()};
+      const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};
+      //std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());
+    });
 
   game_thread.join();
-
-  glfwTerminate();
   return 0;
 }

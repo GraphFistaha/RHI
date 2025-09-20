@@ -14,7 +14,6 @@ add_executable(${this_target}
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
-	glfw
 	glm
 	test_utils
 )
