@@ -408,7 +408,7 @@ struct IContext
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args,
+  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
                                         RenderBuffering buffering,
                                         RHI::SamplesCount samplesCount) = 0;
 };

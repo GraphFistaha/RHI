@@ -253,9 +253,16 @@ ITexture * Context::AllocImage(const ImageCreateArguments & args)
   return result.get();
 }
 
-IAttachment * Context::AllocAttachment(const ImageCreateArguments & args, RenderBuffering buffering,
-                                       RHI::SamplesCount samplesCount)
+IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                       RenderBuffering buffering, RHI::SamplesCount samplesCount)
 {
+  RHI::ImageCreateArguments args{};
+  {
+    args.format = format;
+    args.extent = extent;
+    args.mipLevels = 1;
+    args.type = RHI::ImageType::Image2D;
+  }
   auto && attachment = std::make_unique<GenericAttachment>(*this, args, buffering, samplesCount);
   return m_attachments.emplace_back(std::move(attachment)).get();
 }

@@ -43,7 +43,7 @@ public: // IContext interface
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
                                    bool allowHostAccess) override;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) override;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args,
+  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
                                         RenderBuffering buffering,
                                         RHI::SamplesCount samplesCount) override;
   virtual void ClearResources() override;

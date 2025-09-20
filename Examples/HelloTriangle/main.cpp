@@ -86,7 +86,8 @@ int main()
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment = ctx->CreateSurfacedAttachment(surface, RHI::RenderBuffering::Triple);
-  framebuffer->AddAttachment(0, ctx->AllocAttachment(surfaceAttachment->GetDescription(),
+  framebuffer->AddAttachment(0, ctx->AllocAttachment(surfaceAttachment->GetDescription().format,
+                                                     surfaceAttachment->GetDescription().extent,
                                                      RHI::RenderBuffering::Triple,
                                                      RHI::SamplesCount::Eight));
   framebuffer->AddAttachment(1, surfaceAttachment);
