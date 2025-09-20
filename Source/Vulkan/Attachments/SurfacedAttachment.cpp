@@ -43,7 +43,6 @@ ImageCreateArguments SurfacedAttachment::GetDescription() const noexcept
   ImageCreateArguments description{};
   {
     description.mipLevels = 1;
-    description.shared = false;
     description.type = RHI::ImageType::Image2D;
     auto extent = GetInternalExtent();
     description.extent = {extent.width, extent.height, extent.depth};

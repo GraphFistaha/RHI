@@ -134,7 +134,6 @@ RHI::ITexture * UploadAndCreateTexture(const char * path, RHI::IContext & ctx, b
   RHI::ImageCreateArguments imageArgs{};
   imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
-  imageArgs.shared = false;
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
   auto texture = ctx.AllocImage(imageArgs);
@@ -245,7 +244,6 @@ int main()
     depthStencilAttachmentDescription.format = RHI::ImageFormat::DEPTH_STENCIL;
     depthStencilAttachmentDescription.extent = {g_defaultWindowSize.x, g_defaultWindowSize.y, 1};
     depthStencilAttachmentDescription.mipLevels = 1;
-    depthStencilAttachmentDescription.shared = false;
     depthStencilAttachmentDescription.type = RHI::ImageType::Image2D;
   }
 
@@ -254,7 +252,6 @@ int main()
     colorAttachmentDescription.format = RHI::ImageFormat::RGBA8;
     colorAttachmentDescription.extent = {g_defaultWindowSize.x, g_defaultWindowSize.y, 1};
     colorAttachmentDescription.mipLevels = 1;
-    colorAttachmentDescription.shared = false;
     colorAttachmentDescription.type = RHI::ImageType::Image2D;
   }
 

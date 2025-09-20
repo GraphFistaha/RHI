@@ -53,7 +53,7 @@ namespace RHI::vulkan::memory
 {
 
 MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
-                         VkImageUsageFlags usage, VkSampleCountFlagBits samples)
+                         VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkSharingMode shareMode)
   : OwnedBy<MemoryAllocator>(allocator)
 {
   VkImageCreateInfo imageInfo{};
@@ -73,8 +73,7 @@ MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.samples = samples;
-    imageInfo.sharingMode = description.shared ? VK_SHARING_MODE_CONCURRENT
-                                               : VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.sharingMode = shareMode;
   }
   VmaAllocationCreateFlags allocFlags =
     CalcAllocationFlags(static_cast<VkImageUsageFlagBits>(usage), false);

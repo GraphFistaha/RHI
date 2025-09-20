@@ -28,7 +28,8 @@ public:
   MemoryBlock AllocBuffer(size_t size, VkBufferUsageFlags usage, bool allowHostAccess);
 
   MemoryBlock AllocImage(const ImageCreateArguments & description, VkImageUsageFlags usage,
-                         VkSampleCountFlagBits samples);
+                         VkSampleCountFlagBits samples,
+                         VkSharingMode shareMode = VK_SHARING_MODE_EXCLUSIVE);
 
 private:
   AllocatorHandle m_allocator;

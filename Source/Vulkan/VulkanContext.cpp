@@ -217,7 +217,6 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.format = RHI::ImageFormat::RGBA8;
     args.mipLevels = 1;
     args.type = RHI::ImageType::Image2D;
-    args.shared = false;
   }
   AllocImage(args);
 }
