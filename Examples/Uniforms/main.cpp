@@ -26,8 +26,7 @@ int main()
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
-  std::unique_ptr<RHI::IContext> ctx =
-    RHI::CreateContext(gpuTraits, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   // create buffers for each uniform variables
   auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
@@ -68,6 +67,11 @@ int main()
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
+  window.onResize = [framebuffer](int width, int height)
+  {
+    framebuffer->Resize(width, height);
+  };
+
   float x = 0.0f;
   window.MainLoop(
     [&](float delta)
@@ -87,7 +91,7 @@ int main()
         if (subpass->ShouldBeInvalidated())
         {
           // get size of window
-          auto [width, height] = window.GetSize();
+          auto [width, height, _] = renderTarget->GetExtent();
           subpass->BeginPass();
           // set viewport
           subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));

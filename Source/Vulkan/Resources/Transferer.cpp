@@ -109,7 +109,7 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
   VkBufferCopy copy{};
   copy.dstOffset = 0;
   copy.srcOffset = 0;
-  copy.size = stagingBuffer.Size();
+  copy.size = size - offset;
   commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
   auto && data =
     m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));

@@ -53,7 +53,8 @@ namespace RHI::vulkan::memory
 {
 
 MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
-                         VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkSharingMode shareMode)
+                         VkImageUsageFlags usage, VkSampleCountFlagBits samples,
+                         VkSharingMode shareMode)
   : OwnedBy<MemoryAllocator>(allocator)
 {
   VkImageCreateInfo imageInfo{};
@@ -125,7 +126,7 @@ MemoryBlock::MemoryBlock(MemoryAllocator & allocator, size_t size, VkBufferUsage
   m_buffer = buffer;
   m_memBlock = allocation;
   m_allocInfo = reinterpret_cast<AllocInfoRawMemory &>(allocInfo);
-  m_size = allocInfo.size;
+  m_size = std::min(allocInfo.size, size); // MemoryAllocator can alloc more then needed
   m_flags = allocationFlags;
 }
 
