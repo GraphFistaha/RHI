@@ -40,8 +40,19 @@ void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
 {
   using namespace RHI::test_examples;
   Window * wnd = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-  if (wnd && wnd->onResize)
-    wnd->onMoveCursor(xpos, ypos);
+  static bool st_firstCursorMovement = true;
+  static std::pair<double, double> g_oldCursorPos{0.0, 0.0};
+
+  if (st_firstCursorMovement)
+  {
+    g_oldCursorPos = {xpos, ypos};
+    st_firstCursorMovement = false;
+    return;
+  }
+
+  if (wnd && wnd->onMoveCursor)
+    wnd->onMoveCursor(xpos, ypos, xpos - g_oldCursorPos.first, ypos - g_oldCursorPos.second);
+  g_oldCursorPos = {xpos, ypos};
 }
 
 } // namespace
@@ -53,7 +64,7 @@ namespace RHI::test_examples
 Window::Window(const char * title, int width, int height)
 {
   // Create GLFW window
-  GLFWwindow * window = glfwCreateWindow(800, 600, "HelloTriangle_RHI", NULL, NULL);
+  GLFWwindow * window = glfwCreateWindow(800, 600, title, NULL, NULL);
   if (window == NULL)
   {
     throw std::runtime_error("Failed to create GLFW window");
@@ -121,6 +132,12 @@ bool Window::IsCursorHidden() const noexcept
 bool Window::IsKeyPressed(Keycode keycode) const
 {
   return g_pressedKeys[keycode];
+}
+
+float Window::GetAspectRatio() const noexcept
+{
+  auto [width, height] = GetSize();
+  return static_cast<float>(width) / static_cast<float>(height);
 }
 
 } // namespace RHI::test_examples

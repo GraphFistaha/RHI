@@ -20,6 +20,7 @@ RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   // Создает начальный subpass. У RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастся и в целом все сломается.
   auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, m_graphicsQueueFamily);
+  //TODO: нужен фиктивный шейдер для initialSubpass, иначе не работает HelloWindow
 }
 
 RenderPass::~RenderPass()

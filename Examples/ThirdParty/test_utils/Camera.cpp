@@ -37,9 +37,9 @@ void Camera::MoveCamera(const glm::vec3 & direction)
   m_position += direction * m_speed;
 }
 
-void Camera::OnResolutionChanged(const glm::vec2 & resolution)
+void Camera::SetAspectRatio(float ratio)
 {
-  m_aspect = resolution.x / resolution.y;
+  m_aspect = ratio;
   m_invalidProjection = true;
 }
 

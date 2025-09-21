@@ -16,7 +16,7 @@ int main()
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx =
-    RHI::CreateContext(gpuTraits, RHI::test_examples::ConsoleLog);
+    RHI::CreateContext(gpuTraits, ConsoleLog);
   assert(ctx);
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();

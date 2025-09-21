@@ -7,6 +7,7 @@ PUBLIC
 	"Camera.hpp"
 	"Window.hpp"
 	"TestUtils.hpp"
+	"test_utils_def.h"
 PRIVATE
 	"Camera.cpp"
  "Window.cpp"
@@ -20,4 +21,14 @@ PRIVATE
 	glm
 	glfw
 	RHI
+)
+
+target_include_directories(${this_target}
+PRIVATE
+	"../stb"
+)
+
+target_compile_definitions(${this_target}
+PRIVATE
+	TEST_UTILS_BUILD
 )

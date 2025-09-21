@@ -81,6 +81,7 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? dynamic_cast<IInternalTexture *>(image)
                          : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
+  GetDescriptorsBuffer().OnDescriptorChanged(*this);
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept

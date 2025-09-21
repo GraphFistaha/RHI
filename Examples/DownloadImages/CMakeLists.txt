@@ -3,14 +3,19 @@ set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
 add_executable(${this_target} 
  "main.cpp" 
- "stb_image.h"
- "stb_image_write.h"
 )
 
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
+    test_utils
 )
+
+target_include_directories(${this_target}
+PRIVATE
+	"../ThirdParty/stb"
+)
+
 
 set_target_properties(${this_target} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}

@@ -18,11 +18,6 @@ PRIVATE
 	test_utils
 )
 
-target_include_directories(${this_target}
-PRIVATE
-	"../ThirdParty/stb"
-)
-
 set_target_properties(${this_target} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
 	LIBRARY_OUTPUT_DIRECTORY ${APP_DIR}/Obj

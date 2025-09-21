@@ -136,7 +136,7 @@ struct Window final
 {
   using ResizeCallback = std::function<void(int, int)>;
   using TickCallback = std::function<void(float)>;
-  using CursorMoveCallback = std::function<void(double, double)>;
+  using CursorMoveCallback = std::function<void(double, double, double, double)>;
 
   Window(const char * title, int width, int height);
   ~Window();
@@ -147,6 +147,7 @@ struct Window final
   void SetCursorHidden(bool hidden = true);
   bool IsCursorHidden() const noexcept;
   bool IsKeyPressed(Keycode keycode) const;
+  float GetAspectRatio() const noexcept;
 
   ResizeCallback onResize;
   CursorMoveCallback onMoveCursor;
