@@ -85,17 +85,13 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
     subpassBuffers.reserve(m_subpasses.size());
     for (auto && subpass : m_subpasses)
     {
-      subpass.LockWriting(true);
+      if (subpass.ShouldSwapCommandBuffers())
+        subpass.SwapCommandBuffers();
       if (subpass.IsEnabled())
         subpassBuffers.push_back(subpass.GetCommandBufferForExecution().GetHandle());
     }
     if (!subpassBuffers.empty())
       m_submitter.AddCommands(subpassBuffers);
-
-    for (auto && subpass : m_subpasses)
-    {
-      subpass.LockWriting(false);
-    }
   }
 
 
@@ -146,7 +142,7 @@ void RenderPass::Invalidate()
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;
-    UpdateRenderingReadyFlag();
+    UpdateRenderPassValidFlag();
     m_invalidRenderPass = false;
   }
 
@@ -162,15 +158,20 @@ void RenderPass::SetInvalid()
   m_invalidRenderPass = true;
 }
 
-void RenderPass::WaitForReadyToRendering() const noexcept
+void RenderPass::WaitForRenderPassIsValid() const noexcept
 {
   std::atomic_wait(&m_isReadyForRendering, false);
 }
 
-void RenderPass::UpdateRenderingReadyFlag() noexcept
+void RenderPass::UpdateRenderPassValidFlag() noexcept
 {
-  m_isReadyForRendering = m_renderPass;
+  m_isReadyForRendering = m_renderPass; // m_renderPass != VK_NULL_HANDLE
   std::atomic_notify_all(&m_isReadyForRendering);
+}
+
+void RenderPass::WaitForRenderingIsDone() noexcept
+{
+  m_submitter.WaitForSubmitCompleted();
 }
 
 } // namespace RHI::vulkan

@@ -25,7 +25,7 @@ struct CommandBuffer : public OwnedBy<Context>
   void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
                     VkFramebuffer framebuffer = VK_NULL_HANDLE) const;
   void EndWriting() const;
-  void Reset();
+  virtual void Reset();
   void AddCommands(const std::vector<VkCommandBuffer> & buffers);
 
   template<typename VkCmdFunc, typename... Args>

@@ -45,8 +45,9 @@ public: // IInvalidable Interface
 
 public:
   VkRenderPass GetHandle() const noexcept { return m_renderPass; }
-  void WaitForReadyToRendering() const noexcept;
-  void UpdateRenderingReadyFlag() noexcept;
+  void WaitForRenderPassIsValid() const noexcept;
+  void UpdateRenderPassValidFlag() noexcept;
+  void WaitForRenderingIsDone() noexcept;
 
 private:
   uint32_t m_graphicsQueueFamily;

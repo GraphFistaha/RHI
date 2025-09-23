@@ -74,19 +74,22 @@ public:
 
   void Invalidate();
 
-  void LockWriting(bool lock) const noexcept;
+  bool ShouldSwapCommandBuffers() const noexcept;
+  void SwapCommandBuffers() noexcept;
   void SetDirtyCacheCommands() noexcept;
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
 private:
+  SubpassConfiguration m_pipeline;
+  std::atomic_bool m_invalidPipeline = true;
+  std::atomic_bool m_enabled = true;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
+
   details::CommandBuffer m_executableBuffer;
   details::CommandBuffer m_writingBuffer;
-  SubpassConfiguration m_pipeline;
   mutable std::mutex m_write_lock;
-  std::atomic_bool m_enabled = true;
-  std::atomic_bool m_dirtyCommands = true;
-  std::atomic_bool m_invalidPipeline = true;
+  std::atomic_bool m_dirtyCommands = true; ///< flag to refill m_writingBuffer
+  std::atomic_bool m_shouldSwapBuffer = false;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
 };

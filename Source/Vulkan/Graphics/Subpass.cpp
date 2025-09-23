@@ -24,11 +24,12 @@ Subpass::~Subpass()
 
 void Subpass::BeginPass()
 {
-  GetRenderPass().WaitForReadyToRendering();
+  GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   assert(GetRenderPass().GetHandle());
-  m_cachedRenderPass = GetRenderPass().GetHandle();
   // wait while Pipeline has been invalidated
   std::atomic_wait(&m_invalidPipeline, true);
+  m_write_lock.lock();
+  m_cachedRenderPass = GetRenderPass().GetHandle();
   m_writingBuffer.Reset();
   m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
   m_pipeline.BindToCommandBuffer(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -38,11 +39,9 @@ void Subpass::EndPass()
 {
   m_writingBuffer.EndWriting();
   m_cachedRenderPass = VK_NULL_HANDLE;
-  {
-    std::lock_guard lk{m_write_lock};
-    std::swap(m_executableBuffer, m_writingBuffer);
-  }
   m_dirtyCommands = false;
+  m_write_lock.unlock();
+  m_shouldSwapBuffer = true;
 }
 
 ISubpassConfiguration & Subpass::GetConfiguration() & noexcept
@@ -116,12 +115,18 @@ void Subpass::PushConstant(const void * data, size_t size)
                               static_cast<uint32_t>(size), data);
 }
 
-void Subpass::LockWriting(bool lock) const noexcept
+bool Subpass::ShouldSwapCommandBuffers() const noexcept
 {
-  if (lock)
-    m_write_lock.lock();
-  else
-    m_write_lock.unlock();
+  return m_shouldSwapBuffer;
+}
+
+void Subpass::SwapCommandBuffers() noexcept
+{
+  {
+    std::lock_guard lk{m_write_lock};
+    std::swap(m_executableBuffer, m_writingBuffer);
+  }
+  m_shouldSwapBuffer = false;
 }
 
 void Subpass::SetDirtyCacheCommands() noexcept
