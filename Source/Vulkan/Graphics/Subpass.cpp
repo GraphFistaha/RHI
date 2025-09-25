@@ -149,6 +149,13 @@ SubpassLayout & Subpass::GetLayout() & noexcept
   return m_layout;
 }
 
+void Subpass::SetInvalid()
+{
+  SetDirtyCacheCommands();
+  m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
+}
+
 void Subpass::Invalidate()
 {
   if (m_invalidPipeline)

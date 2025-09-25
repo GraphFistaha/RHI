@@ -105,6 +105,7 @@ void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
 {
   m_pipelineBuilder.SetDepthTestEnabled(enabled);
   m_invalidPipeline = true;
+  GetSubpass().SetInvalid();
 }
 
 void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept

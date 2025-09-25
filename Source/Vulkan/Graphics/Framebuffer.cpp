@@ -35,6 +35,7 @@ size_t Framebuffer::GetImagesCount() const noexcept
 
 void Framebuffer::Invalidate()
 {
+  bool targetsChanged = false;
   if (m_attachmentsChanged)
   {
     if (m_attachments.empty())
@@ -64,10 +65,16 @@ void Framebuffer::Invalidate()
 
     // set attachments to render Pass
     m_renderPass.SetAttachments(m_attachmentDescriptions);
-    //build render pass
-    m_renderPass.Invalidate();
+    targetsChanged = true;
+  }
 
+  //build render pass
+  m_renderPass.Invalidate();
 
+  if (targetsChanged)
+  {
+    uint32_t buffersCount = m_attachments[0]->GetBuffering();
+    auto extent = m_attachments[0]->GetInternalExtent();
     if (m_targets.size() != buffersCount)
     {
       while (m_targets.size() > buffersCount)
@@ -83,7 +90,7 @@ void Framebuffer::Invalidate()
       target.SetExtent(extent);
       target.BindRenderPass(m_renderPass.GetHandle());
     }
-    m_attachmentsChanged = false;
+    targetsChanged = false;
   }
 }
 

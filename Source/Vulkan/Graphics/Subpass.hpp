@@ -72,6 +72,7 @@ public:
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
 
+  void SetInvalid();
   void Invalidate();
 
   bool ShouldSwapCommandBuffers() const noexcept;
