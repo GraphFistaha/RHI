@@ -1,14 +1,14 @@
 #include "BufferUniform.hpp"
 
-#include "../../Utils/CastHelper.hpp"
-#include "../../VulkanContext.hpp"
-#include "../DescriptorsBuffer.hpp"
+#include "../Utils/CastHelper.hpp"
+#include "../VulkanContext.hpp"
+#include "DescriptorBufferLayout.hpp"
 
 namespace RHI::vulkan
 {
-BufferUniform::BufferUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
-                             uint32_t binding, uint32_t arrayIndex)
-  : BaseUniform(ctx, owner, type, binding, arrayIndex)
+BufferUniform::BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+                             LayoutIndex index, uint32_t arrayIndex)
+  : BaseUniform(ctx, owner, type, index, arrayIndex)
 {
 }
 
@@ -39,22 +39,12 @@ void BufferUniform::AssignBuffer(const IBufferGPU & buffer, size_t offset)
   m_buffer = internalBuffer.GetHandle();
   m_size = internalBuffer.Size();
   m_offset = offset;
-  GetDescriptorsBuffer().OnDescriptorChanged(*this);
+  GetLayout().OnDescriptorChanged(*this);
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept
 {
   return m_buffer;
-}
-
-uint32_t BufferUniform::GetBinding() const noexcept
-{
-  return BaseUniform::GetBinding();
-}
-
-uint32_t BufferUniform::GetArrayIndex() const noexcept
-{
-  return BaseUniform::GetArrayIndex();
 }
 
 void BufferUniform::Invalidate()

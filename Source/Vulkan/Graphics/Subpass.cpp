@@ -11,9 +11,10 @@ namespace RHI::vulkan
 Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, uint32_t familyIndex)
   : OwnedBy<Context>(ctx)
   , OwnedBy<RenderPass>(ownerPass)
-  , m_executableBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_writingBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_pipeline(ctx, *this, subpassIndex)
+  , m_execBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  , m_writeBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  , m_descriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
 {
 }
 
@@ -26,18 +27,22 @@ void Subpass::BeginPass()
 {
   GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   assert(GetRenderPass().GetHandle());
-  // wait while Pipeline has been invalidated
-  std::atomic_wait(&m_invalidPipeline, true);
+  m_pipeline.WaitForPipelineIsValid(); // wait while Pipeline has been invalidated
+  assert(m_pipeline.GetPipelineHandle());
+
   m_write_lock.lock();
   m_cachedRenderPass = GetRenderPass().GetHandle();
-  m_writingBuffer.Reset();
-  m_writingBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
-  m_pipeline.BindToCommandBuffer(m_writingBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
+  m_writeBuffer.Reset();
+  m_writeBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
+  m_pipeline.BindToCommandBuffer(m_writeBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
+  m_descriptorBuffer.BindToCommandBuffer(m_writeBuffer.GetHandle(),
+                                         m_pipeline.GetPipelineLayoutHandle(),
+                                         VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 void Subpass::EndPass()
 {
-  m_writingBuffer.EndWriting();
+  m_writeBuffer.EndWriting();
   m_cachedRenderPass = VK_NULL_HANDLE;
   m_dirtyCommands = false;
   m_write_lock.unlock();
@@ -56,7 +61,7 @@ void Subpass::SetEnabled(bool enabled) noexcept
 
 bool Subpass::IsEnabled() const noexcept
 {
-  return m_enabled && !m_executableBuffer.IsEmpty();
+  return m_enabled && !m_execBuffer.IsEmpty();
 }
 
 bool Subpass::ShouldBeInvalidated() const noexcept
@@ -67,21 +72,21 @@ bool Subpass::ShouldBeInvalidated() const noexcept
 void Subpass::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
                            std::uint32_t firstVertex, std::uint32_t firstInstance)
 {
-  m_writingBuffer.PushCommand(vkCmdDraw, vertexCount, instanceCount, firstVertex, firstInstance);
+  m_writeBuffer.PushCommand(vkCmdDraw, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void Subpass::DrawIndexedVertices(std::uint32_t indexCount, std::uint32_t instanceCount,
                                   std::uint32_t firstIndex, int32_t vertexOffset,
                                   std::uint32_t firstInstance)
 {
-  m_writingBuffer.PushCommand(vkCmdDrawIndexed, indexCount, instanceCount, firstIndex, vertexOffset,
-                              firstInstance);
+  m_writeBuffer.PushCommand(vkCmdDrawIndexed, indexCount, instanceCount, firstIndex, vertexOffset,
+                            firstInstance);
 }
 
 void Subpass::SetViewport(float width, float height)
 {
   VkViewport vp{0.0f, 0.0f, width, height, 0.0f, 1.0f};
-  m_writingBuffer.PushCommand(vkCmdSetViewport, 0, 1, &vp);
+  m_writeBuffer.PushCommand(vkCmdSetViewport, 0, 1, &vp);
 }
 
 void Subpass::SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_t height)
@@ -89,7 +94,7 @@ void Subpass::SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_
   VkRect2D scissor{};
   scissor.extent = {width, height};
   scissor.offset = {x, y};
-  m_writingBuffer.PushCommand(vkCmdSetScissor, 0, 1, &scissor);
+  m_writeBuffer.PushCommand(vkCmdSetScissor, 0, 1, &scissor);
 }
 
 void Subpass::BindVertexBuffer(std::uint32_t binding, const IBufferGPU & buffer,
@@ -98,21 +103,21 @@ void Subpass::BindVertexBuffer(std::uint32_t binding, const IBufferGPU & buffer,
   VkDeviceSize vkOffset = offset;
   auto && vkBuffer = utils::CastInterfaceClass2Internal<BufferGPU>(buffer);
   VkBuffer buf = vkBuffer.GetHandle();
-  m_writingBuffer.PushCommand(vkCmdBindVertexBuffers, 0, 1, &buf, &vkOffset);
+  m_writeBuffer.PushCommand(vkCmdBindVertexBuffers, 0, 1, &buf, &vkOffset);
 }
 
 void Subpass::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, std::uint32_t offset)
 {
   auto && vkBuffer = utils::CastInterfaceClass2Internal<BufferGPU>(buffer);
-  m_writingBuffer.PushCommand(vkCmdBindIndexBuffer, vkBuffer.GetHandle(), VkDeviceSize{offset},
-                              utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
+  m_writeBuffer.PushCommand(vkCmdBindIndexBuffer, vkBuffer.GetHandle(), VkDeviceSize{offset},
+                            utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
 }
 
 void Subpass::PushConstant(const void * data, size_t size)
 {
-  m_writingBuffer.PushCommand(vkCmdPushConstants, m_pipeline.GetPipelineLayoutHandle(),
-                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                              static_cast<uint32_t>(size), data);
+  m_writeBuffer.PushCommand(vkCmdPushConstants, m_pipeline.GetPipelineLayoutHandle(),
+                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                            static_cast<uint32_t>(size), data);
 }
 
 bool Subpass::ShouldSwapCommandBuffers() const noexcept
@@ -124,7 +129,7 @@ void Subpass::SwapCommandBuffers() noexcept
 {
   {
     std::lock_guard lk{m_write_lock};
-    std::swap(m_executableBuffer, m_writingBuffer);
+    std::swap(m_execBuffer, m_writeBuffer);
   }
   m_shouldSwapBuffer = false;
 }
@@ -137,6 +142,16 @@ void Subpass::SetDirtyCacheCommands() noexcept
 void Subpass::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
 {
   m_pipeline.TransitLayoutForUsedImages(commandBuffer);
+}
+
+const details::CommandBuffer & Subpass::GetCommandBufferForExecution() const & noexcept
+{
+  return m_execBuffer;
+}
+
+details::CommandBuffer & Subpass::GetCommandBufferForWriting() & noexcept
+{
+  return m_writeBuffer;
 }
 
 const SubpassLayout & Subpass::GetLayout() const & noexcept
@@ -152,19 +167,13 @@ SubpassLayout & Subpass::GetLayout() & noexcept
 void Subpass::SetInvalid()
 {
   SetDirtyCacheCommands();
-  m_invalidPipeline = true;
-  m_invalidPipeline.notify_one();
+  m_pipeline.SetInvalid();
 }
 
 void Subpass::Invalidate()
 {
-  if (m_invalidPipeline)
-  {
-    m_pipeline.Invalidate();
-    SetDirtyCacheCommands();
-    m_invalidPipeline = false;
-    m_invalidPipeline.notify_one();
-  }
+  m_pipeline.Invalidate();
+  m_descriptorBuffer.Invalidate();
 }
 
 } // namespace RHI::vulkan

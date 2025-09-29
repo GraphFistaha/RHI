@@ -4,9 +4,9 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "../Descriptors/DescriptorBufferLayout.hpp"
 #include "../Utils/PipelineBuilder.hpp"
 #include "../Utils/PipelineLayoutBuilder.hpp"
-#include "DescriptorsBuffer.hpp"
 
 namespace RHI::vulkan
 {
@@ -35,11 +35,11 @@ public: // ISubpassConfiguration interface
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) override;
   virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) override;
-  virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding,
+  virtual IBufferUniformDescriptor * DeclareUniform(LayoutIndex index,
                                                     ShaderType shaderStage) override;
-  virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding,
+  virtual ISamplerUniformDescriptor * DeclareSampler(LayoutIndex index,
                                                      ShaderType shaderStage) override;
-  virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
+  virtual void DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * out_array[]) override;
 
   virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
@@ -53,8 +53,10 @@ public: // IInvalidable Interface
   virtual void SetInvalid() override;
 
 public: // public internal API
+  void WaitForPipelineIsValid() const noexcept;
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
-  VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_layout; }
+  VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
+  const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
   void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint);
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
@@ -62,13 +64,14 @@ private:
   uint32_t m_subpassIndex;
 
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
-  VkPipelineLayout m_layout = VK_NULL_HANDLE;
+  DescriptorBufferLayout m_descriptorsLayout;
+  VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
   VkPipeline m_pipeline = VK_NULL_HANDLE;
-  DescriptorBuffer m_descriptors;
 
-  utils::PipelineLayoutBuilder m_layoutBuilder;
+  utils::PipelineLayoutBuilder m_pipelineLayoutBuilder;
   utils::PipelineBuilder m_pipelineBuilder;
-  bool m_invalidPipeline = false;
+
+  std::atomic_bool m_invalidPipeline = false;
   bool m_invalidPipelineLayout = false;
 };
 

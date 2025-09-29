@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "Headers/Descriptors.hpp"
 #include "Headers/Images.hpp"
 
 namespace RHI
@@ -154,20 +155,6 @@ enum class CompareOperation
   Always = 7
 };
 
-enum class TextureWrapping
-{
-  Repeat,
-  MirroredRepeat,
-  ClampToEdge,
-  ClampToBorder
-};
-
-enum class TextureFilteration
-{
-  Nearest,
-  Linear
-};
-
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -231,29 +218,6 @@ struct IAwaitable
   virtual bool Wait() noexcept = 0;
 };
 
-struct IUniformDescriptor : public IInvalidable
-{
-  virtual ~IUniformDescriptor() = default;
-  virtual uint32_t GetBinding() const noexcept = 0;
-  virtual uint32_t GetArrayIndex() const noexcept = 0;
-};
-
-struct ISamplerUniformDescriptor : public IUniformDescriptor
-{
-  virtual void AssignImage(ITexture * texture) = 0;
-  virtual bool IsImageAssigned() const noexcept = 0;
-  virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
-                           RHI::TextureWrapping wWrap) noexcept = 0;
-  virtual void SetFilter(RHI::TextureFilteration minFilter,
-                         RHI::TextureFilteration magFilter) noexcept = 0;
-};
-
-struct IBufferUniformDescriptor : public IUniformDescriptor
-{
-  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) = 0;
-  virtual bool IsBufferAssigned() const noexcept = 0;
-};
-
 /// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
@@ -272,10 +236,10 @@ struct ISubpassConfiguration : public IInvalidable
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
   virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
 
-  virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding, ShaderType shaderStage) = 0;
-  virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
-  virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
-                                    ISamplerUniformDescriptor * out_array[]) = 0;
+  virtual IBufferUniformDescriptor * DeclareUniform(LayoutIndex index, ShaderType shaderStage) = 0;
+  virtual ISamplerUniformDescriptor * DeclareSampler(LayoutIndex index, ShaderType shaderStage) = 0;
+  virtual void DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * outDescriptors[]) = 0;
   virtual void SetMeshTopology(MeshTopology topology) noexcept = 0;
 
   virtual void EnableDepthTest(bool enabled) noexcept = 0;

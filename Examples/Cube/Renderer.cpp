@@ -43,9 +43,9 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
                                     RHI::InputAttributeElementType::SINT);
 
 
-    auto * uniform = subpassConfig.DeclareUniform(0, RHI::ShaderType::Vertex);
+    auto * uniform = subpassConfig.DeclareUniform({0, 0}, RHI::ShaderType::Vertex);
     uniform->AssignBuffer(*m_uniformBuffer);
-    subpassConfig.DeclareSamplersArray(1, RHI::ShaderType::Fragment,
+    subpassConfig.DeclareSamplersArray({0, 1}, RHI::ShaderType::Fragment,
                                        static_cast<uint32_t>(m_textures.size()), m_textures.data());
     for (auto * texture : m_textures)
       texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);

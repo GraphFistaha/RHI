@@ -14,8 +14,6 @@ PRIVATE
 	
 	"Graphics/Framebuffer.cpp"
 	"Graphics/Framebuffer.hpp"
-	"Graphics/DescriptorsBuffer.cpp"
-	"Graphics/DescriptorsBuffer.hpp"
 	"Graphics/Subpass.cpp"
 	"Graphics/Subpass.hpp"
 	"Graphics/SubpassLayout.cpp"
@@ -26,12 +24,16 @@ PRIVATE
 	"Graphics/RenderTarget.hpp"
 	"Graphics/SubpassConfiguration.cpp"
 	"Graphics/SubpassConfiguration.hpp"
-	
-	"Graphics/Uniforms/BaseUniform.hpp"
-	"Graphics/Uniforms/SamplerUniform.hpp"
-	"Graphics/Uniforms/SamplerUniform.cpp"
-	"Graphics/Uniforms/BufferUniform.cpp"
-	"Graphics/Uniforms/BufferUniform.hpp"
+
+	"Descriptors/DescriptorBufferLayout.cpp"
+	"Descriptors/DescriptorBufferLayout.hpp"
+	"Descriptors/DescriptorsBuffer.cpp"
+	"Descriptors/DescriptorsBuffer.hpp"
+	"Descriptors/BaseUniform.hpp"
+	"Descriptors/SamplerUniform.hpp"
+	"Descriptors/SamplerUniform.cpp"
+	"Descriptors/BufferUniform.cpp"
+	"Descriptors/BufferUniform.hpp"
 	
 	
 	"Utils/CastHelper.hpp"

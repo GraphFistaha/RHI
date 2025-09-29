@@ -3,15 +3,15 @@
 namespace RHI::vulkan::utils
 {
 VkPipelineLayout PipelineLayoutBuilder::Make(const VkDevice & device,
-                                               const VkDescriptorSetLayout & descriptorsLayout,
-                                               const VkPushConstantRange * pushConstantRange) const
+                                             const VkDescriptorSetLayout * layouts,
+                                             uint32_t layoutSize,
+                                             const VkPushConstantRange * pushConstantRange) const
 {
-  auto tmp = static_cast<VkDescriptorSetLayout>(descriptorsLayout);
   // create pipeline layout
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = tmp == VK_NULL_HANDLE ? 0 : 1;                // Optional
-  pipelineLayoutInfo.pSetLayouts = tmp == VK_NULL_HANDLE ? nullptr : &tmp;          // Optional
+  pipelineLayoutInfo.setLayoutCount = layoutSize;                                   // Optional
+  pipelineLayoutInfo.pSetLayouts = layouts;                                         // Optional
   pipelineLayoutInfo.pushConstantRangeCount = pushConstantRange == nullptr ? 0 : 1; // Optional
   pipelineLayoutInfo.pPushConstantRanges = pushConstantRange;                       // Optional
 

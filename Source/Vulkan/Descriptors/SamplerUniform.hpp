@@ -3,18 +3,18 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../../Images/TextureInterface.hpp"
-#include "../../Utils/SamplerBuilder.hpp"
+#include "../Images/TextureInterface.hpp"
+#include "../Utils/SamplerBuilder.hpp"
 #include "BaseUniform.hpp"
 
 namespace RHI::vulkan
 {
 
 struct SamplerUniform final : public ISamplerUniformDescriptor,
-                              private details::BaseUniform
+                              public details::BaseUniform
 {
-  explicit SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
-                          uint32_t binding, uint32_t arrayIndex = 0);
+  explicit SamplerUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+                          LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~SamplerUniform() override;
   SamplerUniform(SamplerUniform && rhs) noexcept;
   SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
@@ -28,12 +28,13 @@ public: // ISamplerUniformDescriptor interface
                          RHI::TextureFilteration magFilter) noexcept override;
 
 public:
-  virtual uint32_t GetBinding() const noexcept override;
-  virtual uint32_t GetArrayIndex() const noexcept override;
+  virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }
+  virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
+  virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
 
 public: // IInvalidable interface
-  virtual void Invalidate() override;
-  virtual void SetInvalid() override;
+  void Invalidate();
+  void SetInvalid();
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;

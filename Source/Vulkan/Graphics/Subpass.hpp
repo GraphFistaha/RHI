@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../CommandsExecution/CommandBuffer.hpp"
+#include "../Descriptors/DescriptorsBuffer.hpp"
 #include "SubpassConfiguration.hpp"
 #include "SubpassLayout.hpp"
 
@@ -64,11 +65,8 @@ public: // Commands
   void PushConstant(const void * data, size_t size) override;
 
 public:
-  const details::CommandBuffer & GetCommandBufferForExecution() const & noexcept
-  {
-    return m_executableBuffer;
-  }
-  details::CommandBuffer & GetCommandBufferForWriting() & noexcept { return m_writingBuffer; }
+  const details::CommandBuffer & GetCommandBufferForExecution() const & noexcept;
+  details::CommandBuffer & GetCommandBufferForWriting() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
 
@@ -80,17 +78,24 @@ public:
   void SetDirtyCacheCommands() noexcept;
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
+  template<typename DescriptorT>
+  void OnDescriptorChanged(const DescriptorT & descriptor) noexcept
+  {
+    m_descriptorBuffer.UpdateDescriptor(descriptor);
+    SetDirtyCacheCommands();
+  }
+
 private:
   SubpassConfiguration m_pipeline;
-  std::atomic_bool m_invalidPipeline = true;
   std::atomic_bool m_enabled = true;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
 
-  details::CommandBuffer m_executableBuffer;
-  details::CommandBuffer m_writingBuffer;
+  details::CommandBuffer m_execBuffer;
+  details::CommandBuffer m_writeBuffer;
   mutable std::mutex m_write_lock;
   std::atomic_bool m_dirtyCommands = true; ///< flag to refill m_writingBuffer
   std::atomic_bool m_shouldSwapBuffer = false;
+  DescriptorBuffer m_descriptorBuffer;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
 };

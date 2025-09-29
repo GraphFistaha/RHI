@@ -12,20 +12,21 @@ SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner, uint3
   : OwnedBy<Context>(ctx)
   , OwnedBy<Subpass>(owner)
   , m_subpassIndex(subpassIndex)
-  , m_descriptors(ctx, *this)
+  , m_descriptorsLayout(ctx, *this)
 {
 }
 
 SubpassConfiguration::~SubpassConfiguration()
 {
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
-  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
 }
 
 void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::path & path)
 {
   m_pipelineBuilder.AttachShader(type, path);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
 }
 
 void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot)
@@ -36,6 +37,7 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
   {
     m_pipelineBuilder.OnColorAttachmentHasBound();
     m_invalidPipeline = true;
+    m_invalidPipeline.notify_one();
   }
   GetSubpass().GetRenderPass().SetInvalid();
 }
@@ -50,6 +52,7 @@ void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, Input
 {
   m_pipelineBuilder.AddInputBinding(slot, stride, type);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
 }
 
 void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -58,30 +61,30 @@ void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location
 {
   m_pipelineBuilder.AddInputAttribute(binding, location, offset, elemsCount, elemsType);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
 }
 
-IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(uint32_t binding,
+IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(LayoutIndex index,
                                                                 ShaderType shaderStage)
 {
-  BufferUniform * result = nullptr;
-  m_descriptors.DeclareUniformsArray(binding, shaderStage, 1, &result);
+  IBufferUniformDescriptor * result = nullptr;
+  m_descriptorsLayout.DeclareBufferUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
-ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(uint32_t binding,
+ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex index,
                                                                  ShaderType shaderStage)
 {
-  SamplerUniform * result = nullptr;
-  m_descriptors.DeclareSamplersArray(binding, shaderStage, 1, &result);
+  ISamplerUniformDescriptor * result = nullptr;
+  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
-void SubpassConfiguration::DeclareSamplersArray(uint32_t binding, ShaderType shaderStage,
+void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
                                                 ISamplerUniformDescriptor * out_array[])
 {
-  m_descriptors.DeclareSamplersArray(binding, shaderStage, size,
-                                     reinterpret_cast<SamplerUniform **>(out_array));
+  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, size, out_array);
 }
 
 void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderStage)
@@ -99,12 +102,14 @@ void SubpassConfiguration::SetMeshTopology(MeshTopology topology) noexcept
 {
   m_pipelineBuilder.SetMeshTopology(topology);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
 }
 
 void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
 {
   m_pipelineBuilder.SetDepthTestEnabled(enabled);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
   GetSubpass().SetInvalid();
 }
 
@@ -112,21 +117,23 @@ void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
 {
   m_pipelineBuilder.SetDepthTestCompareOperator(op);
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
 }
-
 
 void SubpassConfiguration::Invalidate()
 {
-  m_descriptors.Invalidate();
+  m_descriptorsLayout.Invalidate();
 
-  if (m_invalidPipelineLayout || !m_layout)
+  if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
-    auto new_layout =
-      m_layoutBuilder.Make(GetContext().GetDevice(), m_descriptors.GetLayoutHandle(),
-                           m_pushConstantRange.has_value() ? &m_pushConstantRange.value()
-                                                           : nullptr);
-    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layout, nullptr);
-    m_layout = new_layout;
+    auto && layoutHandles = m_descriptorsLayout.GetHandles();
+    auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetDevice(), layoutHandles.data(),
+                                                   static_cast<uint32_t>(layoutHandles.size()),
+                                                   m_pushConstantRange.has_value()
+                                                     ? &m_pushConstantRange.value()
+                                                     : nullptr);
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
+    m_pipelineLayout = new_layout;
     m_invalidPipelineLayout = false;
     m_invalidPipeline = true;
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout has been rebuilt");
@@ -138,19 +145,32 @@ void SubpassConfiguration::Invalidate()
       GetSubpass().GetRenderPass().GetFramebuffer().CalcSamplesCount());
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(),
                                                GetSubpass().GetRenderPass().GetHandle(),
-                                               m_subpassIndex, m_layout);
-    GetContext().Log(LogMessageStatus::LOG_DEBUG, "build new VkPipeline");
+                                               m_subpassIndex, m_pipelineLayout);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
+    m_invalidPipeline.notify_one();
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline has been rebuilt");
+    GetSubpass().SetDirtyCacheCommands();
   }
 }
 
 void SubpassConfiguration::SetInvalid()
 {
+  m_descriptorsLayout.SetInvalid();
   m_invalidPipeline = true;
+  m_invalidPipeline.notify_one();
   m_invalidPipelineLayout = true;
+}
+
+void SubpassConfiguration::WaitForPipelineIsValid() const noexcept
+{
+  std::atomic_wait(&m_invalidPipeline, true);
+}
+
+const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() const & noexcept
+{
+  return m_descriptorsLayout;
 }
 
 void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
@@ -158,12 +178,11 @@ void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
 {
   assert(!!m_pipeline);
   vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
-  m_descriptors.BindToCommandBuffer(buffer, m_layout, bindPoint);
 }
 
 void SubpassConfiguration::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
 {
-  m_descriptors.TransitLayoutForUsedImages(commandBuffer);
+  m_descriptorsLayout.TransitLayoutForUsedImages(commandBuffer);
 }
 
 } // namespace RHI::vulkan

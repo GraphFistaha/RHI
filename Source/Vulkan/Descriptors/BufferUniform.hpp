@@ -3,7 +3,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../../Resources/BufferGPU.hpp"
+#include "../Resources/BufferGPU.hpp"
 #include "BaseUniform.hpp"
 
 
@@ -11,10 +11,10 @@ namespace RHI::vulkan
 {
 
 struct BufferUniform final : public IBufferUniformDescriptor,
-                             private details::BaseUniform
+                             public details::BaseUniform
 {
-  explicit BufferUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
-                         uint32_t binding, uint32_t arrayIndex = 0);
+  explicit BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+                         LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~BufferUniform() override = default;
   BufferUniform(BufferUniform && rhs) noexcept;
   BufferUniform & operator=(BufferUniform && rhs) noexcept;
@@ -24,12 +24,13 @@ public: // IBufferUniformDescriptor interface
   virtual bool IsBufferAssigned() const noexcept override;
 
 public: // IUniformDescriptor interface
-  virtual uint32_t GetBinding() const noexcept override;
-  virtual uint32_t GetArrayIndex() const noexcept override;
+  virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }
+  virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
+  virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
 
 public: // IInvalidable interface
-  virtual void Invalidate() override;
-  virtual void SetInvalid() override;
+  void Invalidate();
+  void SetInvalid();
 
 public: // public internal API
   size_t GetOffset() const noexcept { return m_offset; }

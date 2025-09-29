@@ -1,15 +1,15 @@
 #include "SamplerUniform.hpp"
 
-#include "../../Utils/CastHelper.hpp"
-#include "../../VulkanContext.hpp"
-#include "../DescriptorsBuffer.hpp"
+#include "../Utils/CastHelper.hpp"
+#include "../VulkanContext.hpp"
+#include "DescriptorBufferLayout.hpp"
 
 namespace RHI::vulkan
 {
 
-SamplerUniform::SamplerUniform(Context & ctx, DescriptorBuffer & owner, VkDescriptorType type,
-                               uint32_t binding, uint32_t arrayIndex)
-  : BaseUniform(ctx, owner, type, binding, arrayIndex)
+SamplerUniform::SamplerUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+                               LayoutIndex index, uint32_t arrayIndex)
+  : BaseUniform(ctx, owner, type, index, arrayIndex)
   , ISamplerUniformDescriptor()
 {
   m_builder.Reset();
@@ -81,7 +81,7 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? dynamic_cast<IInternalTexture *>(image)
                          : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetDescriptorsBuffer().OnDescriptorChanged(*this);
+  GetLayout().OnDescriptorChanged(*this);
 }
 
 bool SamplerUniform::IsImageAssigned() const noexcept
@@ -94,21 +94,13 @@ void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrappin
                                  RHI::TextureWrapping wWrap) noexcept
 {
   m_builder.SetTextureWrapping(uWrap, vWrap, wWrap);
+  m_invalidSampler = true;
 }
 
 void SamplerUniform::SetFilter(RHI::TextureFilteration minFilter,
                                RHI::TextureFilteration magFilter) noexcept
 {
   m_builder.SetFilter(minFilter, magFilter);
-}
-
-uint32_t SamplerUniform::GetBinding() const noexcept
-{
-  return BaseUniform::GetBinding();
-}
-
-uint32_t SamplerUniform::GetArrayIndex() const noexcept
-{
-  return BaseUniform::GetArrayIndex();
+  m_invalidSampler = true;
 }
 } // namespace RHI::vulkan
