@@ -81,7 +81,8 @@ public:
   template<typename DescriptorT>
   void OnDescriptorChanged(const DescriptorT & descriptor) noexcept
   {
-    m_descriptorBuffer.UpdateDescriptor(descriptor);
+    m_execDescriptorBuffer.UpdateDescriptor(descriptor);
+    m_writeDescriptorBuffer.UpdateDescriptor(descriptor);
     SetDirtyCacheCommands();
   }
 
@@ -95,7 +96,8 @@ private:
   mutable std::mutex m_write_lock;
   std::atomic_bool m_dirtyCommands = true; ///< flag to refill m_writingBuffer
   std::atomic_bool m_shouldSwapBuffer = false;
-  DescriptorBuffer m_descriptorBuffer;
+  DescriptorBuffer m_execDescriptorBuffer;
+  DescriptorBuffer m_writeDescriptorBuffer;
 
   SubpassLayout m_layout{VK_PIPELINE_BIND_POINT_GRAPHICS};
 };

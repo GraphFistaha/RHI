@@ -81,11 +81,36 @@ DescriptorBuffer::~DescriptorBuffer()
   vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
 }
 
+DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
+  : OwnedBy<Context>(std::move(rhs))
+  , OwnedBy<const DescriptorBufferLayout>(std::move(rhs))
+{
+  std::swap(m_pool, rhs.m_pool);
+  std::swap(m_sets, rhs.m_sets);
+  std::swap(m_cachedLayouts, rhs.m_cachedLayouts);
+  std::swap(m_updateTasks, rhs.m_updateTasks);
+}
+
+DescriptorBuffer & DescriptorBuffer::operator=(DescriptorBuffer && rhs) noexcept
+{
+  if (this != &rhs)
+  {
+    OwnedBy<Context>::operator=(std::move(rhs));
+    OwnedBy<const DescriptorBufferLayout>::operator=(std::move(rhs));
+    std::swap(m_pool, rhs.m_pool);
+    std::swap(m_sets, rhs.m_sets);
+    std::swap(m_cachedLayouts, rhs.m_cachedLayouts);
+    std::swap(m_updateTasks, rhs.m_updateTasks);
+  }
+  return *this;
+}
+
 void DescriptorBuffer::Invalidate()
 {
   if (m_cachedLayouts != GetLayout().GetHandles())
   {
     auto [newPool, newSets] = GetLayout().AllocDescriptorSets();
+    std::lock_guard lk{m_setsLock};
     vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
     m_pool = newPool;
     m_sets = std::move(newSets);
@@ -99,6 +124,11 @@ void DescriptorBuffer::BindToCommandBuffer(const VkCommandBuffer & buffer,
                                            VkPipelineLayout pipelineLayout,
                                            VkPipelineBindPoint bindPoint)
 {
+  std::lock_guard lk{m_setsLock};
+  if (m_sets.empty())
+    return;
+
+  assert(!m_sets.empty());
   {
     std::lock_guard lk{m_updateDescriptorsLock};
     for (const GenericUniformPtr & task : m_updateTasks)

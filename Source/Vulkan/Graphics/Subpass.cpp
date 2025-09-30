@@ -14,7 +14,8 @@ Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, u
   , m_pipeline(ctx, *this, subpassIndex)
   , m_execBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writeBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_descriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
+  , m_execDescriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
+  , m_writeDescriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
 {
 }
 
@@ -35,7 +36,7 @@ void Subpass::BeginPass()
   m_writeBuffer.Reset();
   m_writeBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
   m_pipeline.BindToCommandBuffer(m_writeBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
-  m_descriptorBuffer.BindToCommandBuffer(m_writeBuffer.GetHandle(),
+  m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer.GetHandle(),
                                          m_pipeline.GetPipelineLayoutHandle(),
                                          VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
@@ -130,6 +131,7 @@ void Subpass::SwapCommandBuffers() noexcept
   {
     std::lock_guard lk{m_write_lock};
     std::swap(m_execBuffer, m_writeBuffer);
+    std::swap(m_execDescriptorBuffer, m_writeDescriptorBuffer);
   }
   m_shouldSwapBuffer = false;
 }
@@ -173,7 +175,8 @@ void Subpass::SetInvalid()
 void Subpass::Invalidate()
 {
   m_pipeline.Invalidate();
-  m_descriptorBuffer.Invalidate();
+  m_execDescriptorBuffer.Invalidate();
+  m_writeDescriptorBuffer.Invalidate();
 }
 
 } // namespace RHI::vulkan

@@ -29,6 +29,8 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
   ~DescriptorBuffer();
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(const DescriptorBufferLayout, GetLayout);
+  DescriptorBuffer(DescriptorBuffer && rhs) noexcept;
+  DescriptorBuffer & operator=(DescriptorBuffer && rhs) noexcept;
 
   void Invalidate();
 
@@ -45,6 +47,7 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
 private:
   using GenericUniformPtr = std::variant<const BufferUniform *, const SamplerUniform *>;
 
+  std::mutex m_setsLock;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;
   std::vector<VkDescriptorSet> m_sets;
   std::vector<VkDescriptorSetLayout> m_cachedLayouts;
