@@ -2,20 +2,19 @@
 
 #include <format>
 
+#include <Attachments/GenericAttachment.hpp>
+#include <Attachments/SurfacedAttachment.hpp>
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/RenderPass.hpp>
+#include <RenderPass/RenderTarget.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
+#include <Resources/BufferGPU.hpp>
+#include <Resources/Texture.hpp>
+#include <Resources/Transferer.hpp>
 #include <RHI.hpp>
+#include <Utils/CastHelper.hpp>
 #include <VkBootstrap.h>
-
-#include "Attachments/GenericAttachment.hpp"
-#include "Attachments/SurfacedAttachment.hpp"
-#include "CommandsExecution/CommandBuffer.hpp"
-#include "RenderPass/Framebuffer.hpp"
-#include "RenderPass/RenderPass.hpp"
-#include "RenderPass/RenderTarget.hpp"
-#include "RenderPass/SubpassConfiguration.hpp"
-#include "Resources/BufferGPU.hpp"
-#include "Resources/Texture.hpp"
-#include "Resources/Transferer.hpp"
-#include "Utils/CastHelper.hpp"
 
 // --------------------- Static functions ------------------------------
 

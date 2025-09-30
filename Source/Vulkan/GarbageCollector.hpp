@@ -4,10 +4,9 @@
 #include <typeindex>
 #include <variant>
 
+#include <Memory/MemoryBlock.hpp>
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
-
-#include "Memory/MemoryBlock.hpp"
 
 namespace RHI::vulkan
 {
