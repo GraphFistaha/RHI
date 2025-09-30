@@ -1,7 +1,7 @@
 #include "GenericAttachment.hpp"
 
-#include "../Images/ImageUtils.hpp"
-#include "../Images/InternalImageTraits.hpp"
+#include "../ImageUtils/ImageUtils.hpp"
+#include "../ImageUtils/InternalImageTraits.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 

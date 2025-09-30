@@ -12,18 +12,18 @@ PRIVATE
 	"Memory/MemoryBlock.cpp"
 	"Memory/MemoryBlock.hpp"
 	
-	"Graphics/Framebuffer.cpp"
-	"Graphics/Framebuffer.hpp"
-	"Graphics/Subpass.cpp"
-	"Graphics/Subpass.hpp"
-	"Graphics/SubpassLayout.cpp"
-	"Graphics/SubpassLayout.hpp"
-	"Graphics/RenderPass.cpp"
-	"Graphics/RenderPass.hpp"
-	"Graphics/RenderTarget.cpp"
-	"Graphics/RenderTarget.hpp"
-	"Graphics/SubpassConfiguration.cpp"
-	"Graphics/SubpassConfiguration.hpp"
+	"RenderPass/Framebuffer.cpp"
+	"RenderPass/Framebuffer.hpp"
+	"RenderPass/Subpass.cpp"
+	"RenderPass/Subpass.hpp"
+	"RenderPass/SubpassLayout.cpp"
+	"RenderPass/SubpassLayout.hpp"
+	"RenderPass/RenderPass.cpp"
+	"RenderPass/RenderPass.hpp"
+	"RenderPass/RenderTarget.cpp"
+	"RenderPass/RenderTarget.hpp"
+	"RenderPass/SubpassConfiguration.cpp"
+	"RenderPass/SubpassConfiguration.hpp"
 
 	"Descriptors/DescriptorBufferLayout.cpp"
 	"Descriptors/DescriptorBufferLayout.hpp"
@@ -56,14 +56,15 @@ PRIVATE
 	"Utils/SemaphoreBuilder.cpp"
 	
 	
-	"Images/ImageLayoutTransferer.cpp"
-	"Images/ImageLayoutTransferer.hpp"
-	"Images/InternalImageTraits.hpp"
-	"Images/ImageFormatsConversation.cpp"
-	"Images/ImageFormatsConversation.hpp"
-	"Images/TextureInterface.hpp"
-	"Images/ImageUtils.hpp"
-	"Images/ImageUtils.cpp"
+	"ImageUtils/ImageLayoutTransferer.cpp"
+	"ImageUtils/ImageLayoutTransferer.hpp"
+	"ImageUtils/InternalImageTraits.hpp"
+	"ImageUtils/ImageFormatsConversation.cpp"
+	"ImageUtils/ImageFormatsConversation.hpp"
+	"ImageUtils/TextureInterface.hpp"
+	"ImageUtils/ImageUtils.hpp"
+	"ImageUtils/ImageUtils.cpp"
+
 	"Attachments/GenericAttachment.cpp"
 	"Attachments/GenericAttachment.hpp"
 	"Attachments/Attachment.hpp"
@@ -102,4 +103,9 @@ PRIVATE
 	Vulkan::Vulkan
 	vk-bootstrap::vk-bootstrap
 	GPUOpen::VulkanMemoryAllocator
+)
+
+target_include_directories(${PROJECT_NAME}
+PRIVATE
+ "./"
 )

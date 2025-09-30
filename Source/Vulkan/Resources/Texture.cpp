@@ -1,6 +1,6 @@
 #include "Texture.hpp"
 
-#include "../Images/ImageUtils.hpp"
+#include "../ImageUtils/ImageUtils.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 

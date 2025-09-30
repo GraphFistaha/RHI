@@ -9,8 +9,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "GarbageCollector.hpp"
-#include "Graphics/Framebuffer.hpp"
-#include "Images/TextureInterface.hpp"
+#include "RenderPass/Framebuffer.hpp"
+#include "ImageUtils/TextureInterface.hpp"
 #include "Memory/MemoryAllocator.hpp"
 #include "Resources/BufferGPU.hpp"
 #include "Resources/Transferer.hpp"

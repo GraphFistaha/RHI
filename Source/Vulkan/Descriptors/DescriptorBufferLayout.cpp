@@ -4,7 +4,7 @@
 #include <cassert>
 #include <numeric>
 
-#include "../Graphics/SubpassConfiguration.hpp"
+#include "../RenderPass/SubpassConfiguration.hpp"
 #include "../VulkanContext.hpp"
 
 namespace RHI::vulkan::details

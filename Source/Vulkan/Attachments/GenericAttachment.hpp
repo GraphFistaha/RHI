@@ -4,7 +4,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/ImageLayoutTransferer.hpp"
+#include "../ImageUtils/ImageLayoutTransferer.hpp"
 #include "Attachment.hpp"
 
 namespace RHI::vulkan

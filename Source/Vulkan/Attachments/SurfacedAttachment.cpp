@@ -4,8 +4,8 @@
 
 #include <VkBootstrap.h>
 
-#include "../Graphics/RenderPass.hpp"
-#include "../Images/InternalImageTraits.hpp"
+#include "../ImageUtils/InternalImageTraits.hpp"
+#include "../RenderPass/RenderPass.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../Utils/SemaphoreBuilder.hpp"
 #include "../VulkanContext.hpp"

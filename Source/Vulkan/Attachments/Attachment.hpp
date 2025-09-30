@@ -3,7 +3,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../Images/TextureInterface.hpp"
+#include "../ImageUtils/TextureInterface.hpp"
 
 namespace RHI::vulkan
 {

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "../CommandsExecution/AsyncTask.hpp"
-#include "../Images/ImageLayoutTransferer.hpp"
+#include "../ImageUtils/ImageLayoutTransferer.hpp"
 #include "GenericAttachment.hpp"
 
 namespace vkb

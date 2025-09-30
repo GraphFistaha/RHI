@@ -366,12 +366,13 @@ struct IContext
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
-                                                 RenderBuffering buffering) = 0;
   virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
+
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                 RenderBuffering buffering) = 0;
   virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
                                         RenderBuffering buffering,
                                         RHI::SamplesCount samplesCount) = 0;

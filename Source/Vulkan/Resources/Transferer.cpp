@@ -1,7 +1,7 @@
 #include "Transferer.hpp"
 
-#include "../Images/ImageFormatsConversation.hpp"
-#include "../Images/InternalImageTraits.hpp"
+#include "../ImageUtils/ImageFormatsConversation.hpp"
+#include "../ImageUtils/InternalImageTraits.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
 

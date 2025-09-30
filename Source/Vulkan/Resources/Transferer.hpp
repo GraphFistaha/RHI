@@ -8,7 +8,7 @@
 
 #include "../CommandsExecution/CompositeAsyncTask.hpp"
 #include "../CommandsExecution/Submitter.hpp"
-#include "../Images/TextureInterface.hpp"
+#include "../ImageUtils/TextureInterface.hpp"
 #include "BufferGPU.hpp"
 
 namespace RHI::vulkan

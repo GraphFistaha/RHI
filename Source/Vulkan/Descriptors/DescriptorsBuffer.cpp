@@ -4,7 +4,7 @@
 #include <array>
 #include <numeric>
 
-#include "../Graphics/Subpass.hpp"
+#include "../RenderPass/Subpass.hpp"
 #include "../Resources/BufferGPU.hpp"
 #include "../Utils/CastHelper.hpp"
 #include "../VulkanContext.hpp"
