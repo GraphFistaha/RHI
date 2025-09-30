@@ -12,7 +12,7 @@ public:
   void MoveCamera(const glm::vec3 & offset);
   void SetSpeed(float speed) { m_speed = speed; }
   void SetSensetivity(float sensetivity) { m_sensetivity = sensetivity; }
-  void OnResolutionChanged(const glm::vec2 & resolution);
+  void SetAspectRatio(float ratio);
 
   glm::mat4 GetViewMatrix() const noexcept;
   glm::mat4 GetProjectionMatrix() const noexcept;

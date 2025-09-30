@@ -5,34 +5,9 @@
 #include <deque>
 #include <future>
 
-#include <GLFW/glfw3.h>
 #include <RHI.hpp>
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(__linux__)
-#define GLFW_EXPOSE_NATIVE_X11
-#endif
-#include <GLFW/glfw3native.h>
-
-// Custom log function used by RHI::Context
-void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
-{
-  switch (status)
-  {
-    case RHI::LogMessageStatus::LOG_INFO:
-      std::printf("INFO: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_WARNING:
-      std::printf("WARNING: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_ERROR:
-      std::printf("ERROR: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_DEBUG:
-      std::printf("DEBUG: - %s\n", message.c_str());
-      break;
-  }
-}
+#include <TestUtils.hpp>
+#include <Window.hpp>
 
 static constexpr uint32_t VerticesCount = 3;
 static constexpr float Vertices[] = {
@@ -48,33 +23,15 @@ static constexpr uint32_t Indices[] = {0, 1, 2};
 // helper which incapsulated rendering code for some scene
 struct Renderer
 {
-  explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwindow * window);
+  explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer);
   ~Renderer();
   // draw scene in parallel
-  void AsyncDrawScene()
-  {
-    if (m_drawTask.valid())
-    {
-      // wait for previous task
-      auto result = m_drawTask.wait_for(std::chrono::milliseconds(10));
-      if (result == std::future_status::timeout)
-        return;
-    }
-    auto && future = std::async(&Renderer::DrawSceneImpl, this);
-    m_drawTask = std::move(future);
-  }
+  void AsyncDrawScene();
 
-  void UpdateGeometry()
-  {
-    m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
-    m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
-    if (m_subpass->ShouldBeInvalidated())
-      AsyncDrawScene();
-  }
+  void UpdateGeometry();
 
 private:
-  /// weak pointer on Window. Just for getting size of it.
-  GLFWwindow * m_windowPtr;
+  RHI::IFramebuffer * m_fbo;
   /// subpass which can be executed in parallel
   RHI::ISubpass * m_subpass;
 
@@ -88,70 +45,46 @@ private:
 private:
   bool DrawSceneImpl();
 };
-std::unique_ptr<Renderer> TriangleRenderer;
-
-// Resize window callback
-void OnResizeWindow(GLFWwindow * window, int width, int height)
-{
-  RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  TriangleRenderer->AsyncDrawScene();
-}
 
 int main()
 {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-  // Create GLFW window
-  GLFWwindow * window = glfwCreateWindow(800, 600, "HelloTriangle_RHI", NULL, NULL);
-  if (window == NULL)
-  {
-    std::printf("Failed to create GLFW window\n");
-    glfwTerminate();
-    return -1;
-  }
-  // set callback on resize
-  glfwSetWindowSizeCallback(window, OnResizeWindow);
-
-  // fill structure for surface with OS handles
-  RHI::SurfaceConfig surface{};
-#ifdef _WIN32
-  surface.hWnd = glfwGetWin32Window(window);
-  surface.hInstance = GetModuleHandle(nullptr);
-#elif defined(__linux__)
-  surface.hWnd = reinterpret_cast<void *>(glfwGetX11Window(window));
-  surface.hInstance = glfwGetX11Display();
-#endif
+  RHI::test_examples::GlfwInstance instance;
+  RHI::test_examples::Window window("ParallelPass", 800, 600);
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
-  glfwSetWindowUserPointer(window, ctx.get());
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
-  TriangleRenderer = std::make_unique<Renderer>(*ctx, *framebuffer, window);
-  TriangleRenderer->AsyncDrawScene();
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
+                                                              RHI::RenderBuffering::Triple));
 
-  while (!glfwWindowShouldClose(window))
+  Renderer triangleRenderer(*ctx, *framebuffer);
+  triangleRenderer.AsyncDrawScene();
+
+  window.onResize = [&triangleRenderer, &framebuffer](int width, int height)
   {
-    glfwPollEvents();
-    TriangleRenderer->UpdateGeometry();
-    ctx->Flush();
-    if (auto * renderTarget = framebuffer->BeginFrame())
-    {
-      renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
-      framebuffer->EndFrame();
-    }
-  }
+    framebuffer->Resize(width, height);
+    triangleRenderer.AsyncDrawScene();
+  };
 
-  TriangleRenderer.reset();
-  glfwTerminate();
+  window.MainLoop(
+    [framebuffer, &ctx, &triangleRenderer](float delta)
+    {
+      triangleRenderer.UpdateGeometry();
+      ctx->Flush();
+      if (auto * renderTarget = framebuffer->BeginFrame())
+      {
+        renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
+        framebuffer->EndFrame();
+      }
+    });
+
   return 0;
 }
 
-Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer, GLFWwindow * window)
-  : m_windowPtr(window)
+Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
+  : m_fbo(&framebuffer)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   m_subpass = framebuffer.CreateSubpass();
@@ -183,16 +116,38 @@ Renderer::~Renderer()
   //TODO: destroy buffers
 }
 
+void Renderer::AsyncDrawScene()
+{
+  if (m_drawTask.valid())
+  {
+    // wait for previous task
+    auto result = m_drawTask.wait_for(std::chrono::milliseconds(10));
+    if (result == std::future_status::timeout)
+      return;
+  }
+  auto && future = std::async(&Renderer::DrawSceneImpl, this);
+  m_drawTask = std::move(future);
+}
+
+void Renderer::UpdateGeometry()
+{
+  m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
+  m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
+  AsyncDrawScene();
+}
+
 bool Renderer::DrawSceneImpl()
 {
-  int width, height;
-  glfwGetFramebufferSize(m_windowPtr, &width, &height);
-  m_subpass->BeginPass();
-  m_subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-  m_subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-  m_subpass->BindVertexBuffer(0, *m_vertexBuffer, 0);
-  m_subpass->BindIndexBuffer(*m_indexBuffer, RHI::IndexType::UINT32);
-  m_subpass->DrawIndexedVertices(IndicesCount, 1);
-  m_subpass->EndPass();
+  if (m_subpass->ShouldBeInvalidated())
+  {
+    auto extent = m_fbo->GetExtent();
+    m_subpass->BeginPass();
+    m_subpass->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
+    m_subpass->SetScissor(0, 0, static_cast<uint32_t>(extent[0]), static_cast<uint32_t>(extent[1]));
+    m_subpass->BindVertexBuffer(0, *m_vertexBuffer, 0);
+    m_subpass->BindIndexBuffer(*m_indexBuffer, RHI::IndexType::UINT32);
+    m_subpass->DrawIndexedVertices(IndicesCount, 1);
+    m_subpass->EndPass();
+  }
   return true;
 }

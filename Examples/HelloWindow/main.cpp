@@ -3,95 +3,42 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <GLFW/glfw3.h>
 #include <RHI.hpp>
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(__linux__)
-#define GLFW_EXPOSE_NATIVE_X11
-#endif
-#include <GLFW/glfw3native.h>
-
-// Custom log function used by RHI::Context
-void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
-{
-  switch (status)
-  {
-    case RHI::LogMessageStatus::LOG_INFO:
-      std::printf("INFO: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_WARNING:
-      std::printf("WARNING: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_ERROR:
-      std::printf("ERROR: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_DEBUG:
-      std::printf("DEBUG: - %s\n", message.c_str());
-      break;
-  }
-}
-
-// Resize window callback
-void OnResizeWindow(GLFWwindow * window, int width, int height)
-{
-  RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-}
-
+#include <TestUtils.hpp>
+#include <Window.hpp>
 
 int main()
 {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  RHI::test_examples::GlfwInstance instance;
 
-  // Create GLFW window
-  GLFWwindow * window = glfwCreateWindow(800, 600, "HelloTriangle_RHI", NULL, NULL);
-  if (window == NULL)
-  {
-    std::printf("Failed to create GLFW window\n");
-    glfwTerminate();
-    return -1;
-  }
-  // set callback on resize
-  glfwSetWindowSizeCallback(window, OnResizeWindow);
-
-  // fill structure for surface with OS handles
-  RHI::SurfaceConfig surface{};
-#ifdef _WIN32
-  surface.hWnd = glfwGetWin32Window(window);
-  surface.hInstance = GetModuleHandle(nullptr);
-#elif defined(__linux__)
-  surface.hWnd = reinterpret_cast<void *>(glfwGetX11Window(window));
-  surface.hInstance = glfwGetX11Display();
-#endif
+  RHI::test_examples::Window window("Hello window", 800, 600);
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
-  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
-  if (!ctx)
-  {
-    assert(false);
-    glfwTerminate();
-    return -1;
-  }
-  glfwSetWindowUserPointer(window, ctx.get());
+  std::unique_ptr<RHI::IContext> ctx =
+    RHI::CreateContext(gpuTraits, ConsoleLog);
+  assert(ctx);
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
+  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
+                                                              RHI::RenderBuffering::Double));
+
+  window.onResize = [&framebuffer](int width, int height)
+  {
+    framebuffer->Resize(width, height);
+  };
 
   float t = 0.0;
-  while (!glfwWindowShouldClose(window))
-  {
-    glfwPollEvents();
-
-    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
+  window.MainLoop(
+    [=, &t](float delta)
     {
-      renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-      framebuffer->EndFrame();
-    }
-    t += 0.001f;
-  }
+      if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
+      {
+        renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
+        framebuffer->EndFrame();
+      }
+      t += 0.001f;
+    });
 
-  glfwTerminate();
   return 0;
 }

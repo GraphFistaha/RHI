@@ -1,6 +1,6 @@
 #include "CommandBuffer.hpp"
 
-#include "../VulkanContext.hpp"
+#include <VulkanContext.hpp>
 
 namespace
 {
@@ -120,72 +120,6 @@ void CommandBuffer::EndWriting() const
   if (vkEndCommandBuffer(m_buffer) != VK_SUCCESS)
     throw std::runtime_error("failed to record command buffer!");
 }
-
-/*
-VkIndexType IndexType2VulkanEnum(RHI::IndexType type)
-{
-  using namespace RHI;
-  switch (type)
-  {
-    case IndexType::UINT8:
-      return VkIndexType::VK_INDEX_TYPE_UINT8_EXT;
-    case IndexType::UINT16:
-      return VkIndexType::VK_INDEX_TYPE_UINT16;
-    case IndexType::UINT32:
-      return VkIndexType::VK_INDEX_TYPE_UINT32;
-    default:
-      throw std::runtime_error("Failed to cast IndexType to vulkan enum");
-  }
-}
-
-void CommandBuffer::DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-                                 uint32_t firstInstance) const
-{
-  vkCmdDraw(m_buffer, vertexCount, instanceCount, firstVertex, firstInstance);
-}
-
-void CommandBuffer::DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
-                                        uint32_t firstIndex, int32_t vertexOffset,
-                                        uint32_t firstInstance) const
-{
-  vkCmdDrawIndexed(m_buffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
-}
-
-void CommandBuffer::SetViewport(float width, float height)
-{
-  VkViewport viewport = {};
-  viewport.height = height;
-  viewport.width = width;
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-  vkCmdSetViewport(m_buffer, 0, 1, &viewport);
-}
-
-void CommandBuffer::SetScissor(int32_t x, int32_t y, uint32_t width, uint32_t height)
-{
-  VkRect2D scissor = {};
-  scissor.extent.width = width;
-  scissor.extent.height = height;
-  scissor.offset.x = x;
-  scissor.offset.y = y;
-  vkCmdSetScissor(m_buffer, 0, 1, &scissor);
-}
-
-void CommandBuffer::BindVertexBuffer(uint32_t binding, const IBufferGPU & buffer,
-                                     uint32_t offset /* = 0)
-{
-  auto && bufferHandle = reinterpret_cast<VkBuffer>(buffer.GetHandle());
-  VkDeviceSize vkOffset = offset;
-  vkCmdBindVertexBuffers(m_buffer, binding, 1, &bufferHandle, &vkOffset);
-}
-
-void CommandBuffer::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset)
-{
-  auto && bufferHandle = reinterpret_cast<VkBuffer>(buffer.GetHandle());
-  VkDeviceSize vkOffset = offset;
-  vkCmdBindIndexBuffer(m_buffer, bufferHandle, vkOffset, IndexType2VulkanEnum(type));
-}
-*/
 
 void CommandBuffer::Reset()
 {

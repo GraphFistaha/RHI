@@ -2,44 +2,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include <GLFW/glfw3.h>
 #include <RHI.hpp>
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#elif defined(__linux__)
-#define GLFW_EXPOSE_NATIVE_X11
-#endif
-#include <GLFW/glfw3native.h>
-
-// Custom log function used by RHI::Context
-void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
-{
-  switch (status)
-  {
-    case RHI::LogMessageStatus::LOG_INFO:
-      std::printf("INFO: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_WARNING:
-      std::printf("WARNING: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_ERROR:
-      std::printf("ERROR: - %s\n", message.c_str());
-      break;
-    case RHI::LogMessageStatus::LOG_DEBUG:
-      std::printf("DEBUG: - %s\n", message.c_str());
-      break;
-  }
-}
-
-// flag means that you should clear and update trianglePipelineCommands (see in main)
-bool ShouldInvalidateScene = true;
-
-// Resize window callback
-void OnResizeWindow(GLFWwindow * window, int width, int height)
-{
-  RHI::IContext * ctx = reinterpret_cast<RHI::IContext *>(glfwGetWindowUserPointer(window));
-  ShouldInvalidateScene = true;
-}
+#include <TestUtils.hpp>
+#include <Window.hpp>
 
 static constexpr uint32_t VerticesCount = 4;
 static constexpr float Vertices[] = {
@@ -55,41 +20,22 @@ static constexpr uint32_t Indices[] = {0, 1, 2, 0, 2, 3};
 
 int main()
 {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  RHI::test_examples::GlfwInstance instance;
 
-  // Create GLFW window
-  GLFWwindow * window = glfwCreateWindow(800, 600, "Uniforms_RHI", NULL, NULL);
-  if (window == NULL)
-  {
-    std::printf("Failed to create GLFW window\n");
-    glfwTerminate();
-    return -1;
-  }
-  // set callback on resize
-  glfwSetWindowSizeCallback(window, OnResizeWindow);
-
-  // fill structure for surface with OS handles
-  RHI::SurfaceConfig surface{};
-#ifdef _WIN32
-  surface.hWnd = glfwGetWin32Window(window);
-  surface.hInstance = GetModuleHandle(nullptr);
-#elif defined(__linux__)
-  surface.hWnd = reinterpret_cast<void *>(glfwGetX11Window(window));
-  surface.hInstance = glfwGetX11Display();
-#endif
+  RHI::test_examples::Window window("Uniforms", 800, 600);
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
-  glfwSetWindowUserPointer(window, ctx.get());
 
   // create buffers for each uniform variables
   auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
   auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
-  auto * framebuffer = ctx->CreateFramebuffer(3);
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
+  auto * framebuffer = ctx->CreateFramebuffer();
+  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
+                                                              RHI::RenderBuffering::Triple));
+
   auto * subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
@@ -103,12 +49,10 @@ int main()
 
   // declare uniform variables
   auto && u_t =
-    trianglePipeline.DeclareUniform(0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
-  u_t->Invalidate();
+    trianglePipeline.DeclareUniform({0, 0}, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
   u_t->AssignBuffer(*tBuf); // bind buffer to uniform variable
 
-  auto && u_transform = trianglePipeline.DeclareUniform(1, RHI::ShaderType::Vertex);
-  u_transform->Invalidate();
+  auto && u_transform = trianglePipeline.DeclareUniform({0, 1}, RHI::ShaderType::Vertex);
   u_transform->AssignBuffer(*transformBuf); // bind buffer to uniform variable
 
   // create vertex buffer
@@ -121,48 +65,48 @@ int main()
     ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
-  float x = 0.0f;
-  while (!glfwWindowShouldClose(window))
+  window.onResize = [framebuffer](int width, int height)
   {
-    glfwPollEvents();
+    framebuffer->Resize(width, height);
+  };
 
-    float t_val = std::abs(std::sin(x));
-    tBuf->UploadSync(&t_val, sizeof(float));
-
-    std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
-    transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
-
-    x += 0.001f;
-    ctx->Flush();
-
-    if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
+  float x = 0.0f;
+  window.MainLoop(
+    [&](float delta)
     {
-      renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
-      if (ShouldInvalidateScene || subpass->ShouldBeInvalidated())
-      {
-        // get size of window
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        subpass->BeginPass();
-        // set viewport
-        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-        // set scissor
-        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-        // draw triangle
-        subpass->BindVertexBuffer(0, *vertexBuffer, 0);
-        subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-        subpass->DrawIndexedVertices(IndicesCount, 1);
-        subpass->EndPass();
+      float t_val = std::abs(std::sin(x));
+      tBuf->UploadSync(&t_val, sizeof(float));
 
-        ShouldInvalidateScene = false;
+      std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
+      transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
+
+      x += 0.001f;
+      ctx->Flush();
+
+      if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
+      {
+        renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
+        if (subpass->ShouldBeInvalidated())
+        {
+          // get size of window
+          auto [width, height, _] = renderTarget->GetExtent();
+          subpass->BeginPass();
+          // set viewport
+          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          // set scissor
+          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          // draw triangle
+          subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+          subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+          subpass->DrawIndexedVertices(IndicesCount, 1);
+          subpass->EndPass();
+        }
+
+        framebuffer->EndFrame();
       }
 
-      framebuffer->EndFrame();
-    }
+      ctx->ClearResources();
+    });
 
-    ctx->ClearResources();
-  }
-
-  glfwTerminate();
   return 0;
 }

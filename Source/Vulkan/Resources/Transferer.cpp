@@ -1,9 +1,9 @@
 #include "Transferer.hpp"
 
-#include "../Images/ImageFormatsConversation.hpp"
-#include "../Images/InternalImageTraits.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <ImageUtils/ImageFormatsConversation.hpp>
+#include <ImageUtils/InternalImageTraits.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
@@ -29,15 +29,17 @@ public:
   /// pushes task to upload image from host to GPU (asynchronous)
   std::future<UploadResult> UploadImage(details::CommandBuffer & commands,
                                         IInternalTexture & dstImage, const uint8_t * srcData,
-                                        const CopyImageArguments & args);
+                                        const TextureExtent & srcExtent, HostImageFormat hostFormat,
+                                        const TextureRegion & srcRegion,
+                                        const TextureRegion & dstRegion);
   /// pushes task to download image from GPU to host (asynchronous)
   std::future<DownloadResult> DownloadImage(details::CommandBuffer & commands,
                                             IInternalTexture & srcImage, HostImageFormat format,
-                                            const ImageRegion & region);
+                                            const TextureRegion & region);
   /// pushes task to blit image to another image
   std::future<BlitResult> BlitImageToImage(details::CommandBuffer & commands,
                                            IInternalTexture & dst, IInternalTexture & src,
-                                           const ImageRegion & region);
+                                           const TextureRegion & region);
 
 private:
   /// function to copy texels from downloaded staging buffer to host memory
@@ -107,7 +109,7 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
   VkBufferCopy copy{};
   copy.dstOffset = 0;
   copy.srcOffset = 0;
-  copy.size = stagingBuffer.Size();
+  copy.size = size - offset;
   commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
   auto && data =
     m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
@@ -139,17 +141,19 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
 
 std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
   details::CommandBuffer & commands, IInternalTexture & dstImage, const uint8_t * srcData,
-  const CopyImageArguments & args)
+  const TextureExtent & srcExtent, HostImageFormat hostFormat, const TextureRegion & srcRegion,
+  const TextureRegion & dstRegion)
 {
   std::promise<UploadResult> promise;
   const size_t copyingRegionSize =
-    RHI::utils::GetSizeOfImage(args.src.extent, dstImage.GetInternalFormat());
+    RHI::utils::GetSizeOfImage(srcRegion.extent, dstImage.GetInternalFormat());
   BufferGPU stagingBuffer(GetContext(), copyingRegionSize, g_stagingUsage, true);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
-    CopyImageFromHost(srcData, args.src.extent, args.src, args.hostFormat,
-                      reinterpret_cast<uint8_t *>(mapped_ptr.get()), args.dst.extent, args.dst,
-                      dstImage.GetInternalFormat());
+    auto dstExtent = dstImage.GetInternalExtent();
+    CopyImageFromHost(srcData, srcExtent, srcRegion, hostFormat,
+                      reinterpret_cast<uint8_t *>(mapped_ptr.get()), srcRegion.extent,
+                      {{0, 0, 0}, srcRegion.extent}, dstImage.GetInternalFormat());
     mapped_ptr.reset();
     stagingBuffer.Flush();
   }
@@ -163,10 +167,10 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageExtent = {args.dst.extent[0], args.dst.extent[1], args.dst.extent[2]};
-    region.imageOffset = {static_cast<int>(args.dst.offset[0]),
-                          static_cast<int>(args.dst.offset[1]),
-                          static_cast<int>(args.dst.offset[2])};
+    region.imageExtent = {dstRegion.extent[0], dstRegion.extent[1], dstRegion.extent[2]};
+    region.imageOffset = {static_cast<int>(dstRegion.offset[0]),
+                          static_cast<int>(dstRegion.offset[1]),
+                          static_cast<int>(dstRegion.offset[2])};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
     region.imageSubresource.baseArrayLayer = 0;
@@ -185,7 +189,7 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
 
 std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
   details::CommandBuffer & commands, IInternalTexture & srcImage, HostImageFormat format,
-  const ImageRegion & imgRegion)
+  const TextureRegion & imgRegion)
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(),
@@ -213,7 +217,7 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
     DownloadResult result(RHI::utils::GetSizeOfImage(imgRegion.extent, format));
     if (auto scopedPtr = stagingBuffer.Map())
     {
-      ImageRegion rgn{{0, 0, 0}, imgRegion.extent};
+      TextureRegion rgn{{0, 0, 0}, imgRegion.extent};
       CopyImageToHost(reinterpret_cast<uint8_t *>(scopedPtr.get()), imgRegion.extent, rgn,
                       srcFormat, result.data(), imgRegion.extent, rgn, format);
     }
@@ -233,7 +237,7 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
 
 std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
   details::CommandBuffer & commands, IInternalTexture & dst, IInternalTexture & src,
-  const ImageRegion & region)
+  const TextureRegion & region)
 {
   std::promise<BlitResult> promise;
   VkImageCopy copy{};
@@ -298,18 +302,18 @@ std::future<DownloadResult> Transferer::DownloadBuffer(VkBuffer srcBuffer, size_
                                         offset);
 }
 
-std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
-                                                  const uint8_t * srcData,
-                                                  const CopyImageArguments & args)
+std::future<UploadResult> Transferer::UploadImage(
+  IInternalTexture & dstImage, const uint8_t * srcData, const TextureExtent & srcExtent,
+  HostImageFormat hostFormat, const TextureRegion & srcRegion, const TextureRegion & dstRegion)
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, srcData,
-                                     args);
+                                     srcExtent, hostFormat, srcRegion, dstRegion);
 }
 
 std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
                                                       HostImageFormat format,
-                                                      const ImageRegion & region)
+                                                      const TextureRegion & region)
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->DownloadImage(m_graphicsSubmitter.GetWritingBuffer(), srcImage, format,
@@ -317,7 +321,7 @@ std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImag
 }
 
 std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
-                                                     const ImageRegion & region)
+                                                     const TextureRegion & region)
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->BlitImageToImage(m_graphicsSubmitter.GetWritingBuffer(), dst, src, region);

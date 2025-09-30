@@ -1,8 +1,8 @@
 #include "Texture.hpp"
 
-#include "../Images/ImageUtils.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <ImageUtils/ImageUtils.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
@@ -12,7 +12,8 @@ static constexpr uint32_t g_TextureUsageFlags =
 Texture::Texture(Context & ctx, const ImageCreateArguments & args)
   : OwnedBy<Context>(ctx)
   , m_description(args)
-  , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags))
+  , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags,
+                                                             VK_SAMPLE_COUNT_1_BIT))
   , m_layout(m_memBlock.GetImage())
 {
   m_view =
@@ -28,13 +29,17 @@ Texture::~Texture()
 }
 
 std::future<UploadResult> Texture::UploadImage(const uint8_t * srcPixelData,
-                                               const CopyImageArguments & args)
+                                               const TextureExtent & srcExtent,
+                                               HostImageFormat hostFormat,
+                                               const TextureRegion & srcRegion,
+                                               const TextureRegion & dstRegion)
 {
-  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, args);
+  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, srcExtent, hostFormat,
+                                                  srcRegion, dstRegion);
 }
 
 std::future<DownloadResult> Texture::DownloadImage(HostImageFormat format,
-                                                   const ImageRegion & region)
+                                                   const TextureRegion & region)
 {
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
@@ -52,7 +57,7 @@ size_t Texture::Size() const
 void Texture::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::ImageRegion{});
+    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 VkImageView Texture::GetImageView() const noexcept

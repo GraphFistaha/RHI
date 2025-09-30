@@ -2,20 +2,19 @@
 
 #include <format>
 
+#include <Attachments/GenericAttachment.hpp>
+#include <Attachments/SurfacedAttachment.hpp>
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/RenderPass.hpp>
+#include <RenderPass/RenderTarget.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
+#include <Resources/BufferGPU.hpp>
+#include <Resources/Texture.hpp>
+#include <Resources/Transferer.hpp>
 #include <RHI.hpp>
+#include <Utils/CastHelper.hpp>
 #include <VkBootstrap.h>
-
-#include "Attachments/GenericAttachment.hpp"
-#include "Attachments/SurfacedAttachment.hpp"
-#include "CommandsExecution/CommandBuffer.hpp"
-#include "Graphics/Framebuffer.hpp"
-#include "Graphics/RenderPass.hpp"
-#include "Graphics/RenderTarget.hpp"
-#include "Graphics/SubpassConfiguration.hpp"
-#include "Resources/BufferGPU.hpp"
-#include "Resources/Texture.hpp"
-#include "Resources/Transferer.hpp"
-#include "Utils/CastHelper.hpp"
 
 // --------------------- Static functions ------------------------------
 
@@ -207,8 +206,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   : m_logFunc(logFunc)
 {
   m_impl = std::make_unique<Impl>("appName", gpuTraits, m_logFunc);
-  m_allocator = std::make_unique<memory::MemoryAllocator>(m_impl->GetInstance(), m_impl->GetGPU(),
-                                                          m_impl->GetDevice(), GetVulkanVersion());
+  m_allocator = std::make_unique<memory::MemoryAllocator>(*this);
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
 
   // alloc null texture
@@ -217,9 +215,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.extent = {1, 1, 1};
     args.format = RHI::ImageFormat::RGBA8;
     args.mipLevels = 1;
-    args.samples = RHI::SamplesCount::One;
     args.type = RHI::ImageType::Image2D;
-    args.shared = false;
   }
   AllocImage(args);
 }
@@ -228,19 +224,18 @@ Context::~Context()
 {
 }
 
-IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits)
+IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                RenderBuffering buffering)
 {
   auto surface = m_impl->AllocSurface(surfaceTraits);
-  auto surfaceTexture =
-    std::make_unique<SurfacedAttachment>(*this, surface, RHI::SamplesCount::One);
+  auto surfaceTexture = std::make_unique<SurfacedAttachment>(*this, surface, buffering);
   auto && result = m_attachments.emplace_back(std::move(surfaceTexture));
   return result.get();
 }
 
-IFramebuffer * Context::CreateFramebuffer(uint32_t frames_count)
+IFramebuffer * Context::CreateFramebuffer()
 {
   auto & result = m_framebuffers.emplace_back(*this);
-  result.SetFramesCount(frames_count);
   return &result;
 }
 
@@ -257,9 +252,17 @@ ITexture * Context::AllocImage(const ImageCreateArguments & args)
   return result.get();
 }
 
-IAttachment * Context::AllocAttachment(const ImageCreateArguments & args)
+IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                       RenderBuffering buffering, RHI::SamplesCount samplesCount)
 {
-  auto && attachment = std::make_unique<GenericAttachment>(*this, args);
+  RHI::ImageCreateArguments args{};
+  {
+    args.format = format;
+    args.extent = extent;
+    args.mipLevels = 1;
+    args.type = RHI::ImageType::Image2D;
+  }
+  auto && attachment = std::make_unique<GenericAttachment>(*this, args, buffering, samplesCount);
   return m_attachments.emplace_back(std::move(attachment)).get();
 }
 
@@ -333,7 +336,7 @@ Transferer & Context::GetTransferer() & noexcept
   return it->second;
 }
 
-const memory::MemoryAllocator & Context::GetBuffersAllocator() const & noexcept
+memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept
 {
   return *m_allocator;
 }
@@ -371,32 +374,3 @@ std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
   }
 }
 } // namespace RHI
-
-
-namespace RHI::vulkan::utils
-{
-
-VkSemaphore CreateVkSemaphore(VkDevice device)
-{
-  VkSemaphore result = VK_NULL_HANDLE;
-  VkSemaphoreCreateInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  // Don't use createSemaphore in dispatchTable because it's broken
-  if (vkCreateSemaphore(device, &info, nullptr, &result) != VK_SUCCESS)
-    throw std::runtime_error("failed to create semaphore");
-  return VkSemaphore(result);
-}
-
-VkFence CreateFence(VkDevice device, bool locked)
-{
-  VkFenceCreateInfo info{};
-  VkFence result = VK_NULL_HANDLE;
-  info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  if (locked)
-    info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  // Don't use createFence in dispatchTable because it's broken
-  if (vkCreateFence(device, &info, nullptr, &result) != VK_SUCCESS)
-    throw std::runtime_error("failed to create fence");
-  return VkFence(result);
-}
-} // namespace RHI::vulkan::utils

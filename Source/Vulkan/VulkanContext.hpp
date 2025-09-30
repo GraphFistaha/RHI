@@ -5,15 +5,14 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
+#include <GarbageCollector.hpp>
+#include <ImageUtils/TextureInterface.hpp>
+#include <Memory/MemoryAllocator.hpp>
+#include <RenderPass/Framebuffer.hpp>
+#include <Resources/BufferGPU.hpp>
+#include <Resources/Transferer.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "GarbageCollector.hpp"
-#include "Graphics/Framebuffer.hpp"
-#include "Images/TextureInterface.hpp"
-#include "Memory/MemoryAllocator.hpp"
-#include "Resources/BufferGPU.hpp"
-#include "Resources/Transferer.hpp"
 
 namespace RHI::vulkan
 {
@@ -37,12 +36,15 @@ struct Context final : public IContext
   RESTRICTED_COPY(Context);
 
 public: // IContext interface
-  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) override;
-  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) override;
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                 RenderBuffering buffering) override;
+  virtual IFramebuffer * CreateFramebuffer() override;
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
                                    bool allowHostAccess) override;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) override;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args) override;
+  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                        RenderBuffering buffering,
+                                        RHI::SamplesCount samplesCount) override;
   virtual void ClearResources() override;
   virtual void Flush() override;
 
@@ -58,7 +60,7 @@ public: // RHI-only API
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   Transferer & GetTransferer() & noexcept;
-  const memory::MemoryAllocator & GetBuffersAllocator() const & noexcept;
+  memory::MemoryAllocator & GetBuffersAllocator() & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
   RHI::ITexture * GetNullTexture() const noexcept;
@@ -81,13 +83,3 @@ private:
 };
 
 } // namespace RHI::vulkan
-
-namespace RHI::vulkan::utils
-{
-
-/// @brief creates semaphore, doesn't own it
-VkSemaphore CreateVkSemaphore(VkDevice device);
-/// @brief creates fence, doesn't own it
-VkFence CreateFence(VkDevice device, bool locked = false);
-
-} // namespace RHI::vulkan::utils

@@ -16,7 +16,7 @@ namespace RHI::vulkan::details
 struct CommandBuffer : public OwnedBy<Context>
 {
   explicit CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level);
-  virtual ~CommandBuffer();
+  virtual ~CommandBuffer() override;
   CommandBuffer(CommandBuffer && rhs) noexcept;
   CommandBuffer & operator=(CommandBuffer && rhs) noexcept;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
@@ -25,7 +25,7 @@ struct CommandBuffer : public OwnedBy<Context>
   void BeginWriting(VkRenderPass renderPass, uint32_t subpassIndex,
                     VkFramebuffer framebuffer = VK_NULL_HANDLE) const;
   void EndWriting() const;
-  void Reset();
+  virtual void Reset();
   void AddCommands(const std::vector<VkCommandBuffer> & buffers);
 
   template<typename VkCmdFunc, typename... Args>
@@ -46,14 +46,5 @@ private:
   VkCommandBuffer m_buffer = VK_NULL_HANDLE;
   size_t m_commandsCount = 0;
 };
-
-template<typename InIt>
-void AccumulateCommands(CommandBuffer & dst, InIt begin, InIt end)
-{
-  std::vector<VkCommandBuffer> buffers;
-  std::transform(begin, end, std::back_inserter(buffers), [](const CommandBuffer & buf)
-                 { return static_cast<VkCommandBuffer>(buf.GetHandle()); });
-  dst.AddCommands(buffers);
-}
 
 } // namespace RHI::vulkan::details

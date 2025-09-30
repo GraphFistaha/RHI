@@ -1,7 +1,7 @@
 #include "PipelineBuilder.hpp"
 
-#include "CastHelper.hpp"
-#include "ShaderCompiler.hpp"
+#include <Utils/CastHelper.hpp>
+#include <Utils/ShaderCompiler.hpp>
 
 namespace
 {
@@ -335,6 +335,18 @@ void PipelineBuilder::Reset()
 void PipelineBuilder::AttachShader(RHI::ShaderType type, const std::filesystem::path & path)
 {
   m_attachedShaders.push_back({type, path});
+}
+
+void PipelineBuilder::SetSamplesCount(RHI::SamplesCount samplesCount)
+{
+  m_cachedSamplesCount = samplesCount;
+  m_multisampleInfo.rasterizationSamples =
+    utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(samplesCount);
+}
+
+RHI::SamplesCount PipelineBuilder::GetSamplesCount() const noexcept
+{
+  return m_cachedSamplesCount;
 }
 
 void PipelineBuilder::SetMeshTopology(MeshTopology topology)

@@ -25,6 +25,7 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     auto && subpassConfig = newSubpass->GetConfiguration();
     subpassConfig.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     subpassConfig.BindAttachment(1, RHI::ShaderAttachmentSlot::DepthStencil);
+    subpassConfig.BindResolver(2, 0);
     subpassConfig.EnableDepthTest(true);
     // set shaders
     subpassConfig.AttachShader(RHI::ShaderType::Vertex, "cube.vert");
@@ -42,9 +43,9 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
                                     RHI::InputAttributeElementType::SINT);
 
 
-    auto * uniform = subpassConfig.DeclareUniform(0, RHI::ShaderType::Vertex);
+    auto * uniform = subpassConfig.DeclareUniform({0, 0}, RHI::ShaderType::Vertex);
     uniform->AssignBuffer(*m_uniformBuffer);
-    subpassConfig.DeclareSamplersArray(1, RHI::ShaderType::Fragment,
+    subpassConfig.DeclareSamplersArray({0, 1}, RHI::ShaderType::Fragment,
                                        static_cast<uint32_t>(m_textures.size()), m_textures.data());
     for (auto * texture : m_textures)
       texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);

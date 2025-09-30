@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "Headers/Descriptors.hpp"
 #include "Headers/Images.hpp"
 
 namespace RHI
@@ -40,6 +41,14 @@ struct SurfaceConfig
   ExternalHandle hWnd;
   /// Additional window handle (HINSTANCE handle in Windows, Display in Linux)
   ExternalHandle hInstance;
+};
+
+/// @brief How many buffers can be in one attachment
+enum class RenderBuffering : uint8_t
+{
+  Single = 1,
+  Double = 2,
+  Triple = 3
 };
 
 /// @brief requirements for GPU selector
@@ -146,20 +155,6 @@ enum class CompareOperation
   Always = 7
 };
 
-enum class TextureWrapping
-{
-  Repeat,
-  MirroredRepeat,
-  ClampToEdge,
-  ClampToBorder
-};
-
-enum class TextureFilteration
-{
-  Nearest,
-  Linear
-};
-
 /// @brief types of command buffers
 enum class CommandBufferType : uint8_t
 {
@@ -223,29 +218,6 @@ struct IAwaitable
   virtual bool Wait() noexcept = 0;
 };
 
-struct IUniformDescriptor : public IInvalidable
-{
-  virtual ~IUniformDescriptor() = default;
-  virtual uint32_t GetBinding() const noexcept = 0;
-  virtual uint32_t GetArrayIndex() const noexcept = 0;
-};
-
-struct ISamplerUniformDescriptor : public IUniformDescriptor
-{
-  virtual void AssignImage(ITexture * texture) = 0;
-  virtual bool IsImageAssigned() const noexcept = 0;
-  virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
-                           RHI::TextureWrapping wWrap) noexcept = 0;
-  virtual void SetFilter(RHI::TextureFilteration minFilter,
-                         RHI::TextureFilteration magFilter) noexcept = 0;
-};
-
-struct IBufferUniformDescriptor : public IUniformDescriptor
-{
-  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) = 0;
-  virtual bool IsBufferAssigned() const noexcept = 0;
-};
-
 /// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
@@ -257,16 +229,17 @@ struct ISubpassConfiguration : public IInvalidable
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
+  virtual void BindResolver(uint32_t binding, uint32_t resolve_for) = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                  uint32_t elemsCount, InputAttributeElementType elemsType) = 0;
   virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
 
-  virtual IBufferUniformDescriptor * DeclareUniform(uint32_t binding, ShaderType shaderStage) = 0;
-  virtual ISamplerUniformDescriptor * DeclareSampler(uint32_t binding, ShaderType shaderStage) = 0;
-  virtual void DeclareSamplersArray(uint32_t binding, ShaderType shaderStage, uint32_t size,
-                                    ISamplerUniformDescriptor * out_array[]) = 0;
+  virtual IBufferUniformDescriptor * DeclareUniform(LayoutIndex index, ShaderType shaderStage) = 0;
+  virtual ISamplerUniformDescriptor * DeclareSampler(LayoutIndex index, ShaderType shaderStage) = 0;
+  virtual void DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * outDescriptors[]) = 0;
   virtual void SetMeshTopology(MeshTopology topology) noexcept = 0;
 
   virtual void EnableDepthTest(bool enabled) noexcept = 0;
@@ -280,7 +253,7 @@ struct ISubpassConfiguration : public IInvalidable
 struct IRenderTarget
 {
   virtual ~IRenderTarget() = default;
-  virtual ImageExtent GetExtent() const noexcept = 0;
+  virtual TexelIndex GetExtent() const noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
                              float a) noexcept = 0;
   virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
@@ -321,10 +294,9 @@ struct IFramebuffer
   virtual ~IFramebuffer() = default;
   virtual IRenderTarget * BeginFrame() = 0;
   virtual IAwaitable * EndFrame() = 0;
-  virtual void SetFramesCount(uint32_t frames_count) = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
-  virtual RHI::ImageExtent GetExtent() const = 0;
+  virtual RHI::TexelIndex GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
   virtual ISubpass * CreateSubpass() = 0;
@@ -362,9 +334,12 @@ struct ITexture
 {
   virtual ~ITexture() = default;
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const CopyImageArguments & args) = 0;
+                                                const TextureExtent & srcExtent,
+                                                HostImageFormat hostFormat,
+                                                const TextureRegion & srcRegion,
+                                                const TextureRegion & dstRegion) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) = 0;
+                                                    const TextureRegion & region) = 0;
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
@@ -372,11 +347,12 @@ struct ITexture
 };
 
 /// swapchained image sequence to attach it to framebuffer
+// TODO: remove it. Only renderTarget should stay
 struct IAttachment
 {
   virtual ~IAttachment() = default;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) = 0;
+                                                    const TextureRegion & region) = 0;
   virtual ImageCreateArguments GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   virtual void BlitTo(ITexture * texture) = 0;
@@ -390,12 +366,16 @@ struct IContext
   virtual void ClearResources() = 0;
   virtual void Flush() = 0;
 
-  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits) = 0;
-  virtual IFramebuffer * CreateFramebuffer(uint32_t frames_count) = 0;
+  virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
   virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
-  virtual IAttachment * AllocAttachment(const ImageCreateArguments & args) = 0;
+
+  virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
+                                                 RenderBuffering buffering) = 0;
+  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                        RenderBuffering buffering,
+                                        RHI::SamplesCount samplesCount) = 0;
 };
 
 /// @brief Factory-function to create context

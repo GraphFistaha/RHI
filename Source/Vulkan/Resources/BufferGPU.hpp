@@ -1,8 +1,7 @@
 #pragma once
+#include <Memory/MemoryBlock.hpp>
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
-
-#include "../Memory/MemoryBlock.hpp"
 
 namespace RHI::vulkan
 {
@@ -17,7 +16,7 @@ struct BufferGPU : public IBufferGPU,
 {
   using IBufferGPU::ScopedPointer;
 
-  explicit BufferGPU(Context& ctx, size_t size, BufferGPUUsage usage, bool allowHostAccess);
+  explicit BufferGPU(Context & ctx, size_t size, BufferGPUUsage usage, bool allowHostAccess);
   explicit BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool allowHostAccess);
   virtual ~BufferGPU() override;
   BufferGPU(BufferGPU && rhs) noexcept;

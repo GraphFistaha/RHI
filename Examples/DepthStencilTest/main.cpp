@@ -87,14 +87,13 @@ int main()
     args.format = RHI::ImageFormat::DEPTH_STENCIL;
     args.extent = {800, 600, 1};
     args.mipLevels = 1;
-    args.samples = RHI::SamplesCount::One;
     args.shared = false;
     args.type = RHI::ImageType::Image2D;
   }
 
   auto * framebuffer = defaultFramebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
-  framebuffer->AddAttachment(1, ctx->AllocAttachment(args));
+  framebuffer->AddAttachment(1, ctx->AllocAttachment(args, RHI::SamplesCount::One)); 
 
   auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering

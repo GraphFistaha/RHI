@@ -1,10 +1,9 @@
 #pragma once
+#include <ImageUtils/ImageLayoutTransferer.hpp>
+#include <ImageUtils/TextureInterface.hpp>
+#include <Memory/MemoryBlock.hpp>
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
-
-#include "../Images/ImageLayoutTransferer.hpp"
-#include "../Images/TextureInterface.hpp"
-#include "../Memory/MemoryBlock.hpp"
 
 namespace RHI::vulkan
 {
@@ -25,9 +24,12 @@ struct Texture : public ITexture,
 
 public: // ITexture interface
   virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const CopyImageArguments & args) override;
+                                                const TextureExtent & srcExtent,
+                                                HostImageFormat hostFormat,
+                                                const TextureRegion & srcRegion,
+                                                const TextureRegion & dstRegion) override;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const ImageRegion & region) override;
+                                                    const TextureRegion & region) override;
   virtual ImageCreateArguments GetDescription() const noexcept override;
   virtual size_t Size() const override;
   //virtual void SetSwizzle() = 0;

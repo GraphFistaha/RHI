@@ -3,14 +3,19 @@ set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
 add_executable(${this_target} 
  "main.cpp" 
- "stb_image.h"
- "stb_image_write.h"
 )
 
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
+    test_utils
 )
+
+target_include_directories(${this_target}
+PRIVATE
+	"../ThirdParty/stb"
+)
+
 
 set_target_properties(${this_target} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
@@ -24,5 +29,6 @@ file(COPY mike_wazowski.jpg DESTINATION ${APP_DIR})
 add_custom_command(TARGET ${this_target} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${BASE_APP_DIR}/${PROJECT_NAME}.dll
+        $<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
         ${APP_DIR}/.
 )

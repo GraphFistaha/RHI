@@ -1,7 +1,7 @@
 #include "BufferGPU.hpp"
 
-#include "../VulkanContext.hpp"
-#include "Transferer.hpp"
+#include <Resources/Transferer.hpp>
+#include <VulkanContext.hpp>
 
 namespace
 {
@@ -36,8 +36,8 @@ BufferGPU::BufferGPU(Context & ctx, size_t size, BufferGPUUsage usage, bool allo
 
 BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool allowHostAccess)
   : OwnedBy<Context>(ctx)
+  , m_memBlock(ctx.GetBuffersAllocator().AllocBuffer(size, usage, allowHostAccess))
 {
-  m_memBlock = GetContext().GetBuffersAllocator().AllocBuffer(size, usage, allowHostAccess);
 }
 
 BufferGPU::~BufferGPU()
@@ -47,8 +47,8 @@ BufferGPU::~BufferGPU()
 
 BufferGPU::BufferGPU(BufferGPU && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
+  , m_memBlock(std::move(rhs.m_memBlock))
 {
-  std::swap(m_memBlock, rhs.m_memBlock);
 }
 
 BufferGPU & BufferGPU::operator=(BufferGPU && rhs) noexcept
