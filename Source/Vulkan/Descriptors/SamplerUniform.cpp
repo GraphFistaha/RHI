@@ -1,8 +1,8 @@
 #include "SamplerUniform.hpp"
 
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
-#include "DescriptorBufferLayout.hpp"
+#include <Descriptors/DescriptorBufferLayout.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {

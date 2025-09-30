@@ -1,10 +1,10 @@
 #include "RenderPass.hpp"
 
-#include "../CommandsExecution/Submitter.hpp"
-#include "../VulkanContext.hpp"
-#include "Framebuffer.hpp"
-#include "RenderTarget.hpp"
-#include "Subpass.hpp"
+#include <CommandsExecution/Submitter.hpp>
+#include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/RenderTarget.hpp>
+#include <RenderPass/Subpass.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {

@@ -1,9 +1,9 @@
 #include "GenericAttachment.hpp"
 
-#include "../ImageUtils/ImageUtils.hpp"
-#include "../ImageUtils/InternalImageTraits.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <ImageUtils/ImageUtils.hpp>
+#include <ImageUtils/InternalImageTraits.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace
 {

@@ -4,11 +4,11 @@
 
 #include <VkBootstrap.h>
 
-#include "../ImageUtils/InternalImageTraits.hpp"
+#include <ImageUtils/InternalImageTraits.hpp>
 #include "../RenderPass/RenderPass.hpp"
-#include "../Utils/CastHelper.hpp"
+#include <Utils/CastHelper.hpp>
 #include "../Utils/SemaphoreBuilder.hpp"
-#include "../VulkanContext.hpp"
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {

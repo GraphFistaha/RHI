@@ -1,11 +1,10 @@
 #pragma once
 
+#include <Descriptors/BaseUniform.hpp>
+#include <ImageUtils/TextureInterface.hpp>
 #include <RHI.hpp>
+#include <Utils/SamplerBuilder.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../ImageUtils/TextureInterface.hpp"
-#include "../Utils/SamplerBuilder.hpp"
-#include "BaseUniform.hpp"
 
 namespace RHI::vulkan
 {

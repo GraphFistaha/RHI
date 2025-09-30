@@ -8,9 +8,9 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../CommandsExecution/Submitter.hpp"
+#include <CommandsExecution/Submitter.hpp>
 #include "../Utils/RenderPassBuilder.hpp"
-#include "Subpass.hpp"
+#include <RenderPass/Subpass.hpp>
 
 namespace RHI::vulkan
 {

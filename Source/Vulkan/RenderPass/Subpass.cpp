@@ -1,10 +1,10 @@
 #include "Subpass.hpp"
 
-#include "../CommandsExecution/CommandBuffer.hpp"
-#include "../Resources/BufferGPU.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
-#include "RenderPass.hpp"
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <RenderPass/RenderPass.hpp>
+#include <Resources/BufferGPU.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
@@ -37,8 +37,8 @@ void Subpass::BeginPass()
   m_writeBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
   m_pipeline.BindToCommandBuffer(m_writeBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
   m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer.GetHandle(),
-                                         m_pipeline.GetPipelineLayoutHandle(),
-                                         VK_PIPELINE_BIND_POINT_GRAPHICS);
+                                              m_pipeline.GetPipelineLayoutHandle(),
+                                              VK_PIPELINE_BIND_POINT_GRAPHICS);
 }
 
 void Subpass::EndPass()

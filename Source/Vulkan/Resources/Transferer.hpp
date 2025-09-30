@@ -2,14 +2,13 @@
 #include <functional>
 #include <queue>
 
+#include <CommandsExecution/CompositeAsyncTask.hpp>
+#include <CommandsExecution/Submitter.hpp>
+#include <ImageUtils/TextureInterface.hpp>
 #include <OwnedBy.hpp>
+#include <Resources/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../CommandsExecution/CompositeAsyncTask.hpp"
-#include "../CommandsExecution/Submitter.hpp"
-#include "../ImageUtils/TextureInterface.hpp"
-#include "BufferGPU.hpp"
 
 namespace RHI::vulkan
 {

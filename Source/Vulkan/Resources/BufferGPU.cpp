@@ -1,7 +1,7 @@
 #include "BufferGPU.hpp"
 
-#include "../VulkanContext.hpp"
-#include "Transferer.hpp"
+#include <Resources/Transferer.hpp>
+#include <VulkanContext.hpp>
 
 namespace
 {

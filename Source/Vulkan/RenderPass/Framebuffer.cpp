@@ -2,9 +2,9 @@
 
 #include <format>
 
-#include "../Attachments/SurfacedAttachment.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <Attachments/SurfacedAttachment.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace
 {

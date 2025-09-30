@@ -1,9 +1,8 @@
 #pragma once
 
+#include <ImageUtils/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../ImageUtils/TextureInterface.hpp"
 
 namespace RHI::vulkan
 {

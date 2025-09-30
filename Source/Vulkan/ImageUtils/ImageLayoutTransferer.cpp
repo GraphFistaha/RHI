@@ -1,8 +1,8 @@
 #include "ImageLayoutTransferer.hpp"
 
-#include "../CommandsExecution/CommandBuffer.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "InternalImageTraits.hpp"
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <ImageUtils/InternalImageTraits.hpp>
+#include <Utils/CastHelper.hpp>
 
 namespace
 {

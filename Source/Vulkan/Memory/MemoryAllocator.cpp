@@ -3,8 +3,8 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan::memory
 {

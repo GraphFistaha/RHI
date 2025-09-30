@@ -8,8 +8,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../Attachments/Attachment.hpp"
-#include "RenderPass.hpp"
-#include "RenderTarget.hpp"
+#include <RenderPass/RenderPass.hpp>
+#include <RenderPass/RenderTarget.hpp>
 
 namespace RHI::vulkan
 {

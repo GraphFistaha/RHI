@@ -1,9 +1,9 @@
 #include "SubpassConfiguration.hpp"
 
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
-#include "RenderPass.hpp"
-#include "Subpass.hpp"
+#include <RenderPass/RenderPass.hpp>
+#include <RenderPass/Subpass.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {

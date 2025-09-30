@@ -1,6 +1,6 @@
 #include "CommandBuffer.hpp"
 
-#include "../VulkanContext.hpp"
+#include <VulkanContext.hpp>
 
 namespace
 {

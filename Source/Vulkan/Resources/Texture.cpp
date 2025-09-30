@@ -1,8 +1,8 @@
 #include "Texture.hpp"
 
-#include "../ImageUtils/ImageUtils.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <ImageUtils/ImageUtils.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {

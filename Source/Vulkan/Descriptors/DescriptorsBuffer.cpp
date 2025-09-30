@@ -5,9 +5,9 @@
 #include <numeric>
 
 #include "../RenderPass/Subpass.hpp"
-#include "../Resources/BufferGPU.hpp"
-#include "../Utils/CastHelper.hpp"
-#include "../VulkanContext.hpp"
+#include <Resources/BufferGPU.hpp>
+#include <Utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 #include "BufferUniform.hpp"
 #include "DescriptorBufferLayout.hpp"
 #include "SamplerUniform.hpp"

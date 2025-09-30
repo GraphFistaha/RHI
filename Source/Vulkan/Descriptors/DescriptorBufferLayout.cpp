@@ -4,8 +4,8 @@
 #include <cassert>
 #include <numeric>
 
-#include "../RenderPass/SubpassConfiguration.hpp"
-#include "../VulkanContext.hpp"
+#include <RenderPass/SubpassConfiguration.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan::details
 {

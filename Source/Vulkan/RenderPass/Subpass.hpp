@@ -6,7 +6,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "../CommandsExecution/CommandBuffer.hpp"
+#include <CommandsExecution/CommandBuffer.hpp>
 #include "../Descriptors/DescriptorsBuffer.hpp"
 #include "SubpassConfiguration.hpp"
 #include "SubpassLayout.hpp"

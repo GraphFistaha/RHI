@@ -2,7 +2,7 @@
 
 #include <vk_mem_alloc.h>
 
-#include "../Utils/CastHelper.hpp"
+#include <Utils/CastHelper.hpp>
 #include "MemoryAllocator.hpp"
 
 namespace

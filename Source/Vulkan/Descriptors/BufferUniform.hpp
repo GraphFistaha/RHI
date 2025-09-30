@@ -1,10 +1,9 @@
 #pragma once
 
+#include <Descriptors/BaseUniform.hpp>
+#include <Resources/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../Resources/BufferGPU.hpp"
-#include "BaseUniform.hpp"
 
 
 namespace RHI::vulkan

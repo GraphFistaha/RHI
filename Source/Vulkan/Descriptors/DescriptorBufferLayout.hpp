@@ -3,14 +3,13 @@
 #include <deque>
 #include <span>
 
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <Descriptors/BufferUniform.hpp>
+#include <Descriptors/SamplerUniform.hpp>
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
+#include <Utils/DescriptorSetLayoutBuilder.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../CommandsExecution/CommandBuffer.hpp"
-#include "../Utils/DescriptorSetLayoutBuilder.hpp"
-#include "BufferUniform.hpp"
-#include "SamplerUniform.hpp"
 
 namespace RHI::vulkan
 {
