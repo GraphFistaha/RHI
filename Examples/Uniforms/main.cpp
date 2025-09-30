@@ -49,12 +49,10 @@ int main()
 
   // declare uniform variables
   auto && u_t =
-    trianglePipeline.DeclareUniform(0, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
-  u_t->Invalidate();
+    trianglePipeline.DeclareUniform({0, 0}, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
   u_t->AssignBuffer(*tBuf); // bind buffer to uniform variable
 
-  auto && u_transform = trianglePipeline.DeclareUniform(1, RHI::ShaderType::Vertex);
-  u_transform->Invalidate();
+  auto && u_transform = trianglePipeline.DeclareUniform({0, 1}, RHI::ShaderType::Vertex);
   u_transform->AssignBuffer(*transformBuf); // bind buffer to uniform variable
 
   // create vertex buffer

@@ -55,7 +55,7 @@ int main()
   auto it = textures.begin();
   for (uint32_t i = 0; i < 8; ++i)
   {
-    auto * texture = trianglePipeline.DeclareSampler(i, RHI::ShaderType::Fragment);
+    auto * texture = trianglePipeline.DeclareSampler({0, i}, RHI::ShaderType::Fragment);
     texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     texture->AssignImage(*it);
     samplers.push_back(texture);
