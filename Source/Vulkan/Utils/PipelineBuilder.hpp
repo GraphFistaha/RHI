@@ -22,7 +22,7 @@ public:
 
 public:
   // shaders
-  void AttachShader(RHI::ShaderType type, const std::filesystem::path & path);
+  void AttachShader(RHI::ShaderType type, const SpirV & spirv);
 
   void SetSamplesCount(RHI::SamplesCount samplesCount);
   RHI::SamplesCount GetSamplesCount() const noexcept;
@@ -64,7 +64,7 @@ private:
   VkPipelineColorBlendStateCreateInfo m_colorBlendInfo{};
 
   /// Attached shaders
-  std::vector<std::pair<ShaderType, std::filesystem::path>> m_attachedShaders;
+  std::vector<std::pair<ShaderType, SpirV>> m_attachedShaders;
 
   std::vector<VkDynamicState> m_dynamicStates;
   std::vector<VkPipelineColorBlendAttachmentState> m_colorBlendAttachments;

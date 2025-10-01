@@ -49,7 +49,6 @@ PRIVATE
 	"Utils/RenderPassBuilder.hpp"
 	"Utils/SamplerBuilder.cpp"
 	"Utils/SamplerBuilder.hpp"
-	"Utils/ShaderCompiler.hpp"
 	"Utils/FenceBuilder.hpp"
 	"Utils/FenceBuilder.cpp"
 	"Utils/SemaphoreBuilder.hpp"

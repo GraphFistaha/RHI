@@ -22,9 +22,9 @@ SubpassConfiguration::~SubpassConfiguration()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
 }
 
-void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::path & path)
+void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
 {
-  m_pipelineBuilder.AttachShader(type, path);
+  m_pipelineBuilder.AttachShader(type, spirv);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }

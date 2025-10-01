@@ -15,6 +15,13 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message);
 RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx,
                                              bool with_alpha);
 
+/// @brief reads shader SPIR-V file as binary
+/// @param filename - path to file
+/// @return vector of bytes
+RHI::SpirV ReadSpirV(const std::filesystem::path & path);
+
+std::filesystem::path FromGLSL(const std::filesystem::path & path);
+
 namespace RHI::test_examples
 {
 struct GlfwInstance final

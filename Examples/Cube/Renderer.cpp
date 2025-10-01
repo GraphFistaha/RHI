@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 
 #include <glm/ext.hpp>
+#include <TestUtils.hpp>
 
 CubesRenderer::CubesRenderer(RHI::IContext & ctx)
   : m_context(ctx)
@@ -28,9 +29,9 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
     subpassConfig.BindResolver(2, 0);
     subpassConfig.EnableDepthTest(true);
     // set shaders
-    subpassConfig.AttachShader(RHI::ShaderType::Vertex, "cube.vert");
-    subpassConfig.AttachShader(RHI::ShaderType::Geometry, "cube.geom");
-    subpassConfig.AttachShader(RHI::ShaderType::Fragment, "cube.frag");
+    subpassConfig.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("cube.vert")));
+    subpassConfig.AttachShader(RHI::ShaderType::Geometry, ReadSpirV(FromGLSL("cube.geom")));
+    subpassConfig.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("cube.frag")));
     subpassConfig.SetMeshTopology(RHI::MeshTopology::Point);
 
     subpassConfig.AddInputBinding(0, sizeof(CubeDescription), RHI::InputBindingType::VertexData);

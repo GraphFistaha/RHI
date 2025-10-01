@@ -27,8 +27,7 @@ int main()
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
-  std::unique_ptr<RHI::IContext> ctx =
-    RHI::CreateContext(gpuTraits, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment =
@@ -50,8 +49,8 @@ int main()
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   trianglePipeline.BindResolver(1, 0);
   // set shaders
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "triangle.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "triangle.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle.frag")));
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
   trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
   trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
