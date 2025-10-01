@@ -340,7 +340,7 @@ struct ITexture
                                                 const TextureRegion & dstRegion) = 0;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const TextureRegion & region) = 0;
-  virtual ImageCreateArguments GetDescription() const noexcept = 0;
+  virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
   virtual void BlitTo(ITexture * texture) = 0;
@@ -353,7 +353,7 @@ struct IAttachment
   virtual ~IAttachment() = default;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const TextureRegion & region) = 0;
-  virtual ImageCreateArguments GetDescription() const noexcept = 0;
+  virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   virtual void BlitTo(ITexture * texture) = 0;
 };
@@ -369,7 +369,7 @@ struct IContext
   virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
-  virtual ITexture * AllocImage(const ImageCreateArguments & args) = 0;
+  virtual ITexture * AllocImage(const TextureDescription & args) = 0;
 
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) = 0;

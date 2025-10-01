@@ -52,7 +52,7 @@ constexpr VmaAllocationCreateFlags CalcAllocationFlags<VkImageUsageFlagBits>(
 namespace RHI::vulkan::memory
 {
 
-MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
+MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const TextureDescription & description,
                          VkImageUsageFlags usage, VkSampleCountFlagBits samples,
                          VkSharingMode shareMode)
   : OwnedBy<MemoryAllocator>(allocator)

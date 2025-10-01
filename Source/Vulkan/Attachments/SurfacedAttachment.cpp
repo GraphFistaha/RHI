@@ -38,9 +38,9 @@ std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat fo
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-ImageCreateArguments SurfacedAttachment::GetDescription() const noexcept
+TextureDescription SurfacedAttachment::GetDescription() const noexcept
 {
-  ImageCreateArguments description{};
+  TextureDescription description{};
   {
     description.mipLevels = 1;
     description.type = RHI::ImageType::Image2D;

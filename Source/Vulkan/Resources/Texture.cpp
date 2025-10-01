@@ -9,7 +9,7 @@ namespace RHI::vulkan
 static constexpr uint32_t g_TextureUsageFlags =
   VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-Texture::Texture(Context & ctx, const ImageCreateArguments & args)
+Texture::Texture(Context & ctx, const TextureDescription & args)
   : OwnedBy<Context>(ctx)
   , m_description(args)
   , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags,
@@ -44,7 +44,7 @@ std::future<DownloadResult> Texture::DownloadImage(HostImageFormat format,
   return GetContext().GetTransferer().DownloadImage(*this, format, region);
 }
 
-ImageCreateArguments Texture::GetDescription() const noexcept
+TextureDescription Texture::GetDescription() const noexcept
 {
   return m_description;
 }

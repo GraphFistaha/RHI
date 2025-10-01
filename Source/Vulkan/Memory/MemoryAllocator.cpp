@@ -44,7 +44,7 @@ MemoryBlock MemoryAllocator::AllocBuffer(size_t size, VkBufferUsageFlags usage,
   return MemoryBlock(*this, size, usage, allowHostAccess);
 }
 
-MemoryBlock MemoryAllocator::AllocImage(const ImageCreateArguments & description,
+MemoryBlock MemoryAllocator::AllocImage(const TextureDescription & description,
                                         VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkSharingMode shareMode)
 {
   return MemoryBlock(*this, description, usage, samples, shareMode);

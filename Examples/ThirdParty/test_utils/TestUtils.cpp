@@ -37,7 +37,7 @@ RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx,
 
   RHI::TexelIndex extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
 
-  RHI::ImageCreateArguments imageArgs{};
+  RHI::TextureDescription imageArgs{};
   imageArgs.extent = extent;
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;

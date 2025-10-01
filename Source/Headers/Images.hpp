@@ -93,7 +93,7 @@ struct TextureRegion
 };
 
 
-struct ImageCreateArguments final
+struct TextureDescription final
 {
   TextureExtent extent;
   uint32_t mipLevels;

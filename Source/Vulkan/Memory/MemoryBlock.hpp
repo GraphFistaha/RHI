@@ -21,7 +21,7 @@ struct MemoryBlock final : public OwnedBy<MemoryAllocator>
 
 private:
   /// create memory block for image
-  explicit MemoryBlock(MemoryAllocator & allocator, const ImageCreateArguments & description,
+  explicit MemoryBlock(MemoryAllocator & allocator, const TextureDescription & description,
                        VkImageUsageFlags usage, VkSampleCountFlagBits samples,
                        VkSharingMode shareMode = VK_SHARING_MODE_EXCLUSIVE);
   /// Create memory block for buffer
