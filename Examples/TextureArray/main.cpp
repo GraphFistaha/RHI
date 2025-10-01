@@ -66,7 +66,7 @@ int main()
   window.MainLoop(
     [&](float delta)
     {
-      ctx->Flush();
+      ctx->TransferPass();
 
       if (window.IsKeyPressed(RHI::test_examples::Keycode::KEY_ENTER))
       {

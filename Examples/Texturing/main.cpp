@@ -67,7 +67,7 @@ int main()
   window.MainLoop(
     [&](float delta)
     {
-      ctx->Flush();
+      ctx->TransferPass();
 
       // change textures at realtime
       if (window.IsKeyPressed(RHI::test_examples::Keycode::KEY_ENTER))

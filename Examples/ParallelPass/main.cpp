@@ -72,7 +72,7 @@ int main()
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
       triangleRenderer.UpdateGeometry();
-      ctx->Flush();
+      ctx->TransferPass();
       if (auto * renderTarget = framebuffer->BeginFrame())
       {
         renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);

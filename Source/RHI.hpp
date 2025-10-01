@@ -366,7 +366,7 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual void ClearResources() = 0;
-  virtual void Flush() = 0;
+  virtual void TransferPass() = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU

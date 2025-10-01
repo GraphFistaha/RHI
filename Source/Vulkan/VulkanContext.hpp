@@ -46,7 +46,7 @@ public: // IContext interface
                                         RenderBuffering buffering,
                                         RHI::SamplesCount samplesCount) override;
   virtual void ClearResources() override;
-  virtual void Flush() override;
+  virtual void TransferPass() override;
 
 public: // RHI-only API
   VkInstance GetInstance() const noexcept;

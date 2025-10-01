@@ -81,7 +81,7 @@ int main()
       transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
       x += 0.001f;
-      ctx->Flush();
+      ctx->TransferPass();
 
       if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
       {

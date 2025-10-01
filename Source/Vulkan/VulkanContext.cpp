@@ -271,7 +271,7 @@ void Context::ClearResources()
   m_gc->ClearObjects();
 }
 
-void Context::Flush()
+void Context::TransferPass()
 {
   for (auto && [thread_id, transferer] : m_transferers)
     transferer.DoTransfer();
