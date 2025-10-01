@@ -210,7 +210,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
 
   // alloc null texture
-  RHI::ImageCreateArguments args{};
+  RHI::TextureDescription args{};
   {
     args.extent = {1, 1, 1};
     args.format = RHI::ImageFormat::RGBA8;
@@ -245,7 +245,7 @@ IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowH
   return &result;
 }
 
-ITexture * Context::AllocImage(const ImageCreateArguments & args)
+ITexture * Context::AllocImage(const TextureDescription & args)
 {
   auto && texture = std::make_unique<Texture>(*this, args);
   auto && result = m_textures.emplace_back(std::move(texture));
@@ -255,7 +255,7 @@ ITexture * Context::AllocImage(const ImageCreateArguments & args)
 IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
                                        RenderBuffering buffering, RHI::SamplesCount samplesCount)
 {
-  RHI::ImageCreateArguments args{};
+  RHI::TextureDescription args{};
   {
     args.format = format;
     args.extent = extent;

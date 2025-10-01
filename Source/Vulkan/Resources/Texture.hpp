@@ -17,7 +17,7 @@ struct Texture : public ITexture,
                  public IInternalTexture,
                  public OwnedBy<Context>
 {
-  Texture(Context & ctx, const ImageCreateArguments & args);
+  Texture(Context & ctx, const TextureDescription & args);
   virtual ~Texture() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   RESTRICTED_COPY(Texture);
@@ -30,7 +30,7 @@ public: // ITexture interface
                                                 const TextureRegion & dstRegion) override;
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const TextureRegion & region) override;
-  virtual ImageCreateArguments GetDescription() const noexcept override;
+  virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
   //virtual void SetSwizzle() = 0;
   virtual void BlitTo(ITexture * texture) override;
@@ -45,7 +45,7 @@ public: // IInternalTexture interface
   virtual VkExtent3D GetInternalExtent() const noexcept override;
 
 private:
-  ImageCreateArguments m_description;
+  TextureDescription m_description;
   memory::MemoryBlock m_memBlock;
   ImageLayoutTransferer m_layout;
   VkImageView m_view = VK_NULL_HANDLE;

@@ -19,7 +19,7 @@ struct GenericAttachment : public IAttachment,
                            public IInternalAttachment,
                            public OwnedBy<Context>
 {
-  explicit GenericAttachment(Context & ctx, const ImageCreateArguments & m_description,
+  explicit GenericAttachment(Context & ctx, const TextureDescription & m_description,
                              RHI::RenderBuffering buffering, RHI::SamplesCount samplesCount);
   virtual ~GenericAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
@@ -27,7 +27,7 @@ struct GenericAttachment : public IAttachment,
 public: // IAttachment interface
   virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
                                                     const TextureRegion & region) override;
-  virtual ImageCreateArguments GetDescription() const noexcept override;
+  virtual TextureDescription GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;
   virtual void BlitTo(ITexture * texture) override;
@@ -53,7 +53,7 @@ public: // IInternalAttachment interface
 
 protected:
   std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
-  ImageCreateArguments m_description; ///< description of image, all main params for image
+  TextureDescription m_description; ///< description of image, all main params for image
 
   std::vector<memory::MemoryBlock> m_images;    ///< memory for image instances
   std::vector<ImageLayoutTransferer> m_layouts; ///< each image must control its layout

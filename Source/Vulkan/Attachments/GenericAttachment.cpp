@@ -75,7 +75,7 @@ constexpr VkImageAspectFlags CalcImageAspectByFormat(RHI::ImageFormat format)
   }
 }
 
-VkAttachmentDescription BuildAttachmentDescription(const RHI::ImageCreateArguments & description,
+VkAttachmentDescription BuildAttachmentDescription(const RHI::TextureDescription & description,
                                                    RHI::SamplesCount samplesCount) noexcept
 {
   VkAttachmentDescription attachmentDescription{};
@@ -97,7 +97,7 @@ VkAttachmentDescription BuildAttachmentDescription(const RHI::ImageCreateArgumen
 
 namespace RHI::vulkan
 {
-GenericAttachment::GenericAttachment(Context & ctx, const ImageCreateArguments & args,
+GenericAttachment::GenericAttachment(Context & ctx, const TextureDescription & args,
                                      RHI::RenderBuffering buffering, RHI::SamplesCount samplesCount)
   : OwnedBy<Context>(ctx)
   , m_description(args)
@@ -139,7 +139,7 @@ void GenericAttachment::BlitTo(ITexture * texture)
     GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
-ImageCreateArguments GenericAttachment::GetDescription() const noexcept
+TextureDescription GenericAttachment::GetDescription() const noexcept
 {
   return m_description;
 }
