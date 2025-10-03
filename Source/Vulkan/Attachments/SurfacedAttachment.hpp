@@ -63,8 +63,6 @@ public:
 
 private:
   std::mutex m_renderingMutex;
-  VkQueue m_presentQueue = VK_NULL_HANDLE;
-  uint32_t m_presentQueueIndex;
   uint32_t m_desiredBuffering = 2; ///< desired instances of image
 
   std::vector<VkImage> m_images;                          ///< swapchain images

@@ -31,7 +31,7 @@ public: // IContext interface
   virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
                                         RenderBuffering buffering,
                                         RHI::SamplesCount samplesCount) override;
-  virtual void ClearResources() override;
+  virtual void ClearResources() override; ///< GarbageCollector call
   virtual void TransferPass() override;
 
 public: // RHI-only API
@@ -51,10 +51,10 @@ private:
   size_t m_validatationMark = kValidationMark;
   LoggingFunc m_logFunc;
   Device m_device;
-  std::unique_ptr<memory::MemoryAllocator> m_allocator;
-  std::unique_ptr<details::VkObjectsGarbageCollector> m_gc;
-
+  memory::MemoryAllocator m_allocator;
+  details::VkObjectsGarbageCollector m_gc;
   std::unordered_map<std::thread::id, Transferer> m_transferers;
+
   // TODO: replace deque with pool
   std::deque<Framebuffer> m_framebuffers;
   std::deque<BufferGPU> m_buffers;

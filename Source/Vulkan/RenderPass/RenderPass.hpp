@@ -4,13 +4,13 @@
 #include <list>
 #include <shared_mutex>
 
+#include <CommandsExecution/Submitter.hpp>
 #include <OwnedBy.hpp>
+#include <RenderPass/Subpass.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include <CommandsExecution/Submitter.hpp>
 #include "../Utils/RenderPassBuilder.hpp"
-#include <RenderPass/Subpass.hpp>
 
 namespace RHI::vulkan
 {
@@ -50,8 +50,6 @@ public:
   void WaitForRenderingIsDone() noexcept;
 
 private:
-  uint32_t m_graphicsQueueFamily;
-  VkQueue m_graphicsQueue;
   std::vector<VkAttachmentDescription> m_cachedAttachments;
 
   /// There is a lot of thread-readers, so it's must be synchronized access

@@ -24,10 +24,9 @@ namespace RHI::vulkan
 Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   : m_logFunc(logFunc)
   , m_device(*this, gpuTraits)
+  , m_allocator(*this)
+  , m_gc(*this)
 {
-  m_allocator = std::make_unique<memory::MemoryAllocator>(*this);
-  m_gc = std::make_unique<details::VkObjectsGarbageCollector>(*this);
-
   // alloc null texture
   RHI::TextureDescription args{};
   {
@@ -87,7 +86,7 @@ IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::Textu
 
 void Context::ClearResources()
 {
-  m_gc->ClearObjects();
+  m_gc.ClearObjects();
 }
 
 void Context::TransferPass()
@@ -132,12 +131,12 @@ Transferer & Context::GetTransferer() & noexcept
 
 memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept
 {
-  return *m_allocator;
+  return m_allocator;
 }
 
 const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const & noexcept
 {
-  return *m_gc;
+  return m_gc;
 }
 
 RHI::ITexture * Context::GetNullTexture() const noexcept

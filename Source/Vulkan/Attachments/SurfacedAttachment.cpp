@@ -24,8 +24,6 @@ SurfacedAttachment::SurfacedAttachment(Context & ctx, Surface && surface,
   , m_swapchain(std::make_unique<vkb::Swapchain>())
   , m_desiredBuffering(static_cast<uint32_t>(buffering))
 {
-  std::tie(m_presentQueueIndex, m_presentQueue) =
-    ctx.GetGpuConnection().GetQueue(QueueType::Graphics);
 }
 
 SurfacedAttachment::~SurfacedAttachment()
@@ -115,9 +113,10 @@ void SurfacedAttachment::Invalidate()
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
     auto [renderIndex, renderQueue] = GetContext().GetGpuConnection().GetQueue(QueueType::Graphics);
+    auto [presentIndex, _] = GetContext().GetGpuConnection().GetQueue(QueueType::Present);
     vkb::SwapchainBuilder swapchain_builder(GetContext().GetGpuConnection().GetGPU(),
                                             GetContext().GetGpuConnection().GetDevice(), m_surface,
-                                            renderIndex, m_presentQueueIndex);
+                                            renderIndex, presentIndex);
     if (m_desiredBuffering != g_InvalidImageIndex)
       swapchain_builder.set_required_min_image_count(m_desiredBuffering);
     swapchain_builder.set_desired_format(g_vkFormat);
@@ -171,6 +170,7 @@ std::pair<VkImageView, VkSemaphore> SurfacedAttachment::AcquireForRendering()
 
 bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
 {
+  auto [_, presentQueue] = GetContext().GetGpuConnection().GetQueue(QueueType::Present);
   const VkSwapchainKHR swapchains[] = {m_swapchain->swapchain};
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -180,7 +180,7 @@ bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
   presentInfo.pSwapchains = swapchains;
   presentInfo.pImageIndices = &m_activeImage;
   presentInfo.pResults = nullptr; // Optional
-  auto res = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+  auto res = vkQueuePresentKHR(presentQueue, &presentInfo);
   m_activeSemaphore = (m_activeSemaphore + 1u) % m_imageAvailabilitySemaphores.size();
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
   {
