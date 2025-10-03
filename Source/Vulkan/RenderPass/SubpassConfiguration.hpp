@@ -27,7 +27,7 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
   MAKE_ALIAS_FOR_GET_OWNER(Subpass, GetSubpass);
 
 public: // ISubpassConfiguration interface
-  virtual void AttachShader(ShaderType type, const std::filesystem::path & path) override;
+  virtual void AttachShader(ShaderType type, const SpirV & spirv) override;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) override;
   virtual void BindResolver(uint32_t binding, uint32_t resolve_for) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;

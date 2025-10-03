@@ -149,7 +149,7 @@ int main()
       ProcessInput(window, camera, isRunningFlag);
       renderer.SetCameraTransform(camera.GetVP());
       const auto start{std::chrono::steady_clock::now()};
-      ctx->Flush();
+      ctx->TransferPass();
 
       if (auto * renderTarget = framebuffer->BeginFrame())
       {

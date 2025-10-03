@@ -1,7 +1,6 @@
 #include "PipelineBuilder.hpp"
 
 #include <Utils/CastHelper.hpp>
-#include <Utils/ShaderCompiler.hpp>
 
 namespace
 {
@@ -162,6 +161,24 @@ constexpr inline VkCompareOp CastInterfaceEnum2Vulkan<VkCompareOp, CompareOperat
   }
 }
 
+/// @brief creates shader module in context by filename
+/// @param ctx - vulkan context
+/// @param filename - path to file
+/// @return compiled shader module
+VkShaderModule BuildShaderModule(const VkDevice & device, const RHI::SpirV & spirv)
+{
+  VkShaderModuleCreateInfo createInfo{};
+  createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  createInfo.codeSize = spirv.size() * sizeof(uint32_t);
+  createInfo.pCode = spirv.data();
+
+  VkShaderModule module;
+  if (VkResult result = vkCreateShaderModule(device, &createInfo, nullptr, &module);
+      result != VK_SUCCESS)
+    throw std::runtime_error("failed to create shader module!");
+  return VkShaderModule(module);
+}
+
 } // namespace RHI::vulkan::utils
 
 
@@ -197,9 +214,9 @@ VkPipeline PipelineBuilder::Make(const VkDevice & device, const VkRenderPass & r
   // Build shaders
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
   std::vector<VkShaderModule> compiledShaders;
-  for (auto && [type, path] : m_attachedShaders)
+  for (auto && [type, spirv] : m_attachedShaders)
   {
-    auto && module = BuildShaderModule(device, path);
+    auto && module = BuildShaderModule(device, spirv);
     compiledShaders.push_back(module);
     auto && info = shaderStages.emplace_back(VkPipelineShaderStageCreateInfo{});
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -332,9 +349,9 @@ void PipelineBuilder::Reset()
   }
 }
 
-void PipelineBuilder::AttachShader(RHI::ShaderType type, const std::filesystem::path & path)
+void PipelineBuilder::AttachShader(RHI::ShaderType type, const SpirV & spirv)
 {
-  m_attachedShaders.push_back({type, path});
+  m_attachedShaders.push_back({type, spirv});
 }
 
 void PipelineBuilder::SetSamplesCount(RHI::SamplesCount samplesCount)

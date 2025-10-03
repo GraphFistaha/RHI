@@ -22,7 +22,8 @@ VkDescriptorPool CreateDescriptorPool(const Context & ctx,
   assert(poolInfo.maxSets != 0);
 
   VkDescriptorPool c_pool;
-  if (vkCreateDescriptorPool(ctx.GetDevice(), &poolInfo, nullptr, &c_pool) != VK_SUCCESS)
+  if (vkCreateDescriptorPool(ctx.GetGpuConnection().GetDevice(), &poolInfo, nullptr, &c_pool) !=
+      VK_SUCCESS)
     throw std::runtime_error("failed to create VkDescriptorPool!");
   return VkDescriptorPool(c_pool);
 }
@@ -37,7 +38,8 @@ VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
   allocInfo.pSetLayouts = &layout;
 
   VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
-  if (vkAllocateDescriptorSets(ctx.GetDevice(), &allocInfo, &descriptor_set) != VK_SUCCESS)
+  if (vkAllocateDescriptorSets(ctx.GetGpuConnection().GetDevice(), &allocInfo, &descriptor_set) !=
+      VK_SUCCESS)
     throw std::runtime_error("failed to allocate VkDescriptorSet!");
   return VkDescriptorSet(descriptor_set);
 }
@@ -85,7 +87,7 @@ void DescriptorBufferLayout::Invalidate()
   {
     if (m_invalidLayouts[i] == ValidityFlag::NotValid || !m_layouts[i])
     {
-      auto newLayout = m_builders[i].Make(GetContext().GetDevice());
+      auto newLayout = m_builders[i].Make(GetContext().GetGpuConnection().GetDevice());
       GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layouts[i], nullptr);
       m_layouts[i] = newLayout;
       m_invalidLayouts[i] = ValidityFlag::Valid;

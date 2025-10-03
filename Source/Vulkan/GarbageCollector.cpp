@@ -56,7 +56,7 @@ VkObjectsGarbageCollector::~VkObjectsGarbageCollector()
 void VkObjectsGarbageCollector::ClearObjects()
 {
   auto && visitor = overloads{
-    [device = GetContext().GetDevice()](VkObjectDestroyData & data)
+    [device = GetContext().GetGpuConnection().GetDevice()](VkObjectDestroyData & data)
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
@@ -73,7 +73,7 @@ void VkObjectsGarbageCollector::ClearObjects()
       //block will be destroyed later
     }};
 
-  vkDeviceWaitIdle(GetContext().GetDevice());
+  vkDeviceWaitIdle(GetContext().GetGpuConnection().GetDevice());
   std::lock_guard lk{m_mutex};
   while (!m_queue.empty())
   {

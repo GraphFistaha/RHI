@@ -39,8 +39,8 @@ int main()
   auto * subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, "uniform.vert");
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, "uniform.frag");
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("uniform.vert")));
+  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("uniform.frag")));
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
   trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
   trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
@@ -81,7 +81,7 @@ int main()
       transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
       x += 0.001f;
-      ctx->Flush();
+      ctx->TransferPass();
 
       if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
       {

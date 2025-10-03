@@ -22,9 +22,9 @@ SubpassConfiguration::~SubpassConfiguration()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
 }
 
-void SubpassConfiguration::AttachShader(ShaderType type, const std::filesystem::path & path)
+void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
 {
-  m_pipelineBuilder.AttachShader(type, path);
+  m_pipelineBuilder.AttachShader(type, spirv);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
@@ -127,7 +127,8 @@ void SubpassConfiguration::Invalidate()
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
     auto && layoutHandles = m_descriptorsLayout.GetHandles();
-    auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetDevice(), layoutHandles.data(),
+    auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
+                                                   layoutHandles.data(),
                                                    static_cast<uint32_t>(layoutHandles.size()),
                                                    m_pushConstantRange.has_value()
                                                      ? &m_pushConstantRange.value()
@@ -143,7 +144,7 @@ void SubpassConfiguration::Invalidate()
   {
     m_pipelineBuilder.SetSamplesCount(
       GetSubpass().GetRenderPass().GetFramebuffer().CalcSamplesCount());
-    auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetDevice(),
+    auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
                                                GetSubpass().GetRenderPass().GetHandle(),
                                                m_subpassIndex, m_pipelineLayout);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);

@@ -28,8 +28,8 @@ int main()
     auto && pipeline = subpass1->GetConfiguration();
     pipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     // set shaders
-    pipeline.AttachShader(RHI::ShaderType::Vertex, "triangle.vert");
-    pipeline.AttachShader(RHI::ShaderType::Fragment, "triangle_quad.frag");
+    pipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
+    pipeline.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
     pipeline.SetMeshTopology(RHI::MeshTopology::Triangle);
   }
 
@@ -38,8 +38,8 @@ int main()
     auto && pipeline = subpass2->GetConfiguration();
     pipeline.BindAttachment(1, RHI::ShaderAttachmentSlot::Color);
     // set shaders
-    pipeline.AttachShader(RHI::ShaderType::Vertex, "quad.vert");
-    pipeline.AttachShader(RHI::ShaderType::Fragment, "triangle_quad.frag");
+    pipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("quad.vert")));
+    pipeline.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
     pipeline.SetMeshTopology(RHI::MeshTopology::TriangleStrip);
   }
 
@@ -48,7 +48,7 @@ int main()
     [&](float delta)
     {
       if (auto * renderTarget = framebuffer->BeginFrame())
-      { 
+      {
         renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
         renderTarget->SetClearValue(1, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
 

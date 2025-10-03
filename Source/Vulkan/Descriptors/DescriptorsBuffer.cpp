@@ -46,7 +46,7 @@ void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const Un
   }
   descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-  vkUpdateDescriptorSets(ctx.GetDevice(), 1, &descriptorWrite, 0, nullptr);
+  vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
 
@@ -78,7 +78,7 @@ DescriptorBuffer::DescriptorBuffer(Context & ctx, const DescriptorBufferLayout &
 
 DescriptorBuffer::~DescriptorBuffer()
 {
-  vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
+  vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
 }
 
 DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
@@ -111,7 +111,7 @@ void DescriptorBuffer::Invalidate()
   {
     auto [newPool, newSets] = GetLayout().AllocDescriptorSets();
     std::lock_guard lk{m_setsLock};
-    vkDestroyDescriptorPool(GetContext().GetDevice(), m_pool, nullptr);
+    vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
     m_pool = newPool;
     m_sets = std::move(newSets);
     m_cachedLayouts = GetLayout().GetHandles();

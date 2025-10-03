@@ -18,7 +18,7 @@ int main()
   auto future = texture->DownloadImage(RHI::HostImageFormat::RGB8, region2Download);
 
   while (!future._Is_ready())
-    ctx->Flush();
+    ctx->TransferPass();
   auto result = future.get();
   stbi_write_bmp("downloaded_image.bmp", region2Download.extent[0], region2Download.extent[1], 3,
                  result.data());

@@ -12,14 +12,12 @@ namespace RHI::vulkan
 RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   : OwnedBy<Context>(ctx)
   , OwnedBy<Framebuffer>(framebuffer)
-  , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
-  , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
-  , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+  , m_submitter(ctx, QueueType::Graphics, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
 {
+  auto [family, _] = ctx.GetGpuConnection().GetQueue(QueueType::Graphics);
   // Создает начальный subpass. У RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастся и в целом все сломается.
-  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, m_graphicsQueueFamily);
+  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, family);
   //TODO: нужен фиктивный шейдер для initialSubpass, иначе не работает HelloWindow
 }
 
@@ -33,9 +31,9 @@ ISubpass * RenderPass::CreateSubpass()
   if (m_createSubpassCallsCounter++ == 0)
     return &m_subpasses.front();
 
+  auto [family, _] = GetContext().GetGpuConnection().GetQueue(QueueType::Graphics);
   auto && subpass = m_subpasses.emplace_back(GetContext(), *this,
-                                             static_cast<uint32_t>(m_subpasses.size()),
-                                             m_graphicsQueueFamily);
+                                             static_cast<uint32_t>(m_subpasses.size()), family);
   m_invalidRenderPass = true;
   return &subpass;
 }
@@ -138,7 +136,7 @@ void RenderPass::Invalidate()
       m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
-    auto new_renderpass = m_builder.Make(GetContext().GetDevice());
+    auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;

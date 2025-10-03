@@ -218,6 +218,8 @@ struct IAwaitable
   virtual bool Wait() noexcept = 0;
 };
 
+using SpirV = std::vector<uint32_t>;
+
 /// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
@@ -227,7 +229,7 @@ struct ISubpassConfiguration : public IInvalidable
   virtual ~ISubpassConfiguration() = default;
   // General static settings
   /// @brief attach shader to pipeline
-  virtual void AttachShader(ShaderType type, const std::filesystem::path & path) = 0;
+  virtual void AttachShader(ShaderType type, const SpirV & spirv) = 0;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
   virtual void BindResolver(uint32_t binding, uint32_t resolve_for) = 0;
 
@@ -364,7 +366,7 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual void ClearResources() = 0;
-  virtual void Flush() = 0;
+  virtual void TransferPass() = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   /// @brief creates BufferGPU
@@ -381,38 +383,6 @@ struct IContext
 /// @brief Factory-function to create context
 RHI_API std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
                                                 LoggingFunc loggingFunc = nullptr);
-
-namespace details
-{
-
-/// @brief changes shader filename path for current API and extension format
-/// @param path - shader filename path in GLSL format
-/// @param extension - extension that should have result file
-/// @return new shader filename adapted for current file format
-inline std::filesystem::path ResolveShaderExtension(const std::filesystem::path & path,
-                                                    const std::filesystem::path & apiFolder,
-                                                    const std::filesystem::path & extension)
-{
-  std::filesystem::path suffix;
-  auto && ext = path.extension();
-  if (ext == ".vert")
-    suffix = "_vert";
-  else if (ext == ".frag")
-    suffix = "_frag";
-  else if (ext == ".geom")
-    suffix = "_geom";
-  else if (ext == ".glsl")
-  {
-    suffix = "";
-  }
-  else
-    assert(false && "Invalid format for shader file");
-  std::filesystem::path result = apiFolder / path.parent_path() / path.stem();
-  result += suffix;
-  result += extension;
-  return result;
-}
-} // namespace details
 
 } // namespace RHI
 

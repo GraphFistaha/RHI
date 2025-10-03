@@ -40,8 +40,8 @@ namespace RHI::vulkan::details
 CommandBuffer::CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level)
   : OwnedBy<Context>(ctx)
   , m_level(level)
-  , m_pool(::CreateCommandPool(ctx.GetDevice(), queue_family))
-  , m_buffer(::CreateCommandBuffer(ctx.GetDevice(), m_pool, level))
+  , m_pool(::CreateCommandPool(ctx.GetGpuConnection().GetDevice(), queue_family))
+  , m_buffer(::CreateCommandBuffer(ctx.GetGpuConnection().GetDevice(), m_pool, level))
 {
 }
 
@@ -50,7 +50,7 @@ CommandBuffer::~CommandBuffer()
   if (!!m_buffer)
   {
     const VkCommandBuffer buf = m_buffer;
-    vkFreeCommandBuffers(GetContext().GetDevice(), m_pool, 1, &buf);
+    vkFreeCommandBuffers(GetContext().GetGpuConnection().GetDevice(), m_pool, 1, &buf);
   }
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
 }

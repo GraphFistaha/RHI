@@ -328,10 +328,8 @@ std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IIn
 }
 
 Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)
-  : m_writingBuffer(ctx, ctx.GetQueue(type).second, ctx.GetQueue(type).first,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_executingBuffer(ctx, ctx.GetQueue(type).second, ctx.GetQueue(type).first,
-                      VK_PIPELINE_STAGE_TRANSFER_BIT)
+  : m_writingBuffer(ctx, type, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_executingBuffer(ctx, type, VK_PIPELINE_STAGE_TRANSFER_BIT)
 {
   m_writingBuffer.BeginWriting();
 }
