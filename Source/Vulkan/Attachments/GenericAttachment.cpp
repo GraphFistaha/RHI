@@ -211,7 +211,8 @@ void GenericAttachment::Invalidate()
                                                       CalcImageUsageByFormat(m_description.format),
                                                       desiredMSAA);
       m_layouts.emplace_back(memoryBlock.GetImage());
-      m_views.emplace_back(utils::CreateImageView(GetContext().GetDevice(), memoryBlock.GetImage(),
+      m_views.emplace_back(utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
+                                                  memoryBlock.GetImage(),
                                                   GetInternalFormat(), VK_IMAGE_VIEW_TYPE_2D,
                                                   CalcImageAspectByFormat(m_description.format)));
       m_images.push_back(std::move(memoryBlock));

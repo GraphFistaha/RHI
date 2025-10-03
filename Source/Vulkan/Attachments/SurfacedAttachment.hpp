@@ -2,9 +2,10 @@
 #include <deque>
 #include <vector>
 
-#include "../CommandsExecution/AsyncTask.hpp"
+#include <Attachments/GenericAttachment.hpp>
+#include <CommandsExecution/AsyncTask.hpp>
 #include <ImageUtils/ImageLayoutTransferer.hpp>
-#include "GenericAttachment.hpp"
+#include <Surface.hpp>
 
 namespace vkb
 {
@@ -19,8 +20,7 @@ struct SurfacedAttachment final : public IAttachment,
                                   public IInternalAttachment,
                                   public OwnedBy<Context>
 {
-  explicit SurfacedAttachment(Context & ctx, const VkSurfaceKHR surface,
-                              RHI::RenderBuffering buffering);
+  explicit SurfacedAttachment(Context & ctx, Surface && surface, RHI::RenderBuffering buffering);
   virtual ~SurfacedAttachment() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
@@ -75,7 +75,7 @@ private:
   uint32_t m_activeImage = g_InvalidImageIndex; ///< image index in rendering
 
   /// presentation data
-  VkSurfaceKHR m_surface;                      ///< surface
+  Surface m_surface;
   std::unique_ptr<vkb::Swapchain> m_swapchain; ///< swapchain
   bool m_invalidSwapchain = false;
 };

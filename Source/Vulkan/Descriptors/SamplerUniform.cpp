@@ -64,7 +64,7 @@ void SamplerUniform::Invalidate()
 {
   if (m_invalidSampler || !m_sampler)
   {
-    auto new_sampler = m_builder.Make(GetContext().GetDevice());
+    auto new_sampler = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "new VkSampler has been created");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
     m_sampler = new_sampler;

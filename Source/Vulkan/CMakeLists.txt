@@ -7,6 +7,11 @@ PRIVATE
 	"VulkanContext.hpp"
 	"GarbageCollector.cpp"
 	"GarbageCollector.hpp"
+	"Device.cpp"
+	"Device.hpp"
+	"Surface.cpp"
+	"Surface.hpp"
+
 	"Memory/MemoryAllocator.hpp"
 	"Memory/MemoryAllocator.cpp"
 	"Memory/MemoryBlock.cpp"

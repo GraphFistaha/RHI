@@ -12,8 +12,8 @@ namespace RHI::vulkan
 RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   : OwnedBy<Context>(ctx)
   , OwnedBy<Framebuffer>(framebuffer)
-  , m_graphicsQueueFamily(ctx.GetQueue(QueueType::Graphics).first)
-  , m_graphicsQueue(ctx.GetQueue(QueueType::Graphics).second)
+  , m_graphicsQueueFamily(ctx.GetGpuConnection().GetQueue(QueueType::Graphics).first)
+  , m_graphicsQueue(ctx.GetGpuConnection().GetQueue(QueueType::Graphics).second)
   , m_submitter(ctx, m_graphicsQueue, m_graphicsQueueFamily,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
 {
@@ -138,7 +138,7 @@ void RenderPass::Invalidate()
       m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
-    auto new_renderpass = m_builder.Make(GetContext().GetDevice());
+    auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;

@@ -5,11 +5,6 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
-namespace RHI::vulkan
-{
-enum class QueueType : uint8_t;
-} // namespace RHI::vulkan
-
 namespace RHI::vulkan::details
 {
 /// @brief Submits commands into queue, owns primary command buffer

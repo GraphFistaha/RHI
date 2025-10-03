@@ -73,7 +73,8 @@ void RenderTarget::Invalidate()
     for (uint32_t i = 0; i < m_attachedImages.size(); ++i)
       m_builder.BindAttachment(i, m_attachedImages[i]);
 
-    auto new_framebuffer = m_builder.Make(GetContext().GetDevice(), m_boundRenderPass, m_extent);
+    auto new_framebuffer =
+      m_builder.Make(GetContext().GetGpuConnection().GetDevice(), m_boundRenderPass, m_extent);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
     m_framebuffer = new_framebuffer;
     m_invalidFramebuffer = false;

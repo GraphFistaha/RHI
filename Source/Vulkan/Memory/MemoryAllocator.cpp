@@ -16,9 +16,9 @@ MemoryAllocator::MemoryAllocator(Context & ctx)
     "size of BufferBase::AllocInfoRawMemory less then should be. It should be at least as VmaAllocationInfo");
 
   VmaAllocatorCreateInfo allocator_info{};
-  allocator_info.instance = ctx.GetInstance();
-  allocator_info.physicalDevice = ctx.GetGPU();
-  allocator_info.device = ctx.GetDevice();
+  allocator_info.instance = ctx.GetGpuConnection().GetInstance();
+  allocator_info.physicalDevice = ctx.GetGpuConnection().GetGPU();
+  allocator_info.device = ctx.GetGpuConnection().GetDevice();
 
   //Validation layers causes crash in GetBufferMemoryRequirements
 #ifdef ENABLE_VALIDATION_LAYERS

@@ -10,8 +10,8 @@ namespace RHI::vulkan
 AsyncTask::AsyncTask(Context & ctx)
   : OwnedBy<Context>(ctx)
 {
-  m_semaphore = utils::SemaphoreBuilder().Make(ctx.GetDevice());
-  m_fence = utils::FenceBuilder().SetLocked().Make(ctx.GetDevice());
+  m_semaphore = utils::SemaphoreBuilder().Make(ctx.GetGpuConnection().GetDevice());
+  m_fence = utils::FenceBuilder().SetLocked().Make(ctx.GetGpuConnection().GetDevice());
 }
 
 AsyncTask::~AsyncTask()
@@ -40,14 +40,15 @@ AsyncTask & AsyncTask::operator=(AsyncTask && rhs) noexcept
 
 bool AsyncTask::Wait() noexcept
 {
-  auto res = vkWaitForFences(GetContext().GetDevice(), 1, &m_fence, VK_TRUE, UINT64_MAX);
+  auto res =
+    vkWaitForFences(GetContext().GetGpuConnection().GetDevice(), 1, &m_fence, VK_TRUE, UINT64_MAX);
   return res == VK_SUCCESS;
 }
 
 void AsyncTask::StartTask() noexcept
 {
   Wait();
-  vkResetFences(GetContext().GetDevice(), 1, &m_fence);
+  vkResetFences(GetContext().GetGpuConnection().GetDevice(), 1, &m_fence);
 }
 
 
