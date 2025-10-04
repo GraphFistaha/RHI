@@ -77,7 +77,7 @@ void VkObjectsGarbageCollector::ClearObjects()
   std::lock_guard lk{m_mutex};
   while (!m_queue.empty())
   {
-    DestroyData data = std::move(m_queue.front());
+    DestroyableObject data = std::move(m_queue.front());
     m_queue.pop();
     std::visit(visitor, data);
   }

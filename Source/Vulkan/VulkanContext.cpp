@@ -38,9 +38,6 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   AllocImage(args);
 }
 
-Context::~Context()
-{
-}
 
 IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                 RenderBuffering buffering)
@@ -55,6 +52,13 @@ IFramebuffer * Context::CreateFramebuffer()
 {
   auto & result = m_framebuffers.emplace_back(*this);
   return &result;
+}
+
+void Context::DestroyFramebuffer(IFramebuffer * fbo)
+{
+  //m_gc.PushVkObjectToDestroy(fbo, nullptr);
+  RHI::utils::FreeListPool<int> pool;
+  int & t = pool.Emplace(4);
 }
 
 IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)

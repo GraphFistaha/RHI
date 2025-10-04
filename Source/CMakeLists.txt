@@ -14,6 +14,7 @@ PRIVATE
 	"MultibackendUtils/ImageTraits.hpp"
 	"MultibackendUtils/Types.hpp"
 	"MultibackendUtils/OwnedBy.hpp"
+	"MultibackendUtils/ObjectsTable.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})

@@ -1,5 +1,6 @@
 #pragma once
 #include <Device.hpp>
+#include <FreeListPool.hpp>
 #include <GarbageCollector.hpp>
 #include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryAllocator.hpp>
@@ -17,14 +18,13 @@ struct Context final : public IContext
 {
   /// @brief constructor
   explicit Context(const GpuTraits & gpuTraits, LoggingFunc log);
-  /// @brief destructor
-  virtual ~Context() override;
   RESTRICTED_COPY(Context);
 
 public: // IContext interface
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) override;
   virtual IFramebuffer * CreateFramebuffer() override;
+  virtual void DestroyFramebuffer(IFramebuffer * fbo);
   virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
                                    bool allowHostAccess) override;
   virtual ITexture * AllocImage(const TextureDescription & args) override;

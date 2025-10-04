@@ -24,7 +24,7 @@ class VkObjectsGarbageCollector final : public OwnedBy<Context>
     RHI::InternalObjectHandle allocator;
   };
 
-  using DestroyData = std::variant<VkObjectDestroyData, memory::MemoryBlock>;
+  using DestroyableObject = std::variant<VkObjectDestroyData, memory::MemoryBlock>;
 
 public:
   explicit VkObjectsGarbageCollector(Context & ctx);
@@ -47,7 +47,7 @@ public:
     if (!block)
       return;
     std::lock_guard lk{m_mutex};
-    m_queue.push(DestroyData{std::move(block)});
+    m_queue.push(DestroyableObject{std::move(block)});
   }
 
   void ClearObjects();
@@ -55,7 +55,7 @@ public:
 private:
   mutable std::mutex m_mutex;
   //TODO: make queue lock-free
-  mutable std::queue<DestroyData> m_queue;
+  mutable std::queue<DestroyableObject> m_queue;
 };
 
 } // namespace RHI::vulkan::details
