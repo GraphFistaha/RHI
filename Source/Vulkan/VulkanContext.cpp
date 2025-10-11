@@ -35,7 +35,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.mipLevels = 1;
     args.type = RHI::ImageType::Image2D;
   }
-  AllocImage(args);
+  m_nullTexture = CreateTexture(args);
 }
 
 
@@ -43,39 +43,41 @@ IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTra
                                                 RenderBuffering buffering)
 {
   Surface surface(m_device, surfaceTraits);
-  auto surfaceTexture = std::make_unique<SurfacedAttachment>(*this, std::move(surface), buffering);
-  auto && result = m_attachments.emplace_back(std::move(surfaceTexture));
-  return result.get();
+  return m_attachments.Emplace<SurfacedAttachment>(*this, std::move(surface), buffering);
 }
 
 IFramebuffer * Context::CreateFramebuffer()
 {
-  auto & result = m_framebuffers.emplace_back(*this);
-  return &result;
+  return m_framebuffers.Emplace<Framebuffer>(*this);
 }
 
-void Context::DestroyFramebuffer(IFramebuffer * fbo)
+void Context::DeleteFramebuffer(IFramebuffer * fbo)
 {
-  //m_gc.PushVkObjectToDestroy(fbo, nullptr);
-  RHI::utils::FreeListPool<int> pool;
-  int & t = pool.Emplace(4);
+  m_framebuffers.Destroy(fbo);
 }
 
-IBufferGPU * Context::AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
+IBufferGPU * Context::CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
 {
-  auto && result = m_buffers.emplace_back(*this, size, usage, allowHostAccess);
-  return &result;
+  return m_buffers.Emplace<BufferGPU>(*this, size, usage, allowHostAccess);
 }
 
-ITexture * Context::AllocImage(const TextureDescription & args)
+void Context::DeleteBuffer(IBufferGPU * buffer)
 {
-  auto && texture = std::make_unique<Texture>(*this, args);
-  auto && result = m_textures.emplace_back(std::move(texture));
-  return result.get();
+  m_buffers.Destroy(buffer);
 }
 
-IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
-                                       RenderBuffering buffering, RHI::SamplesCount samplesCount)
+ITexture * Context::CreateTexture(const TextureDescription & args)
+{
+  return m_textures.Emplace<Texture>(*this, args);
+}
+
+void Context::DeleteTexture(ITexture * texture)
+{
+  m_textures.Destroy(texture);
+}
+
+IAttachment * Context::CreateAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                        RenderBuffering buffering, RHI::SamplesCount samplesCount)
 {
   RHI::TextureDescription args{};
   {
@@ -84,12 +86,17 @@ IAttachment * Context::AllocAttachment(RHI::ImageFormat format, const RHI::Textu
     args.mipLevels = 1;
     args.type = RHI::ImageType::Image2D;
   }
-  auto && attachment = std::make_unique<GenericAttachment>(*this, args, buffering, samplesCount);
-  return m_attachments.emplace_back(std::move(attachment)).get();
+  return m_attachments.Emplace<GenericAttachment>(*this, args, buffering, samplesCount);
+}
+
+void Context::DeleteAttachment(IAttachment * attachment)
+{
+  m_attachments.Destroy(attachment);
 }
 
 void Context::ClearResources()
 {
+  WaitForIdle();
   m_gc.ClearObjects();
 }
 
@@ -145,7 +152,7 @@ const details::VkObjectsGarbageCollector & Context::GetGarbageCollector() const 
 
 RHI::ITexture * Context::GetNullTexture() const noexcept
 {
-  return m_textures[0].get();
+  return m_nullTexture;
 }
 
 } // namespace RHI::vulkan

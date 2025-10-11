@@ -114,11 +114,11 @@ int main()
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(2, surfaceAttachment);
-  framebuffer->AddAttachment(1, ctx->AllocAttachment(RHI::ImageFormat::DEPTH_STENCIL,
+  framebuffer->AddAttachment(1, ctx->CreateAttachment(RHI::ImageFormat::DEPTH_STENCIL,
                                                      surfaceAttachment->GetDescription().extent,
                                                      RHI::RenderBuffering::Triple,
                                                      RHI::SamplesCount::Eight));
-  framebuffer->AddAttachment(0, ctx->AllocAttachment(RHI::ImageFormat::RGBA8,
+  framebuffer->AddAttachment(0, ctx->CreateAttachment(RHI::ImageFormat::RGBA8,
                                                      surfaceAttachment->GetDescription().extent,
                                                      RHI::RenderBuffering::Triple,
                                                      RHI::SamplesCount::Eight));

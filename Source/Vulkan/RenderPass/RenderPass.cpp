@@ -38,6 +38,13 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
+void RenderPass::DeleteSubpass(ISubpass * subpass)
+{
+  size_t c = std::erase_if(m_subpasses, [subpass](const Subpass & sp) { return &sp == subpass; });
+  if (c > 0)
+    m_invalidRenderPass = true;
+}
+
 AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
                              std::vector<VkSemaphore> && waitSemaphores)
 {

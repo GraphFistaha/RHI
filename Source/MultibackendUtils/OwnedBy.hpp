@@ -9,6 +9,7 @@ namespace RHI
 template<typename OwnerObjectT>
 struct OwnedBy
 {
+  OwnedBy() = default;
   /// constructor
   explicit OwnedBy(OwnerObjectT & ctx)
     : m_owner(&ctx)

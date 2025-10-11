@@ -16,9 +16,9 @@ namespace RHI::vulkan
 {
 
 /// @brief vulkan implementation for renderer
-struct SurfacedAttachment final : public IAttachment,
-                                  public IInternalAttachment,
-                                  public OwnedBy<Context>
+struct SurfacedAttachment : public IAttachment,
+                            public IInternalAttachment,
+                            public OwnedBy<Context>
 {
   explicit SurfacedAttachment(Context & ctx, Surface && surface, RHI::RenderBuffering buffering);
   virtual ~SurfacedAttachment() override;

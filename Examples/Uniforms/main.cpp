@@ -29,8 +29,8 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   // create buffers for each uniform variables
-  auto tBuf = ctx->AllocBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
-  auto transformBuf = ctx->AllocBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
+  auto tBuf = ctx->CreateBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
+  auto transformBuf = ctx->CreateBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
   auto * framebuffer = ctx->CreateFramebuffer();
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
@@ -57,12 +57,12 @@ int main()
 
   // create vertex buffer
   auto && vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
+    ctx->CreateBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
   vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto indexBuffer =
-    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
+    ctx->CreateBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
   window.onResize = [framebuffer](int width, int height)
