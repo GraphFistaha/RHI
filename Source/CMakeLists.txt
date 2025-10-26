@@ -1,7 +1,12 @@
 include(../CMakeUtils.cmake)
 
 set(this_target ${PROJECT_NAME})
-add_library(${this_target} SHARED)
+
+if (RHI_BUILD_SHARED)
+	add_library(${this_target} SHARED)
+else()
+	add_library(${this_target})
+endif()
 
 # ----------------------- build library -------------------------
 
@@ -35,6 +40,7 @@ endif()
 target_compile_definitions(${this_target}
 PRIVATE
 	RHI_BUILD
+	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
 )
 
 if (${RHI_BUILD_EXAMPLES})

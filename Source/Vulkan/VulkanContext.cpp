@@ -148,8 +148,8 @@ RHI::ITexture * Context::GetNullTexture() const noexcept
 
 namespace RHI
 {
-std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
-                                        LoggingFunc loggingFunc /* = nullptr*/)
+RHI_API std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
+                                                LoggingFunc loggingFunc /* = nullptr*/)
 {
   try
   {
@@ -166,4 +166,5 @@ std::unique_ptr<IContext> CreateContext(const GpuTraits & gpuTraits,
     return nullptr;
   }
 }
+
 } // namespace RHI
