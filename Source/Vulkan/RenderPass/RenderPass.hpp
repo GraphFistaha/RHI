@@ -8,9 +8,8 @@
 #include <OwnedBy.hpp>
 #include <RenderPass/Subpass.hpp>
 #include <RHI.hpp>
+#include <Utils/RenderPassBuilder.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../Utils/RenderPassBuilder.hpp"
 
 namespace RHI::vulkan
 {
@@ -33,6 +32,8 @@ struct RenderPass : public IInvalidable,
 
 public: // IFramebuffer Interface
   ISubpass * CreateSubpass();
+  void DeleteSubpass(ISubpass * subpass);
+
   AsyncTask * Draw(RenderTarget & renderTarget,
                    std::vector<VkSemaphore> && imageAvailiableSemaphore);
   void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;

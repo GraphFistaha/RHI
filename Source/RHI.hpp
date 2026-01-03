@@ -369,15 +369,18 @@ struct IContext
   virtual void TransferPass() = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
-  /// @brief creates BufferGPU
-  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
-  virtual ITexture * AllocImage(const TextureDescription & args) = 0;
+  virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;
+  virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
+  virtual void DeleteBuffer(IBufferGPU * buffer) = 0;
+  virtual ITexture * CreateTexture(const TextureDescription & args) = 0;
+  virtual void DeleteTexture(ITexture * texture) = 0;
 
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) = 0;
-  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
-                                        RenderBuffering buffering,
-                                        RHI::SamplesCount samplesCount) = 0;
+  virtual IAttachment * CreateAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                         RenderBuffering buffering,
+                                         RHI::SamplesCount samplesCount) = 0;
+  virtual void DeleteAttachment(IAttachment * attachment) = 0;
 };
 
 /// @brief Factory-function to create context

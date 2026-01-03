@@ -3,6 +3,7 @@
 #include <GarbageCollector.hpp>
 #include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryAllocator.hpp>
+#include <ObjectsTable.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <Resources/Transferer.hpp>
@@ -17,20 +18,22 @@ struct Context final : public IContext
 {
   /// @brief constructor
   explicit Context(const GpuTraits & gpuTraits, LoggingFunc log);
-  /// @brief destructor
-  virtual ~Context() override;
   RESTRICTED_COPY(Context);
 
 public: // IContext interface
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) override;
   virtual IFramebuffer * CreateFramebuffer() override;
-  virtual IBufferGPU * AllocBuffer(size_t size, BufferGPUUsage usage,
-                                   bool allowHostAccess) override;
-  virtual ITexture * AllocImage(const TextureDescription & args) override;
-  virtual IAttachment * AllocAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
-                                        RenderBuffering buffering,
-                                        RHI::SamplesCount samplesCount) override;
+  virtual void DeleteFramebuffer(IFramebuffer * fbo) override;
+  virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage,
+                                    bool allowHostAccess) override;
+  virtual void DeleteBuffer(IBufferGPU * buffer) override;
+  virtual ITexture * CreateTexture(const TextureDescription & args) override;
+  virtual void DeleteTexture(ITexture * texture) override;
+  virtual IAttachment * CreateAttachment(RHI::ImageFormat format, const RHI::TextureExtent & extent,
+                                         RenderBuffering buffering,
+                                         RHI::SamplesCount samplesCount) override;
+  virtual void DeleteAttachment(IAttachment * attachment) override;
   virtual void ClearResources() override; ///< GarbageCollector call
   virtual void TransferPass() override;
 
@@ -56,10 +59,11 @@ private:
   std::unordered_map<std::thread::id, Transferer> m_transferers;
 
   // TODO: replace deque with pool
-  std::deque<Framebuffer> m_framebuffers;
-  std::deque<BufferGPU> m_buffers;
-  std::vector<std::unique_ptr<IAttachment>> m_attachments;
-  std::vector<std::unique_ptr<ITexture>> m_textures;
+  RHI::utils::ObjectsTable<IFramebuffer> m_framebuffers;
+  RHI::utils::ObjectsTable<IBufferGPU> m_buffers;
+  RHI::utils::ObjectsTable<IAttachment> m_attachments;
+  RHI::utils::ObjectsTable<ITexture> m_textures;
+  ITexture * m_nullTexture;
 };
 
 } // namespace RHI::vulkan

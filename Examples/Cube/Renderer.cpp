@@ -5,8 +5,8 @@
 
 CubesRenderer::CubesRenderer(RHI::IContext & ctx)
   : m_context(ctx)
-  , m_uniformBuffer(ctx.AllocBuffer(sizeof(UniformBlock), RHI::BufferGPUUsage::UniformBuffer, true))
-  , m_cubesBuffer(ctx.AllocBuffer(sizeof(CubeDescription) * g_MaxCubesCount,
+  , m_uniformBuffer(ctx.CreateBuffer(sizeof(UniformBlock), RHI::BufferGPUUsage::UniformBuffer, true))
+  , m_cubesBuffer(ctx.CreateBuffer(sizeof(CubeDescription) * g_MaxCubesCount,
                                   RHI::BufferGPUUsage::VertexBuffer, false))
 {
   SetCameraTransform(glm::identity<glm::mat4>());

@@ -43,7 +43,7 @@ RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_
   imageArgs.type = RHI::ImageType::Image2D;
   imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
   imageArgs.mipLevels = 1;
-  auto texture = ctx->AllocImage(imageArgs);
+  auto texture = ctx->CreateTexture(imageArgs);
   texture->UploadImage(pixel_data, extent,
                        with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8,
                        {{}, extent}, {{}, extent});

@@ -32,7 +32,7 @@ int main()
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
-  framebuffer->AddAttachment(0, ctx->AllocAttachment(surfaceAttachment->GetDescription().format,
+  framebuffer->AddAttachment(0, ctx->CreateAttachment(surfaceAttachment->GetDescription().format,
                                                      surfaceAttachment->GetDescription().extent,
                                                      RHI::RenderBuffering::Triple,
                                                      RHI::SamplesCount::Eight));
@@ -59,12 +59,12 @@ int main()
 
   // create vertex buffer
   auto * vertexBuffer =
-    ctx->AllocBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, true);
+    ctx->CreateBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, true);
   vertexBuffer->UploadSync(Vertices, VerticesCount * 5 * sizeof(float));
 
   // create index buffer
   auto * indexBuffer =
-    ctx->AllocBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, true);
+    ctx->CreateBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, true);
   // fill buffer with Mapping into CPU memory
   if (auto scoped_map = indexBuffer->Map())
   {

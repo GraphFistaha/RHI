@@ -73,11 +73,10 @@ void VkObjectsGarbageCollector::ClearObjects()
       //block will be destroyed later
     }};
 
-  vkDeviceWaitIdle(GetContext().GetGpuConnection().GetDevice());
   std::lock_guard lk{m_mutex};
   while (!m_queue.empty())
   {
-    DestroyData data = std::move(m_queue.front());
+    DestroyableObject data = std::move(m_queue.front());
     m_queue.pop();
     std::visit(visitor, data);
   }
