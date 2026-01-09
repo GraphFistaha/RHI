@@ -42,14 +42,26 @@ struct IUniformDescriptor
   virtual uint32_t GetArrayIndex() const noexcept = 0;
 };
 
-struct ISamplerUniformDescriptor : public IUniformDescriptor
+struct ISamplerDescriptor
 {
-  virtual void AssignImage(ITexture * texture) = 0;
-  virtual bool IsImageAssigned() const noexcept = 0;
+  virtual ~ISamplerDescriptor() = default;
   virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
                            RHI::TextureWrapping wWrap) noexcept = 0;
   virtual void SetFilter(RHI::TextureFilteration minFilter,
                          RHI::TextureFilteration magFilter) noexcept = 0;
+};
+
+struct ISamplerUniformDescriptor : public IUniformDescriptor,
+                                   public ISamplerDescriptor
+{
+  virtual void AssignImage(ITexture * texture) = 0;
+  virtual bool IsImageAssigned() const noexcept = 0;
+};
+
+struct ISamplerArrayUniformDescriptor : public IUniformDescriptor,
+                                        public ISamplerDescriptor
+{
+  virtual void AssignImage(uint32_t index, ITexture * texture) = 0;
 };
 
 struct IBufferUniformDescriptor : public IUniformDescriptor

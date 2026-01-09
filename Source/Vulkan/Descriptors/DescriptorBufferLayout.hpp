@@ -5,6 +5,7 @@
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Descriptors/BufferUniform.hpp>
+#include <Descriptors/SamplerArrayUniform.hpp>
 #include <Descriptors/SamplerUniform.hpp>
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
@@ -38,6 +39,8 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
                                   IBufferUniformDescriptor * outArray[]);
   void DeclareSamplerUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                    ISamplerUniformDescriptor * outArray[]);
+  void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                        ISamplerArrayUniformDescriptor * outArray[]);
 
   template<typename DescriptorT>
   void OnDescriptorChanged(const DescriptorT & uniform) noexcept
@@ -67,6 +70,7 @@ private:
   };
   using BufferUniforms = std::deque<BufferUniform>;
   using SamplerUniforms = std::deque<SamplerUniform>;
+  using SamplerArrayUniforms = std::deque<SamplerArrayUniform>;
 
   std::vector<VkDescriptorSetLayout> m_layouts;
   std::vector<utils::DescriptorSetLayoutBuilder> m_builders;
@@ -74,6 +78,7 @@ private:
 
   BufferUniforms m_bufferUniformDescriptors;
   SamplerUniforms m_samplerDescriptors;
+  SamplerArrayUniforms m_samplerArrayDescriptors;
   std::unordered_map<VkDescriptorType, std::vector<DescriptorMetaInfo>> m_setsInfo;
   std::unordered_map<LayoutIndex, std::vector<details::BaseUniform *>> m_indexedDescriptors;
 };

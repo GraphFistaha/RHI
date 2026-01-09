@@ -23,13 +23,8 @@ struct Texture : public ITexture,
   RESTRICTED_COPY(Texture);
 
 public: // ITexture interface
-  virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const TextureExtent & srcExtent,
-                                                HostImageFormat hostFormat,
-                                                const TextureRegion & srcRegion,
-                                                const TextureRegion & dstRegion) override;
-  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const TextureRegion & region) override;
+  virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) override;
+  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs& args) override;
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
   //virtual void SetSwizzle() = 0;

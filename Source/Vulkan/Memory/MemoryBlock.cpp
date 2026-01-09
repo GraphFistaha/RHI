@@ -1,8 +1,8 @@
 #include "MemoryBlock.hpp"
 
+#include <Utils/CastHelper.hpp>
 #include <vk_mem_alloc.h>
 
-#include <Utils/CastHelper.hpp>
 #include "MemoryAllocator.hpp"
 
 namespace
@@ -65,7 +65,7 @@ MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const TextureDescription &
     imageInfo.extent.height = description.extent[1];
     imageInfo.extent.depth = description.extent[2];
     imageInfo.mipLevels = description.mipLevels;
-    imageInfo.arrayLayers = 1;
+    imageInfo.arrayLayers = description.layersCount;
     imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
     imageInfo.tiling = /*description.format == RHI::ImageFormat::DEPTH_STENCIL
                        ? VK_IMAGE_TILING_LINEAR

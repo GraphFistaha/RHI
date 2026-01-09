@@ -124,7 +124,12 @@ GenericAttachment::~GenericAttachment()
 std::future<DownloadResult> GenericAttachment::DownloadImage(HostImageFormat format,
                                                              const TextureRegion & region)
 {
-  return GetContext().GetTransferer().DownloadImage(*this, format, region);
+  DownloadImageArgs args{};
+  args.format = format;
+  args.copyRegion = region;
+  args.layerIndex = 0;
+  args.layersCount = 1;
+  return GetContext().GetTransferer().DownloadImage(*this, args);
 }
 
 size_t GenericAttachment::Size() const
@@ -212,8 +217,8 @@ void GenericAttachment::Invalidate()
                                                       desiredMSAA);
       m_layouts.emplace_back(memoryBlock.GetImage());
       m_views.emplace_back(utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
-                                                  memoryBlock.GetImage(),
-                                                  GetInternalFormat(), VK_IMAGE_VIEW_TYPE_2D,
+                                                  memoryBlock.GetImage(), GetInternalFormat(),
+                                                  VK_IMAGE_VIEW_TYPE_2D,
                                                   CalcImageAspectByFormat(m_description.format)));
       m_images.push_back(std::move(memoryBlock));
     }

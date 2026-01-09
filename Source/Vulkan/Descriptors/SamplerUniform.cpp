@@ -49,7 +49,7 @@ VkSampler SamplerUniform::GetHandle() const noexcept
   return m_sampler;
 }
 
-VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
+std::vector<VkDescriptorImageInfo> SamplerUniform::CreateDescriptorInfo() const
 {
   assert(m_sampler);
   assert(m_boundTexture);
@@ -57,7 +57,14 @@ VkDescriptorImageInfo SamplerUniform::CreateDescriptorInfo() const noexcept
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   imageInfo.imageView = m_boundTexture->GetImageView();
   imageInfo.sampler = m_sampler;
-  return imageInfo;
+  return {imageInfo};
+}
+
+void SamplerUniform::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer,
+                                                 VkImageLayout layout)
+{
+  if (m_boundTexture)
+    m_boundTexture->TransferLayout(commandBuffer, layout);
 }
 
 void SamplerUniform::Invalidate()

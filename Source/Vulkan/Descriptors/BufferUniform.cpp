@@ -9,6 +9,7 @@ namespace RHI::vulkan
 BufferUniform::BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
                              LayoutIndex index, uint32_t arrayIndex)
   : BaseUniform(ctx, owner, type, index, arrayIndex)
+  , IBufferUniformDescriptor()
 {
 }
 
@@ -55,13 +56,13 @@ void BufferUniform::SetInvalid()
 {
 }
 
-VkDescriptorBufferInfo BufferUniform::CreateDescriptorInfo() const noexcept
+std::vector<VkDescriptorBufferInfo> BufferUniform::CreateDescriptorInfo() const
 {
   VkDescriptorBufferInfo bufferInfo{};
   bufferInfo.buffer = m_buffer;
   bufferInfo.range = m_size;
   bufferInfo.offset = m_offset;
-  return bufferInfo;
+  return {bufferInfo};
 }
 
 } // namespace RHI::vulkan

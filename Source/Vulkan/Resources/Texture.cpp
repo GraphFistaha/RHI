@@ -29,20 +29,14 @@ Texture::~Texture()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
 }
 
-std::future<UploadResult> Texture::UploadImage(const uint8_t * srcPixelData,
-                                               const TextureExtent & srcExtent,
-                                               HostImageFormat hostFormat,
-                                               const TextureRegion & srcRegion,
-                                               const TextureRegion & dstRegion)
+std::future<UploadResult> Texture::UploadImage(const UploadImageArgs& args)
 {
-  return GetContext().GetTransferer().UploadImage(*this, srcPixelData, srcExtent, hostFormat,
-                                                  srcRegion, dstRegion);
+  return GetContext().GetTransferer().UploadImage(*this, args);
 }
 
-std::future<DownloadResult> Texture::DownloadImage(HostImageFormat format,
-                                                   const TextureRegion & region)
+std::future<DownloadResult> Texture::DownloadImage(const DownloadImageArgs& args)
 {
-  return GetContext().GetTransferer().DownloadImage(*this, format, region);
+  return GetContext().GetTransferer().DownloadImage(*this, args);
 }
 
 TextureDescription Texture::GetDescription() const noexcept

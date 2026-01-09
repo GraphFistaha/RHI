@@ -13,27 +13,24 @@ template<typename SrcFormatT, typename DstFormatT, SrcFormatT srcFormat, DstForm
          typename srcTexel = RHI::utils::texel_type_t<SrcFormatT, srcFormat>,
          typename dstTexel = RHI::utils::texel_type_t<DstFormatT, dstFormat>>
 void CopyImage(const srcTexel * srcPixelData, const TexelIndex & srcExtent,
-               const TextureRegion & srcRegion, dstTexel * dstPixelData,
-               const TexelIndex & dstExtent, const TextureRegion & dstRegion)
+               const TextureRegion & copyRegion, dstTexel * dstPixelData,
+               const TexelIndex & dstExtent, const TexelIndex & dstOffset)
 {
-  if (srcRegion.extent != dstRegion.extent)
-    throw std::invalid_argument("Images have different extents. Copying is impossible");
-
   const uint32_t srcRowSize = srcExtent[0];
   const uint32_t dstRowSize = dstExtent[0];
   const size_t srcLayerSize = srcExtent[0] * srcExtent[1];
   const size_t dstLayerSize = dstExtent[0] * dstExtent[1];
 
-  const srcTexel * src = srcPixelData + srcLayerSize * srcRegion.offset[2] +
-                         srcRowSize * srcRegion.offset[1] + srcRegion.offset[0];
-  dstTexel * dst = dstPixelData + dstLayerSize * dstRegion.offset[2] +
-                   dstRowSize * dstRegion.offset[1] + dstRegion.offset[0];
+  const srcTexel * src = srcPixelData + srcLayerSize * copyRegion.offset[2] +
+                         srcRowSize * copyRegion.offset[1] + copyRegion.offset[0];
+  dstTexel * dst =
+    dstPixelData + dstLayerSize * dstOffset[2] + dstRowSize * dstOffset[1] + dstOffset[0];
 
-  for (uint32_t l = 0, lc = srcRegion.extent[2]; l < lc; ++l)
+  for (uint32_t l = 0, lc = copyRegion.extent[2]; l < lc; ++l)
   {
-    for (uint32_t h = 0, hc = srcRegion.extent[1]; h < hc; ++h)
+    for (uint32_t h = 0, hc = copyRegion.extent[1]; h < hc; ++h)
     {
-      CopyTexelsArray<SrcFormatT, DstFormatT, srcFormat, dstFormat>(src, dst, srcRegion.extent[0]);
+      CopyTexelsArray<SrcFormatT, DstFormatT, srcFormat, dstFormat>(src, dst, copyRegion.extent[0]);
       src += srcRowSize;
       dst += dstRowSize;
     }
@@ -47,12 +44,11 @@ void CopyImage(const srcTexel * srcPixelData, const TexelIndex & srcExtent,
 namespace RHI::vulkan
 {
 
-void CopyImageFromHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
-                       const TextureRegion & srcRegion, HostImageFormat srcFormat,
-                       uint8_t * dstPixelData, const TexelIndex & dstExtent,
-                       const TextureRegion & dstRegion, VkFormat dstFormat)
+void CopyImageFromHost(const HostTextureView & hostTexture, const MappedGpuTextureView & gpuTexture,
+                       const TextureRegion & copyRegion,
+                       const TexelIndex & dstOffset /* = { 0, 0, 0 }*/)
 {
-  switch (srcFormat)
+  switch (hostTexture.format)
   {
     case HostImageFormat::R8:
     case HostImageFormat::A8:
@@ -62,25 +58,28 @@ void CopyImageFromHost(const uint8_t * srcPixelData, const TexelIndex & srcExten
       throw std::runtime_error("Image formats are not compatible");
     case HostImageFormat::RGB8:
     {
-      if (dstFormat == VK_FORMAT_R8G8B8A8_SRGB)
+      if (gpuTexture.format == VK_FORMAT_R8G8B8A8_SRGB)
         utils::CopyImage<HostImageFormat, VkFormat, HostImageFormat::RGB8,
                          VK_FORMAT_R8G8B8A8_SRGB>(reinterpret_cast<const RHI::utils::uint24_t *>(
-                                                    srcPixelData),
-                                                  srcExtent, srcRegion,
-                                                  reinterpret_cast<uint32_t *>(dstPixelData),
-                                                  dstExtent, dstRegion);
+                                                    hostTexture.pixelData),
+                                                  hostTexture.extent, copyRegion,
+                                                  reinterpret_cast<uint32_t *>(
+                                                    gpuTexture.pixelData),
+                                                  gpuTexture.extent, dstOffset);
       else
         throw std::runtime_error("Image formats are not compatible");
     }
     break;
     case HostImageFormat::RGBA8:
     {
-      if (dstFormat == VK_FORMAT_R8G8B8A8_SRGB)
+      if (gpuTexture.format == VK_FORMAT_R8G8B8A8_SRGB)
         utils::CopyImage<HostImageFormat, VkFormat, HostImageFormat::RGBA8,
-                         VK_FORMAT_R8G8B8A8_SRGB>(reinterpret_cast<const uint32_t *>(srcPixelData),
-                                                  srcExtent, srcRegion,
-                                                  reinterpret_cast<uint32_t *>(dstPixelData),
-                                                  dstExtent, dstRegion);
+                         VK_FORMAT_R8G8B8A8_SRGB>(reinterpret_cast<const uint32_t *>(
+                                                    hostTexture.pixelData),
+                                                  hostTexture.extent, copyRegion,
+                                                  reinterpret_cast<uint32_t *>(
+                                                    gpuTexture.pixelData),
+                                                  gpuTexture.extent, dstOffset);
       else
         throw std::runtime_error("Image formats are not compatible");
     }
@@ -88,12 +87,10 @@ void CopyImageFromHost(const uint8_t * srcPixelData, const TexelIndex & srcExten
   }
 }
 
-void CopyImageToHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
-                     const TextureRegion & srcRegion, VkFormat srcFormat, uint8_t * dstPixelData,
-                     const TexelIndex & dstExtent, const TextureRegion & dstRegion,
-                     HostImageFormat dstFormat)
+void CopyImageToHost(const MappedGpuTextureView & gpuTexture, const HostTextureView & hostTexture,
+                     const TextureRegion & copyRegion, const TexelIndex & dstOffset)
 {
-  switch (dstFormat)
+  switch (hostTexture.format)
   {
     case HostImageFormat::R8:
     case HostImageFormat::A8:
@@ -103,14 +100,15 @@ void CopyImageToHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
       throw std::runtime_error("Image formats are not compatible");
     case HostImageFormat::RGB8:
     {
-      if (srcFormat == VK_FORMAT_R8G8B8A8_SRGB)
+      if (gpuTexture.format == VK_FORMAT_R8G8B8A8_SRGB)
       {
         utils::CopyImage<VkFormat, HostImageFormat, VK_FORMAT_R8G8B8A8_SRGB,
-                         HostImageFormat::RGB8>(reinterpret_cast<const uint32_t *>(srcPixelData),
-                                                srcExtent, srcRegion,
+                         HostImageFormat::RGB8>(reinterpret_cast<const uint32_t *>(
+                                                  gpuTexture.pixelData),
+                                                gpuTexture.extent, copyRegion,
                                                 reinterpret_cast<RHI::utils::uint24_t *>(
-                                                  dstPixelData),
-                                                dstExtent, dstRegion);
+                                                  hostTexture.pixelData),
+                                                hostTexture.extent, dstOffset);
       }
       else
       {
@@ -120,13 +118,15 @@ void CopyImageToHost(const uint8_t * srcPixelData, const TexelIndex & srcExtent,
     break;
     case HostImageFormat::RGBA8:
     {
-      if (srcFormat == VK_FORMAT_R8G8B8A8_SRGB)
+      if (gpuTexture.format == VK_FORMAT_R8G8B8A8_SRGB)
       {
         utils::CopyImage<VkFormat, HostImageFormat, VK_FORMAT_R8G8B8A8_SRGB,
-                         HostImageFormat::RGBA8>(reinterpret_cast<const uint32_t *>(srcPixelData),
-                                                 srcExtent, srcRegion,
-                                                 reinterpret_cast<uint32_t *>(dstPixelData),
-                                                 dstExtent, dstRegion);
+                         HostImageFormat::RGBA8>(reinterpret_cast<const uint32_t *>(
+                                                   gpuTexture.pixelData),
+                                                 gpuTexture.extent, copyRegion,
+                                                 reinterpret_cast<uint32_t *>(
+                                                   hostTexture.pixelData),
+                                                 hostTexture.extent, dstOffset);
       }
       else
       {

@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 
 #include "Utils.hpp"
@@ -96,9 +97,18 @@ struct TextureRegion
 struct TextureDescription final
 {
   TextureExtent extent;
-  uint32_t mipLevels;
+  uint32_t mipLevels = 1;
+  uint32_t layersCount = 1;
   ImageType type;
   ImageFormat format;
+};
+
+struct HostTextureView final
+{
+  TextureExtent extent;
+  uint8_t * pixelData = nullptr;
+  HostImageFormat format;
+  uint32_t layersCount = 1;
 };
 
 } // namespace RHI

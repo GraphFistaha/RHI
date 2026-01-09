@@ -9,24 +9,20 @@
 namespace RHI::vulkan
 {
 
-struct SamplerUniform final : public ISamplerUniformDescriptor,
-                              public details::BaseUniform
+struct SamplerArrayUniform final : public ISamplerArrayUniformDescriptor,
+                                   public details::BaseUniform
 {
-  explicit SamplerUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
-                          LayoutIndex index, uint32_t arrayIndex = 0);
-  virtual ~SamplerUniform() override;
-  SamplerUniform(SamplerUniform && rhs) noexcept;
-  SamplerUniform & operator=(SamplerUniform && rhs) noexcept;
+  explicit SamplerArrayUniform(Context & ctx, DescriptorBufferLayout & owner, size_t size,
+                               VkDescriptorType type, LayoutIndex index, uint32_t arrayIndex = 0);
+  virtual ~SamplerArrayUniform() override;
+  SamplerArrayUniform(SamplerArrayUniform && rhs) noexcept;
+  SamplerArrayUniform & operator=(SamplerArrayUniform && rhs) noexcept;
 
 public: // ISamplerDescriptor interface
   virtual void SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
                            RHI::TextureWrapping wWrap) noexcept override;
   virtual void SetFilter(RHI::TextureFilteration minFilter,
                          RHI::TextureFilteration magFilter) noexcept override;
-
-public: // ISamplerUniformDescriptor interface
-  virtual void AssignImage(ITexture * image) override;
-  virtual bool IsImageAssigned() const noexcept override;
 
 public:
   std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;
@@ -37,6 +33,9 @@ public: // IUniformDescriptor interface
   virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
   virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
 
+public: // ISamplerArrayUniformDescriptor interface
+  virtual void AssignImage(uint32_t index, ITexture * image) override;
+
 public: // IInvalidable interface
   void Invalidate();
   void SetInvalid();
@@ -46,7 +45,7 @@ public: // public internal API
   using BaseUniform::GetDescriptorType;
 
 private:
-  IInternalTexture * m_boundTexture = nullptr;
+  std::vector<IInternalTexture *> m_boundTextures;
   VkSampler m_sampler = VK_NULL_HANDLE;
   utils::SamplerBuilder m_builder;
   bool m_invalidSampler = true;

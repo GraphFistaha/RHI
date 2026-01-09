@@ -30,12 +30,8 @@ struct Transferer final : public OwnedBy<Context>
                                          size_t offset = 0);
   std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const uint8_t * srcData,
-                                        const TextureExtent & srcExtent, HostImageFormat hostFormat,
-                                        const TextureRegion & srcRegion,
-                                        const TextureRegion & dstRegion);
-  std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage, HostImageFormat format,
-                                            const TextureRegion & region);
+  std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const UploadImageArgs & args);
+  std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage, const DownloadImageArgs& args);
   std::future<BlitResult> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                            const TextureRegion & region);
 

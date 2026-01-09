@@ -7,13 +7,15 @@
 #include <RHI.hpp>
 
 
-
 // Custom log function used by RHI::Context
 void ConsoleLog(RHI::LogMessageStatus status, const std::string & message);
 
 
-RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx,
-                                             bool with_alpha);
+RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_alpha);
+
+RHI::ITexture * UploadLayeredTexture(RHI::IContext * ctx,
+                                     const std::vector<std::filesystem::path> & paths,
+                                     bool with_alpha);
 
 /// @brief reads shader SPIR-V file as binary
 /// @param filename - path to file

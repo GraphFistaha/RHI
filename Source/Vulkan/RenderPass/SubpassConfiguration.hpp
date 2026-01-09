@@ -38,8 +38,12 @@ public: // ISubpassConfiguration interface
                                                     ShaderType shaderStage) override;
   virtual ISamplerUniformDescriptor * DeclareSampler(LayoutIndex index,
                                                      ShaderType shaderStage) override;
+
+  virtual void DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    IBufferUniformDescriptor * outArray[]) override;
+  /// Sampler2D / Sampler2DArray uniform
   virtual void DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
-                                    ISamplerUniformDescriptor * out_array[]) override;
+                                    ISamplerUniformDescriptor * outArray[]) override;
 
   virtual uint32_t GetSubpassIndex() const noexcept override { return m_subpassIndex; }
   virtual void SetMeshTopology(MeshTopology topology) noexcept override;
