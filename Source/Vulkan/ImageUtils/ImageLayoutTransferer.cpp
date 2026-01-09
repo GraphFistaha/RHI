@@ -121,9 +121,9 @@ void ImageLayoutTransferer::TransferLayout(details::CommandBuffer & commandBuffe
     barrier.image = m_image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
     barrier.srcAccessMask = LayoutTransfer_MakeAccessFlag(m_layout);
     barrier.dstAccessMask = LayoutTransfer_MakeAccessFlag(newLayout);
   }

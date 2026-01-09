@@ -26,7 +26,6 @@ public: // ISamplerDescriptor interface
 
 public: // ISamplerUniformDescriptor interface
   virtual void AssignImage(ITexture * image) override;
-  virtual bool IsImageAssigned() const noexcept override;
 
 public:
   std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;

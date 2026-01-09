@@ -55,7 +55,6 @@ struct ISamplerUniformDescriptor : public IUniformDescriptor,
                                    public ISamplerDescriptor
 {
   virtual void AssignImage(ITexture * texture) = 0;
-  virtual bool IsImageAssigned() const noexcept = 0;
 };
 
 struct ISamplerArrayUniformDescriptor : public IUniformDescriptor,

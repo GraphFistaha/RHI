@@ -91,12 +91,6 @@ void SamplerUniform::AssignImage(ITexture * image)
   GetLayout().OnDescriptorChanged(*this);
 }
 
-bool SamplerUniform::IsImageAssigned() const noexcept
-{
-  return m_boundTexture != dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture()) ||
-         !m_boundTexture;
-}
-
 void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,
                                  RHI::TextureWrapping wWrap) noexcept
 {
