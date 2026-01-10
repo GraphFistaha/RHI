@@ -34,7 +34,7 @@ struct Device final : public OwnedBy<Context>
   uint32_t GetVulkanVersion() const noexcept;
 
 private:
-  std::array<uint8_t, 8624> m_privateData;
+  std::array<uint8_t, 9216> m_privateData; ///< private data. You can change size if it doesn't compile
   std::array<std::pair<uint32_t, VkQueue>, QueueType::Total> m_queues;
 };
 
