@@ -274,6 +274,7 @@ std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
 std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmaps(
   details::CommandBuffer & commands, IInternalTexture & dst)
 {
+  // derives extent in 2
   auto extentDiv2 = [](const VkOffset3D & extent)
   {
     return VkOffset3D{std::max(1, extent.x / 2), std::max(1, extent.y / 2),
@@ -284,6 +285,7 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   const uint32_t transferQueue =
     GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
 
+  // lambda to make a barrier for mip level
   auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
                                                                     VkImageLayout newLayout,
                                                                     uint32_t level)
@@ -316,6 +318,7 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
   };
 
+  // if texture has no mip levels, then do nothing
   if (dst.GetMipLevelsCount() <= 1)
   {
     std::promise<MipmapsGenerationResult> result;
@@ -323,11 +326,30 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
     return result.get_future();
   }
 
-
+  // help variables for algorithm
   VkExtent3D extent = dst.GetInternalExtent();
   VkOffset3D oldMipExtent = {static_cast<int>(extent.width), static_cast<int>(extent.height),
                              static_cast<int>(extent.depth)};
   VkOffset3D mipExtent = extentDiv2(oldMipExtent);
+
+  /*
+    Algorithm description:
+    Given an texture with N layers and M mip levels to generate.
+    you should generate all mip levels for each layer
+    note: the texture must be in the same layout as it was before the algorithm
+
+    1) remember layout of the texture to restore it after the execution
+    2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+    3) for i = 1 to M:
+         3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level. 
+                This step blocks mip level for reading
+         3.2) blit image (all N layers) from i - 1 to i mip level with linear filteration. 
+                Note: i'th level has only half of i-1'th level's extent
+         3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                this step waits for reading is completed and blocks for writing
+         3.4) div extent in 2
+    4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+  */
 
   VkImageLayout oldLayout = dst.GetLayout();
   dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
