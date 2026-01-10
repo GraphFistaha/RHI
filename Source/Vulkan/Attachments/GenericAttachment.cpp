@@ -181,6 +181,16 @@ VkExtent3D GenericAttachment::GetInternalExtent() const noexcept
   return {m_description.extent[0], m_description.extent[1], m_description.extent[2]};
 }
 
+uint32_t GenericAttachment::GetMipLevelsCount() const noexcept
+{
+  return 1;
+}
+
+uint32_t GenericAttachment::GetLayersCount() const noexcept
+{
+  return 1;
+}
+
 //-------------------- IAttachment interface --------------------
 
 void GenericAttachment::Invalidate()

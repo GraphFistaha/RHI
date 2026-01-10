@@ -31,9 +31,11 @@ struct Transferer final : public OwnedBy<Context>
   std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
 
   std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const UploadImageArgs & args);
-  std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage, const DownloadImageArgs& args);
+  std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage,
+                                            const DownloadImageArgs & args);
   std::future<BlitResult> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                            const TextureRegion & region);
+  std::future<MipmapsGenerationResult> GenerateMipmaps(IInternalTexture & texture);
 
 private:
   struct Bufferchain final

@@ -24,7 +24,8 @@ struct Texture : public ITexture,
 
 public: // ITexture interface
   virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) override;
-  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs& args) override;
+  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) override;
+  virtual std::future<MipmapsGenerationResult> GenerateMipmaps() override;
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
   //virtual void SetSwizzle() = 0;
@@ -32,12 +33,13 @@ public: // ITexture interface
 
 public: // IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
-                              VkImageLayout layout) override;
+  virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
+  virtual uint32_t GetMipLevelsCount() const noexcept override;
+  virtual uint32_t GetLayersCount() const noexcept override;
 
 private:
   TextureDescription m_description;

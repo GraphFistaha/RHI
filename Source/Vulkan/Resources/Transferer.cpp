@@ -38,6 +38,9 @@ public:
                                            IInternalTexture & dst, IInternalTexture & src,
                                            const TextureRegion & region);
 
+  std::future<MipmapsGenerationResult> GenerateMipmaps(details::CommandBuffer & commands,
+                                                       IInternalTexture & dst);
+
 private:
   /// function to copy texels from downloaded staging buffer to host memory
   using CreateDownloadResultFunc = std::function<DownloadResult(BufferGPU &)>;
@@ -48,12 +51,16 @@ private:
     std::tuple<BufferGPU /*stagingBuffer*/, std::promise<DownloadResult>, CreateDownloadResultFunc>;
   /// queued data for blitting
   using BlitTask = std::promise<BlitResult>;
+  /// @brief queued data for mipmaps generation
+  using MipsGenerationTask = std::pair<IInternalTexture *, std::promise<MipmapsGenerationResult>>;
 
   struct PendingTasksBatch final
   {
     std::vector<UploadTask> upload_tasks;     ///< promises to complete upload tasks
     std::vector<DownloadTask> download_tasks; ///< promises to complete download tasks
     std::vector<BlitTask> blit_tasks;         ///< promises to complete blit tasks
+    /// promises to complete mips generation tasks
+    std::vector<MipsGenerationTask> mips_generation_tasks;
   };
 
   PendingTasksBatch m_writingBatch;
@@ -91,6 +98,12 @@ void Transferer::PendingTasksContainer::ProcessSubmittedTasks()
     promise.set_value(result);
   }
   m_executingBatch.blit_tasks.clear();
+
+  for (auto && [texture, promise] : m_executingBatch.mips_generation_tasks)
+  {
+    promise.set_value(texture->GetMipLevelsCount());
+  }
+  m_executingBatch.mips_generation_tasks.clear();
 
   std::swap(m_executingBatch, m_writingBatch);
 }
@@ -258,6 +271,105 @@ std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
   return data.get_future();
 }
 
+std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmaps(
+  details::CommandBuffer & commands, IInternalTexture & dst)
+{
+  auto extentDiv2 = [](const VkOffset3D & extent)
+  {
+    return VkOffset3D{std::max(1, extent.x / 2), std::max(1, extent.y / 2),
+                      std::max(1, extent.z / 2)};
+  };
+
+
+  const uint32_t transferQueue =
+    GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
+
+  auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
+                                                                    VkImageLayout newLayout,
+                                                                    uint32_t level)
+  {
+    assert(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    assert(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    VkImageMemoryBarrier barrier{};
+    {
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.oldLayout = oldLayout;
+      barrier.newLayout = newLayout;
+      barrier.srcQueueFamilyIndex = transferQueue;
+      barrier.dstQueueFamilyIndex = transferQueue;
+      barrier.image = dst.GetHandle();
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseMipLevel = level;
+      barrier.subresourceRange.levelCount = 1;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+      barrier.srcAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_WRITE_BIT
+                              : VK_ACCESS_TRANSFER_READ_BIT;
+      barrier.dstAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_READ_BIT
+                              : VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    commands.PushCommand(vkCmdPipelineBarrier, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+  };
+
+  if (dst.GetMipLevelsCount() <= 1)
+  {
+    std::promise<MipmapsGenerationResult> result;
+    result.set_value(0);
+    return result.get_future();
+  }
+
+
+  VkExtent3D extent = dst.GetInternalExtent();
+  VkOffset3D oldMipExtent = {static_cast<int>(extent.width), static_cast<int>(extent.height),
+                             static_cast<int>(extent.depth)};
+  VkOffset3D mipExtent = extentDiv2(oldMipExtent);
+
+  VkImageLayout oldLayout = dst.GetLayout();
+  dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
+  {
+    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
+
+    VkImageBlit blit{};
+    {
+      blit.srcOffsets[0] = {0, 0, 0};
+      blit.srcOffsets[1] = oldMipExtent;
+      blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.srcSubresource.mipLevel = level - 1;
+      blit.srcSubresource.baseArrayLayer = 0;
+      blit.srcSubresource.layerCount = dst.GetLayersCount();
+      blit.dstOffsets[0] = {0, 0, 0};
+      blit.dstOffsets[1] = mipExtent;
+      blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.dstSubresource.mipLevel = level;
+      blit.dstSubresource.baseArrayLayer = 0;
+      blit.dstSubresource.layerCount = dst.GetLayersCount();
+    }
+
+    commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
+                         VK_FILTER_LINEAR);
+
+    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, level - 1);
+
+    oldMipExtent = mipExtent;
+    mipExtent = extentDiv2(mipExtent);
+  }
+
+  dst.TransferLayout(commands, oldLayout);
+
+  std::promise<MipmapsGenerationResult> promise;
+  auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
+  return data.second.get_future();
+}
+
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
@@ -327,6 +439,12 @@ std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IIn
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->BlitImageToImage(m_graphicsSubmitter.GetWritingBuffer(), dst, src, region);
+}
+
+std::future<MipmapsGenerationResult> Transferer::GenerateMipmaps(IInternalTexture & texture)
+{
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->GenerateMipmaps(m_graphicsSubmitter.GetWritingBuffer(), texture);
 }
 
 Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)

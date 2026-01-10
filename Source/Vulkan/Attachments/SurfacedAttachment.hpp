@@ -38,6 +38,8 @@ public: //IInternalTexture interface
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
+  virtual uint32_t GetMipLevelsCount() const noexcept override;
+  virtual uint32_t GetLayersCount() const noexcept override;
 
 public: // IAttachment interface
   virtual void BlitTo(ITexture * texture) override;

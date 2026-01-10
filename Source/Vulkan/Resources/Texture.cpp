@@ -29,14 +29,19 @@ Texture::~Texture()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(std::move(m_memBlock), nullptr);
 }
 
-std::future<UploadResult> Texture::UploadImage(const UploadImageArgs& args)
+std::future<UploadResult> Texture::UploadImage(const UploadImageArgs & args)
 {
   return GetContext().GetTransferer().UploadImage(*this, args);
 }
 
-std::future<DownloadResult> Texture::DownloadImage(const DownloadImageArgs& args)
+std::future<DownloadResult> Texture::DownloadImage(const DownloadImageArgs & args)
 {
   return GetContext().GetTransferer().DownloadImage(*this, args);
+}
+
+std::future<MipmapsGenerationResult> Texture::GenerateMipmaps()
+{
+  return GetContext().GetTransferer().GenerateMipmaps(*this);
 }
 
 TextureDescription Texture::GetDescription() const noexcept
@@ -83,6 +88,16 @@ VkFormat Texture::GetInternalFormat() const noexcept
 VkExtent3D Texture::GetInternalExtent() const noexcept
 {
   return {m_description.extent[0], m_description.extent[1], m_description.extent[2]};
+}
+
+uint32_t Texture::GetMipLevelsCount() const noexcept
+{
+  return m_description.mipLevels;
+}
+
+uint32_t Texture::GetLayersCount() const noexcept
+{
+  return m_description.layersCount;
 }
 
 } // namespace RHI::vulkan

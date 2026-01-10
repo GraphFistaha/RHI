@@ -15,6 +15,9 @@ PUBLIC
 	"RHI.hpp"
 	"RHI_def.h"
 	"Headers/Images.hpp"
+	"Headers/Images.cpp"
+	"Headers/Descriptors.hpp"
+	"Headers/Utils.hpp"
 PRIVATE
 	"MultibackendUtils/ImageTraits.hpp"
 	"MultibackendUtils/Types.hpp"

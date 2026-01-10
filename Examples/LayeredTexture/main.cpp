@@ -29,8 +29,8 @@ int main()
     UploadLayeredTexture(ctx.get(),
                          {"Grunge_201M.jpg", "Soil_120M.jpg", "Soil_124M.jpg", "Wood_145M.jpg",
                           "Wood_285M.jpg"},
-                         false);
-
+                         false /*with_alpha*/, true /*useMips*/);
+     
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
                                                               RHI::RenderBuffering::Triple));
@@ -38,7 +38,8 @@ int main()
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   auto && trianglePipeline = subpass->GetConfiguration();
   trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("layered_texture.vert")));
+  trianglePipeline.AttachShader(RHI::ShaderType::Vertex,
+                                ReadSpirV(FromGLSL("layered_texture.vert")));
   trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
                                 ReadSpirV(FromGLSL("layered_texture.frag")));
   trianglePipeline.DefinePushConstant(sizeof(PushConstant),

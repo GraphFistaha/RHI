@@ -5,7 +5,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 // clang-format on
-extern RHI::ITexture * UploadTexture(const char *, RHI::IContext *, bool);
+extern RHI::ITexture * UploadTexture(const char *, RHI::IContext *, bool, bool);
 int main()
 {
   RHI::GpuTraits gpuTraits{};

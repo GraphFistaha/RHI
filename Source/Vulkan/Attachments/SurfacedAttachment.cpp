@@ -105,6 +105,16 @@ VkExtent3D SurfacedAttachment::GetInternalExtent() const noexcept
   return {result.width, result.height, 1};
 }
 
+uint32_t SurfacedAttachment::GetMipLevelsCount() const noexcept
+{
+  return 1;
+}
+
+uint32_t SurfacedAttachment::GetLayersCount() const noexcept
+{
+  return 1;
+}
+
 void SurfacedAttachment::BlitTo(ITexture * texture)
 {
   //if (auto * ptr = dynamic_cast<RHI::vulkan::IInternalTexture *>(texture))

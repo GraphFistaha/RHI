@@ -71,7 +71,7 @@ void SamplerBuilder::Reset()
   m_createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
   m_createInfo.mipLodBias = 0.0f;
   m_createInfo.minLod = 0.0f;
-  m_createInfo.maxLod = 0.0f;
+  m_createInfo.maxLod = VK_LOD_CLAMP_NONE;
 }
 
 void SamplerBuilder::SetFilter(RHI::TextureFilteration minFilter,

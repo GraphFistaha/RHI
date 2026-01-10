@@ -317,7 +317,10 @@ struct IFramebuffer
 // ------------------- Data ------------------
 using UploadResult = size_t;
 using DownloadResult = std::vector<uint8_t>;
+using MipmapsGenerationResult = size_t;
 using BlitResult = size_t;
+
+using ArrayRange = std::pair<uint32_t /*baseIndex*/, uint32_t /*count*/>;
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
@@ -364,6 +367,7 @@ struct ITexture
   virtual ~ITexture() = default;
   virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) = 0;
   virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) = 0;
+  virtual std::future<MipmapsGenerationResult> GenerateMipmaps() = 0;
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;

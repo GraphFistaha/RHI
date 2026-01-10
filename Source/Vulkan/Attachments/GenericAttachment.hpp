@@ -40,6 +40,8 @@ public: //IInternalTexture interface
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
+  virtual uint32_t GetMipLevelsCount() const noexcept override;
+  virtual uint32_t GetLayersCount() const noexcept override;
 
 public: // IInternalAttachment interface
   virtual void Invalidate() override;
@@ -52,7 +54,7 @@ public: // IInternalAttachment interface
   virtual void Resize(const VkExtent2D & new_extent) noexcept override;
 
 protected:
-  std::mutex m_renderingMutex;        ///< mutex, because you can't enter in rendering mode twice
+  std::mutex m_renderingMutex;      ///< mutex, because you can't enter in rendering mode twice
   TextureDescription m_description; ///< description of image, all main params for image
 
   std::vector<memory::MemoryBlock> m_images;    ///< memory for image instances
