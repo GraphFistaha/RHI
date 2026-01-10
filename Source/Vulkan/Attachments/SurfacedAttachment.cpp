@@ -34,7 +34,12 @@ SurfacedAttachment::~SurfacedAttachment()
 std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat format,
                                                               const TextureRegion & region)
 {
-  return GetContext().GetTransferer().DownloadImage(*this, format, region);
+  DownloadImageArgs args{};
+  args.format = format;
+  args.copyRegion = region;
+  args.layerIndex = 0;
+  args.layersCount = 1;
+  return GetContext().GetTransferer().DownloadImage(*this, args);
 }
 
 TextureDescription SurfacedAttachment::GetDescription() const noexcept
@@ -98,6 +103,16 @@ VkExtent3D SurfacedAttachment::GetInternalExtent() const noexcept
     result = surfaceCapabilities.currentExtent;
   }
   return {result.width, result.height, 1};
+}
+
+uint32_t SurfacedAttachment::GetMipLevelsCount() const noexcept
+{
+  return 1;
+}
+
+uint32_t SurfacedAttachment::GetLayersCount() const noexcept
+{
+  return 1;
 }
 
 void SurfacedAttachment::BlitTo(ITexture * texture)

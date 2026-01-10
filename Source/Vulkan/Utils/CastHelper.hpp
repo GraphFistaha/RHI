@@ -47,14 +47,13 @@ constexpr inline VkImageType CastInterfaceEnum2Vulkan<VkImageType, ImageType>(Im
   switch (type)
   {
     case ImageType::Image1D:
+    case ImageType::Image1D_Array:
       return VK_IMAGE_TYPE_1D;
     case ImageType::Image2D:
+    case ImageType::Image2D_Array:
       return VK_IMAGE_TYPE_2D;
     case ImageType::Image3D:
       return VK_IMAGE_TYPE_3D;
-    case ImageType::Image1D_Array:
-      return VK_IMAGE_TYPE_2D;
-    case ImageType::Image2D_Array:
     case ImageType::Cubemap:
       return VK_IMAGE_TYPE_3D;
     default:

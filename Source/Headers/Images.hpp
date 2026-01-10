@@ -1,7 +1,10 @@
 #pragma once
+#include <RHI_def.h>
+
+#include <array>
 #include <cstdint>
 
-#include "Utils.hpp"
+#include <Headers/Utils.hpp>
 
 namespace RHI
 {
@@ -96,9 +99,20 @@ struct TextureRegion
 struct TextureDescription final
 {
   TextureExtent extent;
-  uint32_t mipLevels;
+  uint32_t layersCount = 1;
   ImageType type;
   ImageFormat format;
+  uint32_t mipLevels = 1;
+};
+
+RHI_API constexpr uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength = 1);
+
+struct HostTextureView final
+{
+  TextureExtent extent;
+  uint8_t * pixelData = nullptr;
+  HostImageFormat format;
+  uint32_t layersCount = 1;
 };
 
 } // namespace RHI

@@ -18,6 +18,10 @@ struct BufferUniform final : public IBufferUniformDescriptor,
   BufferUniform(BufferUniform && rhs) noexcept;
   BufferUniform & operator=(BufferUniform && rhs) noexcept;
 
+public:
+  std::vector<VkDescriptorBufferInfo> CreateDescriptorInfo() const;
+
+
 public: // IBufferUniformDescriptor interface
   virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) override;
   virtual bool IsBufferAssigned() const noexcept override;
@@ -34,7 +38,6 @@ public: // IInvalidable interface
 public: // public internal API
   size_t GetOffset() const noexcept { return m_offset; }
   VkBuffer GetBuffer() const noexcept { return m_buffer; }
-  VkDescriptorBufferInfo CreateDescriptorInfo() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include <OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
@@ -12,6 +14,7 @@ struct DescriptorBufferLayout;
 
 namespace RHI::vulkan::details
 {
+
 struct BaseUniform : public OwnedBy<Context>,
                      public OwnedBy<DescriptorBufferLayout>
 {

@@ -66,11 +66,11 @@ void DescriptorBufferLayout::TransitLayoutForUsedImages(details::CommandBuffer &
 {
   for (auto && sampler : m_samplerDescriptors)
   {
-    VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    auto && imagePtr = sampler.GetAttachedImage();
-    if (imagePtr)
-      imagePtr->TransferLayout(commandBuffer, layout);
+    sampler.TransitLayoutForUsedImages(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   }
+
+  for (auto && sampler : m_samplerArrayDescriptors)
+    sampler.TransitLayoutForUsedImages(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void DescriptorBufferLayout::SetInvalid()
@@ -100,18 +100,22 @@ void DescriptorBufferLayout::Invalidate()
 
   for (auto && uniform : m_samplerDescriptors)
     uniform.Invalidate();
+
+  for (auto && uniform : m_samplerArrayDescriptors)
+    uniform.Invalidate();
 }
 
 void DescriptorBufferLayout::DeclareBufferUniformsArray(LayoutIndex index, ShaderType shaderStage,
                                                         uint32_t size,
                                                         IBufferUniformDescriptor * outArray[])
 {
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  constexpr VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   DeclareDescriptorsArray(index, type, shaderStage, size);
 
   for (uint32_t i = 0; i < size; ++i)
   {
     auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
+    BufferUniform uniform(GetContext(), *this, type, index, i);
     auto && newDescriptor =
       m_bufferUniformDescriptors.emplace_back(GetContext(), *this, type, index, i);
     it->second.push_back(&newDescriptor);
@@ -130,6 +134,22 @@ void DescriptorBufferLayout::DeclareSamplerUniformsArray(LayoutIndex index, Shad
   {
     auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
     auto && newDescriptor = m_samplerDescriptors.emplace_back(GetContext(), *this, type, index, i);
+    it->second.push_back(&newDescriptor);
+    outArray[i] = &newDescriptor;
+  }
+}
+
+void DescriptorBufferLayout::DeclareSamplerArrayUniformsArray(
+  LayoutIndex index, ShaderType shaderStage, uint32_t size,
+  ISamplerArrayUniformDescriptor * outArray[])
+{
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  DeclareDescriptorsArray(index, type, shaderStage, size);
+
+  for (uint32_t i = 0; i < size; ++i)
+  {
+    auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
+    auto && newDescriptor = m_samplerArrayDescriptors.emplace_back(GetContext(), *this, 0, type, index, i);
     it->second.push_back(&newDescriptor);
     outArray[i] = &newDescriptor;
   }

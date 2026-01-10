@@ -4,10 +4,11 @@
 #include <array>
 #include <numeric>
 
-#include "../RenderPass/Subpass.hpp"
 #include <Resources/BufferGPU.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
+
+#include "../RenderPass/Subpass.hpp"
 #include "BufferUniform.hpp"
 #include "DescriptorBufferLayout.hpp"
 #include "SamplerUniform.hpp"
@@ -18,11 +19,12 @@ namespace RHI::vulkan::details
 
 //discover https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
 template<typename UniformT>
-  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, SamplerUniform>)
+  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, SamplerUniform> ||
+           std::is_same_v<UniformT, SamplerArrayUniform>)
 void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const UniformT & uniform)
 {
   assert(set);
-  auto && info = uniform.CreateDescriptorInfo();
+  auto && infos = uniform.CreateDescriptorInfo();
 
   VkWriteDescriptorSet descriptorWrite{};
   descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -30,10 +32,10 @@ void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const Un
   descriptorWrite.dstBinding = uniform.GetBinding();
   descriptorWrite.dstArrayElement = uniform.GetArrayIndex();
   descriptorWrite.descriptorType = uniform.GetDescriptorType();
-  descriptorWrite.descriptorCount = 1;
+  descriptorWrite.descriptorCount = static_cast<uint32_t>(infos.size());
   if constexpr (std::is_same_v<UniformT, BufferUniform>)
   {
-    descriptorWrite.pBufferInfo = &info;
+    descriptorWrite.pBufferInfo = infos.data();
     descriptorWrite.pImageInfo = nullptr; // Optional
   }
   else if constexpr (std::is_same_v<UniformT, SamplerUniform>)
@@ -42,7 +44,7 @@ void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const Un
            uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
            uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER);
     descriptorWrite.pBufferInfo = nullptr;
-    descriptorWrite.pImageInfo = &info; // Optional
+    descriptorWrite.pImageInfo = infos.data(); // Optional
   }
   descriptorWrite.pTexelBufferView = nullptr; // Optional
 

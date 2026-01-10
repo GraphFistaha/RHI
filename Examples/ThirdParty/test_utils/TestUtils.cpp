@@ -1,5 +1,6 @@
 #include "TestUtils.hpp"
 
+#include <cassert>
 #include <fstream>
 
 #include <GLFW/glfw3.h>
@@ -29,25 +30,105 @@ void ConsoleLog(RHI::LogMessageStatus status, const std::string & message)
   }
 }
 
-RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_alpha)
+RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_alpha,
+                              bool useMips /* = false*/)
 {
   int w = 0, h = 0, channels = 3;
   uint8_t * pixel_data = stbi_load(path, &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);
   if (!pixel_data)
     throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
 
-  RHI::TexelIndex extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+  RHI::HostTextureView hostTexture{};
+  {
+    hostTexture.extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+    hostTexture.pixelData = reinterpret_cast<uint8_t *>(pixel_data);
+    hostTexture.format = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
+    hostTexture.layersCount = 1;
+  };
 
   RHI::TextureDescription imageArgs{};
-  imageArgs.extent = extent;
-  imageArgs.type = RHI::ImageType::Image2D;
-  imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
-  imageArgs.mipLevels = 1;
+  {
+    imageArgs.extent = hostTexture.extent;
+    imageArgs.layersCount = hostTexture.layersCount;
+    imageArgs.type = RHI::ImageType::Image2D;
+    imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
+    imageArgs.mipLevels = useMips ? RHI::CalcMaxMipLevels(imageArgs.extent) : 1;
+    ;
+  }
   auto texture = ctx->CreateTexture(imageArgs);
-  texture->UploadImage(pixel_data, extent,
-                       with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8,
-                       {{}, extent}, {{}, extent});
+
+  RHI::UploadImageArgs args{};
+  {
+    args.srcTexture = hostTexture;
+    args.copyRegion = {{0, 0, 0}, hostTexture.extent};
+    args.dstOffset = {0, 0, 0};
+    args.layerIndex = 0;
+    args.layersCount = 1;
+  }
+  texture->UploadImage(args);
+  if (useMips)
+    texture->GenerateMipmaps();
   stbi_image_free(pixel_data);
+  return texture;
+}
+
+RHI::ITexture * UploadLayeredTexture(RHI::IContext * ctx,
+                                     const std::vector<std::filesystem::path> & paths,
+                                     bool with_alpha, bool useMips /* = false*/)
+{
+  int width = 0, height = 0;
+  std::vector<RHI::HostTextureView> textures;
+  for (auto && path : paths)
+  {
+    int w = 0, h = 0, channels = 3;
+    uint8_t * pixel_data =
+      stbi_load(path.string().c_str(), &w, &h, &channels, with_alpha ? STBI_rgb_alpha : STBI_rgb);
+    if (!pixel_data)
+      throw std::runtime_error("Failed to load texture. Check it exists near the exe file");
+    if (width != 0 && width != w || height != 0 && height != h)
+      throw std::runtime_error("Images have different sizes");
+
+    auto && hostTexture = textures.emplace_back();
+    hostTexture.pixelData = pixel_data;
+    hostTexture.extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+    hostTexture.layersCount = 1;
+    hostTexture.format = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
+  }
+
+  bool allTheSameSize = std::all_of(textures.begin(), textures.end(), [&](auto && texture)
+                                    { return texture.extent == textures.front().extent; });
+  assert(allTheSameSize);
+
+  RHI::TextureDescription imageArgs{};
+  {
+    imageArgs.extent = textures.front().extent;
+    imageArgs.type = RHI::ImageType::Image2D_Array;
+    imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
+    imageArgs.mipLevels = useMips ? RHI::CalcMaxMipLevels(imageArgs.extent) : 1;
+    imageArgs.layersCount = static_cast<uint32_t>(textures.size());
+  }
+  auto texture = ctx->CreateTexture(imageArgs);
+
+  for (uint32_t i = 0; i < textures.size(); ++i)
+  {
+    RHI::HostTextureView & hostTexture = textures[i];
+    RHI::UploadImageArgs args{};
+    {
+      args.srcTexture = hostTexture;
+      args.copyRegion = {{0, 0, 0}, {hostTexture.extent}};
+      args.dstOffset = {0, 0, 0};
+      args.layerIndex = i;
+      args.layersCount = 1;
+    }
+    texture->UploadImage(args);
+  }
+
+  if (useMips)
+    texture->GenerateMipmaps();
+
+  for (auto && hostTexture : textures)
+    stbi_image_free(hostTexture.pixelData);
+  textures.clear();
   return texture;
 }
 

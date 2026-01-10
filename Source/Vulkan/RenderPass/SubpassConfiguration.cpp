@@ -80,12 +80,20 @@ ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex ind
   return result;
 }
 
+void SubpassConfiguration::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage,
+                                                uint32_t size,
+                                                IBufferUniformDescriptor * outArray[])
+{
+  m_descriptorsLayout.DeclareBufferUniformsArray(index, shaderStage, size, outArray);
+}
+
 void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
-                                                ISamplerUniformDescriptor * out_array[])
+                                                ISamplerUniformDescriptor * outArray[])
 {
-  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, size, out_array);
+  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
 }
+
 
 void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderStage)
 {

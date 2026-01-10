@@ -12,9 +12,9 @@ VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkI
   viewInfo.format = format;
   viewInfo.subresourceRange.aspectMask = aspectFlags;
   viewInfo.subresourceRange.baseMipLevel = 0;
-  viewInfo.subresourceRange.levelCount = 1;
+  viewInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
   viewInfo.subresourceRange.baseArrayLayer = 0;
-  viewInfo.subresourceRange.layerCount = 1;
+  viewInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
   VkImageView view;
   if (auto res = vkCreateImageView(device, &viewInfo, nullptr, &view); res != VK_SUCCESS)

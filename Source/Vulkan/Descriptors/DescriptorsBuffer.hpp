@@ -16,6 +16,7 @@ struct Context;
 struct DescriptorBufferLayout;
 struct BufferUniform;
 struct SamplerUniform;
+struct SamplerArrayUniform;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -44,7 +45,8 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
                            VkPipelineBindPoint bindPoint);
 
 private:
-  using GenericUniformPtr = std::variant<const BufferUniform *, const SamplerUniform *>;
+  using GenericUniformPtr =
+    std::variant<const BufferUniform *, const SamplerUniform *, const SamplerArrayUniform *>;
 
   std::mutex m_setsLock;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;

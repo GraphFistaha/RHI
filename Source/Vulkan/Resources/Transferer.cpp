@@ -28,18 +28,18 @@ public:
 
   /// pushes task to upload image from host to GPU (asynchronous)
   std::future<UploadResult> UploadImage(details::CommandBuffer & commands,
-                                        IInternalTexture & dstImage, const uint8_t * srcData,
-                                        const TextureExtent & srcExtent, HostImageFormat hostFormat,
-                                        const TextureRegion & srcRegion,
-                                        const TextureRegion & dstRegion);
+                                        IInternalTexture & dstImage, const UploadImageArgs & args);
   /// pushes task to download image from GPU to host (asynchronous)
   std::future<DownloadResult> DownloadImage(details::CommandBuffer & commands,
-                                            IInternalTexture & srcImage, HostImageFormat format,
-                                            const TextureRegion & region);
+                                            IInternalTexture & srcImage,
+                                            const DownloadImageArgs & args);
   /// pushes task to blit image to another image
   std::future<BlitResult> BlitImageToImage(details::CommandBuffer & commands,
                                            IInternalTexture & dst, IInternalTexture & src,
                                            const TextureRegion & region);
+
+  std::future<MipmapsGenerationResult> GenerateMipmaps(details::CommandBuffer & commands,
+                                                       IInternalTexture & dst);
 
 private:
   /// function to copy texels from downloaded staging buffer to host memory
@@ -51,12 +51,16 @@ private:
     std::tuple<BufferGPU /*stagingBuffer*/, std::promise<DownloadResult>, CreateDownloadResultFunc>;
   /// queued data for blitting
   using BlitTask = std::promise<BlitResult>;
+  /// @brief queued data for mipmaps generation
+  using MipsGenerationTask = std::pair<IInternalTexture *, std::promise<MipmapsGenerationResult>>;
 
   struct PendingTasksBatch final
   {
     std::vector<UploadTask> upload_tasks;     ///< promises to complete upload tasks
     std::vector<DownloadTask> download_tasks; ///< promises to complete download tasks
     std::vector<BlitTask> blit_tasks;         ///< promises to complete blit tasks
+    /// promises to complete mips generation tasks
+    std::vector<MipsGenerationTask> mips_generation_tasks;
   };
 
   PendingTasksBatch m_writingBatch;
@@ -94,6 +98,12 @@ void Transferer::PendingTasksContainer::ProcessSubmittedTasks()
     promise.set_value(result);
   }
   m_executingBatch.blit_tasks.clear();
+
+  for (auto && [texture, promise] : m_executingBatch.mips_generation_tasks)
+  {
+    promise.set_value(texture->GetMipLevelsCount());
+  }
+  m_executingBatch.mips_generation_tasks.clear();
 
   std::swap(m_executingBatch, m_writingBatch);
 }
@@ -140,20 +150,22 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
 }
 
 std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
-  details::CommandBuffer & commands, IInternalTexture & dstImage, const uint8_t * srcData,
-  const TextureExtent & srcExtent, HostImageFormat hostFormat, const TextureRegion & srcRegion,
-  const TextureRegion & dstRegion)
+  details::CommandBuffer & commands, IInternalTexture & dstImage, const UploadImageArgs & args)
 {
   std::promise<UploadResult> promise;
   const size_t copyingRegionSize =
-    RHI::utils::GetSizeOfImage(srcRegion.extent, dstImage.GetInternalFormat());
+    RHI::utils::GetSizeOfImage(args.copyRegion.extent, dstImage.GetInternalFormat());
   BufferGPU stagingBuffer(GetContext(), copyingRegionSize, g_stagingUsage, true);
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
+    MappedGpuTextureView gpuTexture{};
+    gpuTexture.pixelData = reinterpret_cast<uint8_t *>(mapped_ptr.get());
+    gpuTexture.extent = args.copyRegion.extent;
+    gpuTexture.format = dstImage.GetInternalFormat();
+    gpuTexture.baseLayerIndex = args.layerIndex;
+    gpuTexture.layersCount = args.layersCount;
     auto dstExtent = dstImage.GetInternalExtent();
-    CopyImageFromHost(srcData, srcExtent, srcRegion, hostFormat,
-                      reinterpret_cast<uint8_t *>(mapped_ptr.get()), srcRegion.extent,
-                      {{0, 0, 0}, srcRegion.extent}, dstImage.GetInternalFormat());
+    CopyImageFromHost(args.srcTexture, gpuTexture, args.copyRegion);
     mapped_ptr.reset();
     stagingBuffer.Flush();
   }
@@ -167,14 +179,15 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageExtent = {dstRegion.extent[0], dstRegion.extent[1], dstRegion.extent[2]};
-    region.imageOffset = {static_cast<int>(dstRegion.offset[0]),
-                          static_cast<int>(dstRegion.offset[1]),
-                          static_cast<int>(dstRegion.offset[2])};
+    region.imageExtent = {args.copyRegion.extent[0], args.copyRegion.extent[1],
+                          args.copyRegion.extent[2]};
+    region.imageOffset = {static_cast<int>(args.copyRegion.offset[0]),
+                          static_cast<int>(args.copyRegion.offset[1]),
+                          static_cast<int>(args.copyRegion.offset[2])};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
+    region.imageSubresource.baseArrayLayer = args.layerIndex;
+    region.imageSubresource.layerCount = args.layersCount;
   }
 
   VkImageLayout oldLayout = dstImage.GetLayout();
@@ -188,12 +201,11 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
 }
 
 std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
-  details::CommandBuffer & commands, IInternalTexture & srcImage, HostImageFormat format,
-  const TextureRegion & imgRegion)
+  details::CommandBuffer & commands, IInternalTexture & srcImage, const DownloadImageArgs & args)
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(),
-                          RHI::utils::GetSizeOfImage(imgRegion.extent,
+                          RHI::utils::GetSizeOfImage(args.copyRegion.extent,
                                                      srcImage.GetInternalFormat()),
                           g_stagingUsage, true);
   VkBufferImageCopy region{};
@@ -201,25 +213,32 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageExtent = {imgRegion.extent[0], imgRegion.extent[1], imgRegion.extent[2]};
-    region.imageOffset = {static_cast<int>(imgRegion.offset[0]),
-                          static_cast<int>(imgRegion.offset[1]),
-                          static_cast<int>(imgRegion.offset[2])};
+    region.imageExtent = {args.copyRegion.extent[0], args.copyRegion.extent[1],
+                          args.copyRegion.extent[2]};
+    region.imageOffset = {static_cast<int>(args.copyRegion.offset[0]),
+                          static_cast<int>(args.copyRegion.offset[1]),
+                          static_cast<int>(args.copyRegion.offset[2])};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
+    region.imageSubresource.baseArrayLayer = args.layerIndex;
+    region.imageSubresource.layerCount = args.layersCount;
   }
 
-  auto createDownloadResult = [imgRegion, format, srcFormat = srcImage.GetInternalFormat()](
-                                BufferGPU & stagingBuffer) -> DownloadResult
+  auto createDownloadResult =
+    [args, srcFormat = srcImage.GetInternalFormat()](BufferGPU & stagingBuffer) -> DownloadResult
   {
-    DownloadResult result(RHI::utils::GetSizeOfImage(imgRegion.extent, format));
+    DownloadResult result(RHI::utils::GetSizeOfImage(args.copyRegion.extent, args.format));
+    HostTextureView hostTexture{};
+    hostTexture.extent = args.copyRegion.extent;
+    hostTexture.format = args.format;
+    hostTexture.pixelData = result.data();
     if (auto scopedPtr = stagingBuffer.Map())
     {
-      TextureRegion rgn{{0, 0, 0}, imgRegion.extent};
-      CopyImageToHost(reinterpret_cast<uint8_t *>(scopedPtr.get()), imgRegion.extent, rgn,
-                      srcFormat, result.data(), imgRegion.extent, rgn, format);
+      MappedGpuTextureView view{};
+      view.pixelData = reinterpret_cast<uint8_t *>(scopedPtr.get());
+      view.extent = args.copyRegion.extent;
+      view.format = srcFormat;
+      CopyImageToHost(view, hostTexture, {{0, 0, 0}, args.copyRegion.extent});
     }
     return result;
   };
@@ -250,6 +269,127 @@ std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
                        dst.GetLayout(), 1, &copy);
   auto && data = m_writingBatch.blit_tasks.emplace_back(std::move(promise));
   return data.get_future();
+}
+
+std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmaps(
+  details::CommandBuffer & commands, IInternalTexture & dst)
+{
+  // derives extent in 2
+  auto extentDiv2 = [](const VkOffset3D & extent)
+  {
+    return VkOffset3D{std::max(1, extent.x / 2), std::max(1, extent.y / 2),
+                      std::max(1, extent.z / 2)};
+  };
+
+
+  const uint32_t transferQueue =
+    GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
+
+  // lambda to make a barrier for mip level
+  auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
+                                                                    VkImageLayout newLayout,
+                                                                    uint32_t level)
+  {
+    assert(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    assert(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    VkImageMemoryBarrier barrier{};
+    {
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.oldLayout = oldLayout;
+      barrier.newLayout = newLayout;
+      barrier.srcQueueFamilyIndex = transferQueue;
+      barrier.dstQueueFamilyIndex = transferQueue;
+      barrier.image = dst.GetHandle();
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseMipLevel = level;
+      barrier.subresourceRange.levelCount = 1;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+      barrier.srcAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_WRITE_BIT
+                              : VK_ACCESS_TRANSFER_READ_BIT;
+      barrier.dstAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_READ_BIT
+                              : VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    commands.PushCommand(vkCmdPipelineBarrier, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+  };
+
+  // if texture has no mip levels, then do nothing
+  if (dst.GetMipLevelsCount() <= 1)
+  {
+    std::promise<MipmapsGenerationResult> result;
+    result.set_value(0);
+    return result.get_future();
+  }
+
+  // help variables for algorithm
+  VkExtent3D extent = dst.GetInternalExtent();
+  VkOffset3D oldMipExtent = {static_cast<int>(extent.width), static_cast<int>(extent.height),
+                             static_cast<int>(extent.depth)};
+  VkOffset3D mipExtent = extentDiv2(oldMipExtent);
+
+  /*
+    Algorithm description:
+    Given an texture with N layers and M mip levels to generate.
+    you should generate all mip levels for each layer
+    note: the texture must be in the same layout as it was before the algorithm
+
+    1) remember layout of the texture to restore it after the execution
+    2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+    3) for i = 1 to M:
+         3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level. 
+                This step blocks mip level for reading
+         3.2) blit image (all N layers) from i - 1 to i mip level with linear filteration. 
+                Note: i'th level has only half of i-1'th level's extent
+         3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                this step waits for reading is completed and blocks for writing
+         3.4) div extent in 2
+    4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+  */
+
+  VkImageLayout oldLayout = dst.GetLayout();
+  dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
+  {
+    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
+
+    VkImageBlit blit{};
+    {
+      blit.srcOffsets[0] = {0, 0, 0};
+      blit.srcOffsets[1] = oldMipExtent;
+      blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.srcSubresource.mipLevel = level - 1;
+      blit.srcSubresource.baseArrayLayer = 0;
+      blit.srcSubresource.layerCount = dst.GetLayersCount();
+      blit.dstOffsets[0] = {0, 0, 0};
+      blit.dstOffsets[1] = mipExtent;
+      blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.dstSubresource.mipLevel = level;
+      blit.dstSubresource.baseArrayLayer = 0;
+      blit.dstSubresource.layerCount = dst.GetLayersCount();
+    }
+
+    commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
+                         VK_FILTER_LINEAR);
+
+    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, level - 1);
+
+    oldMipExtent = mipExtent;
+    mipExtent = extentDiv2(mipExtent);
+  }
+
+  dst.TransferLayout(commands, oldLayout);
+
+  std::promise<MipmapsGenerationResult> promise;
+  auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
+  return data.second.get_future();
 }
 
 
@@ -302,22 +442,18 @@ std::future<DownloadResult> Transferer::DownloadBuffer(VkBuffer srcBuffer, size_
                                         offset);
 }
 
-std::future<UploadResult> Transferer::UploadImage(
-  IInternalTexture & dstImage, const uint8_t * srcData, const TextureExtent & srcExtent,
-  HostImageFormat hostFormat, const TextureRegion & srcRegion, const TextureRegion & dstRegion)
+std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
+                                                  const UploadImageArgs & args)
 {
   std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, srcData,
-                                     srcExtent, hostFormat, srcRegion, dstRegion);
+  return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, args);
 }
 
 std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
-                                                      HostImageFormat format,
-                                                      const TextureRegion & region)
+                                                      const DownloadImageArgs & args)
 {
   std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->DownloadImage(m_graphicsSubmitter.GetWritingBuffer(), srcImage, format,
-                                       region);
+  return m_pendingTasks->DownloadImage(m_graphicsSubmitter.GetWritingBuffer(), srcImage, args);
 }
 
 std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
@@ -325,6 +461,12 @@ std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IIn
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->BlitImageToImage(m_graphicsSubmitter.GetWritingBuffer(), dst, src, region);
+}
+
+std::future<MipmapsGenerationResult> Transferer::GenerateMipmaps(IInternalTexture & texture)
+{
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->GenerateMipmaps(m_graphicsSubmitter.GetWritingBuffer(), texture);
 }
 
 Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)

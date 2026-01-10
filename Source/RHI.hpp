@@ -239,9 +239,19 @@ struct ISubpassConfiguration : public IInvalidable
   virtual void DefinePushConstant(uint32_t size, ShaderType shaderStage) = 0;
 
   virtual IBufferUniformDescriptor * DeclareUniform(LayoutIndex index, ShaderType shaderStage) = 0;
+
+  /// Sampler2D / Sampler2DArray uniform
   virtual ISamplerUniformDescriptor * DeclareSampler(LayoutIndex index, ShaderType shaderStage) = 0;
+
+  virtual void DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    IBufferUniformDescriptor * outArray[]) = 0;
+  /// Sampler2D / Sampler2DArray uniform
   virtual void DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
-                                    ISamplerUniformDescriptor * outDescriptors[]) = 0;
+                                    ISamplerUniformDescriptor * outArray[]) = 0;
+  ///// Texture2DArray + sampler uniform
+  //virtual ISamplerArrayUniformDescriptor * DeclareSamplersArray(LayoutIndex index,
+  //                                                              ShaderType shaderStage,
+  //                                                              uint32_t size, uint32_t arrayIndex = 0) = 0;
   virtual void SetMeshTopology(MeshTopology topology) noexcept = 0;
 
   virtual void EnableDepthTest(bool enabled) noexcept = 0;
@@ -307,6 +317,7 @@ struct IFramebuffer
 // ------------------- Data ------------------
 using UploadResult = size_t;
 using DownloadResult = std::vector<uint8_t>;
+using MipmapsGenerationResult = size_t; ///< count of mips generated
 using BlitResult = size_t;
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
@@ -331,17 +342,32 @@ struct IBufferGPU
   virtual size_t Size() const noexcept = 0;
 };
 
+struct UploadImageArgs final
+{
+  HostTextureView srcTexture;
+  TextureRegion copyRegion;
+  TextureExtent dstOffset;
+  uint32_t layerIndex = 0;
+  uint32_t layersCount = std::numeric_limits<uint32_t>::max();
+};
+
+struct DownloadImageArgs final
+{
+  HostImageFormat format;
+  TextureRegion copyRegion;
+  uint32_t layerIndex = 0;
+  uint32_t layersCount = std::numeric_limits<uint32_t>::max();
+};
+
 /// Image with mipmaps, compression
 struct ITexture
 {
   virtual ~ITexture() = default;
-  virtual std::future<UploadResult> UploadImage(const uint8_t * srcPixelData,
-                                                const TextureExtent & srcExtent,
-                                                HostImageFormat hostFormat,
-                                                const TextureRegion & srcRegion,
-                                                const TextureRegion & dstRegion) = 0;
-  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const TextureRegion & region) = 0;
+  virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) = 0;
+  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) = 0;
+  /// @brief generate mipmaps as declared in TextureDescription
+  /// @return future with count of generated mip levels
+  virtual std::future<MipmapsGenerationResult> GenerateMipmaps() = 0;
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;
