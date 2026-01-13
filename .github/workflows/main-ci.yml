@@ -1,0 +1,79 @@
+name: RHI main CI
+
+on:
+  push:
+    branches: [ main, master, 26-enable-cicd ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        build_type: [Release]
+        cpp_standard: [20]
+        exclude:
+          - os: macos-latest
+            cpp_standard: 20
+        include:
+          - os: ubuntu-latest
+            compiler: g++
+          - os: macos-latest
+            compiler: clang++
+          - os: windows-latest
+            compiler: msvc
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.ccache
+          ${{ github.workspace }}/build
+        key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cpp', '**/*.hpp') }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+    
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc g++ cmake make ccache
+        # Add any other dependencies your project needs
+        # sudo apt-get install -y libboost-all-dev gtest
+    
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install cmake ccache
+        # Add other dependencies if needed
+    
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install ninja
+        
+    - name: Configure CMake
+      run: |
+        cmake -B ${{github.workspace}}/Build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_STANDARD=${{ matrix.cpp_standard }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+          -DRHI_BUILD_EXAMPLES=ON
+    
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/Build \
+          --config ${{ matrix.build_type }} \
+          --parallel $(nproc)
+    
+    - name: Run tests
+      run: |
+        cd ${{github.workspace}}/Build
+        ctest --output-on-failure -C ${{ matrix.build_type }}
