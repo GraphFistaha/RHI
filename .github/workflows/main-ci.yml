@@ -33,6 +33,9 @@ jobs:
         compiler: ${{ matrix.compiler }}
         cmake: true
         ninja: true
+
+    - name: Install Vulkan SDK
+      run: choco install vulkan-sdk
     
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
