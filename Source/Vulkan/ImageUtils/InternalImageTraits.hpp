@@ -1,5 +1,5 @@
 #pragma once
-#include <ImageTraits.hpp>
+#include <Private/ImageTraits.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

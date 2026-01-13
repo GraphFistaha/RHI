@@ -1,4 +1,5 @@
 #!/bin/sh
+sudo apt update
 # install system packages
 sudo apt-get install libgl-dev libgl1-mesa-dev \
 libx11-xcb-dev libfontenc-dev libxaw7-dev libxcomposite-dev libxcursor-dev libxdamage-dev libxext-dev libxfixes-dev libxi-dev \
@@ -8,10 +9,4 @@ libxcb-keysyms1-dev libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-x
 uuid-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev libxcb-util-dev libxcb-util0-dev
 
 #install vulkan libraries
-sudo apt-get install libvulkan-dev
-
-./Examples/precompile_shaders.sh -o "Build/Debug/Shaders"
-
-echo "All packages were installed. You can configure project"
-echo "Press any button to continue..."
-read x
+sudo apt-get install libvulkan-dev glslc

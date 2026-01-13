@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "Headers/Descriptors.hpp"
-#include "Headers/Images.hpp"
+#include <Descriptors.hpp>
+#include <Images.hpp>
 
 namespace RHI
 {

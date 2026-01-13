@@ -7,7 +7,7 @@
 #include <Descriptors/BufferUniform.hpp>
 #include <Descriptors/SamplerArrayUniform.hpp>
 #include <Descriptors/SamplerUniform.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
 #include <vulkan/vulkan.hpp>
@@ -41,12 +41,6 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
                                    ISamplerUniformDescriptor * outArray[]);
   void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                         ISamplerArrayUniformDescriptor * outArray[]);
-
-  template<typename DescriptorT>
-  void OnDescriptorChanged(const DescriptorT & uniform) noexcept
-  {
-    GetConfiguration().GetSubpass().OnDescriptorChanged(uniform);
-  }
 
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 

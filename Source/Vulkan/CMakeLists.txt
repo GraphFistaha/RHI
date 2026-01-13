@@ -1,5 +1,4 @@
-add_subdirectory(ThirdParty/VulkanMemoryAllocator)
-add_subdirectory(ThirdParty/VkBootstrap)
+add_subdirectory (ThirdParty/VkBootstrap)
 
 target_sources (${PROJECT_NAME}
 PRIVATE
@@ -91,19 +90,20 @@ PRIVATE
 	"CommandsExecution/Submitter.hpp"
 	"CommandsExecution/AsyncTask.cpp"
 	"CommandsExecution/AsyncTask.hpp"
+
 	"CommandsExecution/CompositeAsyncTask.cpp"
 	"CommandsExecution/CompositeAsyncTask.hpp"
 )
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 target_compile_definitions(${PROJECT_NAME} 
 PRIVATE
 	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
 
-#find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	Vulkan::Vulkan

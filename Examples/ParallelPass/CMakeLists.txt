@@ -1,5 +1,4 @@
 set(this_target "ParallelPass")
-set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
 add_executable(${this_target} 
 	"main.cpp"
@@ -14,22 +13,23 @@ PRIVATE
 	test_utils
 )
 
-set_target_properties(${this_target} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
-	LIBRARY_OUTPUT_DIRECTORY ${APP_DIR}/Obj
-	ARCHIVE_OUTPUT_DIRECTORY ${APP_DIR}/Obj
-)
-
 TARGET_PRECOMPILE_SHADERS(TARGET ${this_target} API Vulkan
 SHADERS
 	"triangle.frag"
 	"triangle.vert"
+OUTPUT_DIRECTORY "${CMAKE_INSTALL_PREFIX}/Examples/${this_target}"
 )
 
-#copy RHI.dll into example's dir
-add_custom_command(TARGET ${this_target} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${BASE_APP_DIR}/${PROJECT_NAME}.dll
-		$<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
-        ${APP_DIR}/.
+install(TARGETS ${this_target}
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
+)
+
+install(TARGETS RHI
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
 )

@@ -6,7 +6,7 @@
 #include <CommandsExecution/Submitter.hpp>
 #include <Device.hpp>
 #include <ImageUtils/TextureInterface.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>

@@ -1,11 +1,11 @@
-#include "Images.hpp"
-
 #include <algorithm>
+
+#include <Images.hpp>
 
 namespace RHI
 {
 
-RHI_API constexpr uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength /* = 1*/)
+RHI_API uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength /* = 1*/)
 {
   uint32_t mipCounts = 1;
   uint32_t maxLength = std::max({extent[0], extent[1], extent[2]});

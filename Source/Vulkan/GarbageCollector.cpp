@@ -19,27 +19,50 @@ struct overloads : Ts...
 
 namespace RHI::vulkan::details
 {
-static const std::unordered_map<std::type_index, void *> kDestroyFuncs =
-  {{typeid(VkSemaphore), vkDestroySemaphore},
-   {typeid(VkFence), vkDestroyFence},
-   {typeid(VkPipeline), vkDestroyPipeline},
-   {typeid(VkPipelineLayout), vkDestroyPipelineLayout},
-   {typeid(VkPipelineCache), vkDestroyPipelineCache},
-   {typeid(VkBuffer), nullptr}, // because VkBuffer must be free with MemoryAllocator
-   {typeid(VkBufferView), vkDestroyBufferView},
-   {typeid(VkImage), nullptr}, // because VkImage must be free with MemoryAllocator
-   {typeid(VkImageView), vkDestroyImageView},
-   {typeid(VkDescriptorPool), vkDestroyDescriptorPool},
-   {typeid(VkDescriptorSetLayout), vkDestroyDescriptorSetLayout},
-   {typeid(VkSurfaceKHR), vkDestroySurfaceKHR},
-   {typeid(VkRenderPass), vkDestroyRenderPass},
-   {typeid(VkCommandPool), vkDestroyCommandPool},
-   {typeid(VkFramebuffer), vkDestroyFramebuffer},
-   {typeid(VkSampler), vkDestroySampler},
-   {typeid(VkCommandPool), vkDestroyCommandPool}
+class DestroyFuncWrapper final
+{
+  std::function<void(VkDevice, RHI::InternalObjectHandle, const VkAllocationCallbacks *)> m_func;
 
+public:
+  template<typename VkObjectT>
+  DestroyFuncWrapper(void (*destroyFunc)(VkDevice, VkObjectT, const VkAllocationCallbacks *))
+  {
+    if (destroyFunc)
+    {
+      m_func = [destroyFunc](VkDevice dev, RHI::InternalObjectHandle obj,
+                             const VkAllocationCallbacks * callbacks)
+      {
+        destroyFunc(dev, reinterpret_cast<VkObjectT>(obj), callbacks);
+      };
+    }
+  }
+
+  void operator()(VkDevice dev, RHI::InternalObjectHandle obj,
+                  const VkAllocationCallbacks * callbacks) const
+  {
+    if (m_func)
+      m_func(dev, obj, callbacks);
+  }
 };
-}
+
+static const std::unordered_map<std::type_index, DestroyFuncWrapper> kDestroyFuncs = {
+  {typeid(VkSemaphore), DestroyFuncWrapper(vkDestroySemaphore)},
+  {typeid(VkFence), DestroyFuncWrapper(vkDestroyFence)},
+  {typeid(VkPipeline), DestroyFuncWrapper(vkDestroyPipeline)},
+  {typeid(VkPipelineLayout), DestroyFuncWrapper(vkDestroyPipelineLayout)},
+  {typeid(VkPipelineCache), DestroyFuncWrapper(vkDestroyPipelineCache)},
+  //{typeid(VkBuffer), DestroyFuncWrapper(nullptr)}, // because VkBuffer must be free with MemoryAllocator
+  {typeid(VkBufferView), DestroyFuncWrapper(vkDestroyBufferView)},
+  //{typeid(VkImage), DestroyFuncWrapper(nullptr)}, // because VkImage must be free with MemoryAllocator
+  {typeid(VkImageView), DestroyFuncWrapper(vkDestroyImageView)},
+  {typeid(VkDescriptorPool), DestroyFuncWrapper(vkDestroyDescriptorPool)},
+  {typeid(VkDescriptorSetLayout), DestroyFuncWrapper(vkDestroyDescriptorSetLayout)},
+  //{typeid(VkSurfaceKHR), DestroyFuncWrapper(vkDestroySurfaceKHR)}, //destroyed with vkb::destroy_surface
+  {typeid(VkRenderPass), DestroyFuncWrapper(vkDestroyRenderPass)},
+  {typeid(VkCommandPool), DestroyFuncWrapper(vkDestroyCommandPool)},
+  {typeid(VkFramebuffer), DestroyFuncWrapper(vkDestroyFramebuffer)},
+  {typeid(VkSampler), DestroyFuncWrapper(vkDestroySampler)}};
+} // namespace RHI::vulkan::details
 
 namespace RHI::vulkan::details
 {
@@ -60,13 +83,15 @@ void VkObjectsGarbageCollector::ClearObjects()
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
+      {
         throw std::runtime_error(std::format(
           "Failed to destroy object {} of type {}, because kDestroyFunc doesn't contain destroy function pointer",
           data.object, data.objectType.name()));
+      }
 
-      auto * func = reinterpret_cast<decltype(vkDestroySemaphore) *>(it->second);
-      func(device, reinterpret_cast<VkSemaphore>(data.object),
-           reinterpret_cast<const VkAllocationCallbacks *>(data.allocator));
+      auto && destroyFunc = it->second;
+      destroyFunc(device, data.object,
+                  reinterpret_cast<const VkAllocationCallbacks *>(data.allocator));
     },
     [](memory::MemoryBlock & block)
     {

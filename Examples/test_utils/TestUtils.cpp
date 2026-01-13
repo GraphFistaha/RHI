@@ -1,5 +1,6 @@
 #include "TestUtils.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 
@@ -176,7 +177,7 @@ std::filesystem::path FromGLSL(const std::filesystem::path & path)
   }
   else
     assert(false && "Invalid format for shader file");
-  std::filesystem::path result = apiFolder / path.parent_path() / path.stem();
+  std::filesystem::path result = path.parent_path() / path.stem();
   result += suffix;
   result += spirvExtension;
   return result;

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>

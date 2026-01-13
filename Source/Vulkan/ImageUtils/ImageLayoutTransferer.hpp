@@ -2,7 +2,7 @@
 #include <unordered_map>
 
 #include <Memory/MemoryBlock.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <list>
 
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

@@ -40,7 +40,7 @@ void BufferUniform::AssignBuffer(const IBufferGPU & buffer, size_t offset)
   m_buffer = internalBuffer.GetHandle();
   m_size = internalBuffer.Size();
   m_offset = offset;
-  GetLayout().OnDescriptorChanged(*this);
+  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept

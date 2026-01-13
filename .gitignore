@@ -34,7 +34,7 @@
 
 
 build/*
-Build/*
+**/Build/*
 
 .vscode/*
 .vscode/settings.json
@@ -54,3 +54,4 @@ CMakeCache.txt
 
 .vs/*
 out/*
+CMakeCache/*

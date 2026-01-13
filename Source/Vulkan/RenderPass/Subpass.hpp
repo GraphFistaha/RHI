@@ -2,7 +2,7 @@
 #include <atomic>
 #include <mutex>
 
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
