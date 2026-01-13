@@ -35,7 +35,9 @@ jobs:
         ninja: true
 
     - name: Install Vulkan SDK
-      run: choco install vulkan-sdk
+      run: |
+        curl https://sdk.lunarg.com/sdk/download/1.4.335.0/windows/vulkansdk-windows-X64-1.4.335.0.exe -o VulkanSDK.exe
+        VulkanSDK.exe --accept-licenses --default-answer --confirm-command install
     
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
