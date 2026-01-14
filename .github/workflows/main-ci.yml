@@ -71,7 +71,9 @@ jobs:
         echo "Install dependencies (windows)"
         
     - name: Configure CMake
-      run: cmake -B Build
+      run: | 
+          cmake -B Build 
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
     
     - name: Build project
       run: cmake --build Build
