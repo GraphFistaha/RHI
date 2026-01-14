@@ -24,7 +24,7 @@ MemoryAllocator::MemoryAllocator(Context & ctx)
 #ifdef ENABLE_VALIDATION_LAYERS
   allocator_info.vulkanApiVersion = VK_API_VERSION_1_0;
 #else
-  allocator_info.vulkanApiVersion = ctx.GetVulkanVersion();
+  allocator_info.vulkanApiVersion = ctx.GetGpuConnection().GetVulkanVersion();
 #endif
 
   VmaAllocator allocator;

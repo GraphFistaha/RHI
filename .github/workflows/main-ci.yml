@@ -36,8 +36,9 @@ jobs:
         cmake: true
         ninja: true
         conan: true
-        cache: true
+        ccache: true
         clang-format: true
+        clang-tidy: true
 
     - name: Conan Profile detect
       run: |
@@ -83,7 +84,7 @@ jobs:
           cmake -B Build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
     
     - name: Build project
-      run: cmake --build Build --config ${{ matrix.build_type }} --parallel $(nproc)
+      run: cmake --build Build --config ${{ matrix.build_type }}
     
     - name: Run tests
       run: |
