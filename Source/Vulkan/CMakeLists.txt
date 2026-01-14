@@ -1,6 +1,3 @@
-add_subdirectory(ThirdParty/VulkanMemoryAllocator)
-add_subdirectory(ThirdParty/VkBootstrap)
-
 target_sources (${PROJECT_NAME}
 PRIVATE
 	"VulkanContext.cpp"
@@ -97,13 +94,14 @@ PRIVATE
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)
+find_package(VulkanMemoryAllocator REQUIRED)
+find_package(vk-bootstrap REQUIRED)
 
 target_compile_definitions(${PROJECT_NAME} 
 PRIVATE
 	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
 
-#find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
 	Vulkan::Vulkan

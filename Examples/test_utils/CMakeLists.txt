@@ -16,9 +16,14 @@ PRIVATE
 
 target_include_directories(${this_target} PUBLIC "./")
 
+find_package(glm CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(stb CONFIG REQUIRED)
+
 target_link_libraries(${this_target} 
 PRIVATE
-	glm
+	glm::glm
+	stb::stb
 	glfw
 	RHI
 )

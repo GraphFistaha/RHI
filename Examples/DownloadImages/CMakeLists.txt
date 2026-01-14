@@ -5,9 +5,12 @@ add_executable(${this_target}
  "main.cpp" 
 )
 
+find_package(stb CONFIG REQUIRED)
+
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
+    stb::stb
     test_utils
 )
 

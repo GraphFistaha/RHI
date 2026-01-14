@@ -11,10 +11,12 @@ add_executable(${this_target}
 	"cube.geom"
 )
 
+find_package(glm CONFIG REQUIRED)
+
 target_link_libraries(${this_target} 
 PRIVATE
 	RHI
-	glm
+	glm::glm
 	test_utils
 )
 

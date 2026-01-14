@@ -1,6 +1,4 @@
-add_subdirectory(ThirdParty/glfw)
-add_subdirectory(ThirdParty/glm)
-add_subdirectory(ThirdParty/test_utils)
+add_subdirectory(test_utils)
 
 add_subdirectory(HelloWindow)
 add_subdirectory(HelloTriangle)

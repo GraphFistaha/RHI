@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
-include(Source/ShaderCompile.cmake)
 
 option(RHI_BUILD_EXAMPLES "Build example programs" ON)
 option(RHI_BUILD_SHARED "Build RHI as shared library" ON)
@@ -21,7 +20,26 @@ if(LINUX)
 add_compile_options(-fPIC)
 endif()
 
+include(${SOURCE_DIR}/ShaderCompile.cmake)
+# -------------------- Install conan packages ----------------------
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/conanfile.txt")
+    message(STATUS "Copy conanfile.txt into CMake cache")
+    configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${CMAKE_BINARY_DIR}/conanfile.txt" COPYONLY)
+endif()
 
+include(${SOURCE_DIR}/conan.cmake)
+
+conan_cmake_autodetect(settings RUNTIME static)
+message(status ${settings})
+conan_cmake_install(PATH_OR_REFERENCE .
+                    BUILD missing
+                    REMOTE conancenter
+                    SETTINGS ${settings})
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
+
+#------------------------------------------------------------------
 
 
 ADD_SUBDIRECTORY(${SOURCE_DIR})
