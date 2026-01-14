@@ -39,6 +39,11 @@ jobs:
         cache: true
         clang-format: true
 
+    - name: Conan Profile detect
+      run: |
+            conan --version
+            conan profile detect
+
     - name: Install Vulkan SDK
       uses: jakoch/install-vulkan-sdk-action@v1
       with:
