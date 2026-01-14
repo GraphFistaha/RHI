@@ -35,10 +35,11 @@ jobs:
         ninja: true
 
     - name: Install Vulkan SDK
-      if: runner.os == 'Windows'
-      run: |
-        curl https://sdk.lunarg.com/sdk/download/1.4.335.0/windows/vulkansdk-windows-X64-1.4.335.0.exe -o VulkanSDK.exe
-        VulkanSDK.exe --accept-licenses --default-answer --confirm-command install
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
+      with:
+         vulkan-query-version: 1.4.304.1
+         vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
+         vulkan-use-cache: true
     
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
