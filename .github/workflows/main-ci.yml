@@ -72,11 +72,10 @@ jobs:
         
     - name: Configure CMake
       run: | 
-          cmake -B Build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -B Build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
     
     - name: Build project
-      run: cmake --build Build
+      run: cmake --build Build --config ${{ matrix.build_type }} --parallel $(nproc)
     
     - name: Run tests
       run: |
