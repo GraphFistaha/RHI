@@ -20,12 +20,11 @@ MemoryAllocator::MemoryAllocator(Context & ctx)
   allocator_info.physicalDevice = ctx.GetGpuConnection().GetGPU();
   allocator_info.device = ctx.GetGpuConnection().GetDevice();
 
-  //Validation layers causes crash in GetBufferMemoryRequirements
-#ifdef ENABLE_VALIDATION_LAYERS
+  //IS you set newer version (1.1 or 1.3) it crashes 
+  // in m_VulkanFunctions.vkGetImageMemoryRequirements2KHR
+  // it seems Vma could't load some function from vulkan-1.dll
+  // or my VkInstance initialization is wrong
   allocator_info.vulkanApiVersion = VK_API_VERSION_1_0;
-#else
-  allocator_info.vulkanApiVersion = ctx.GetGpuConnection().GetVulkanVersion();
-#endif
 
   VmaAllocator allocator;
   if (auto res = vmaCreateAllocator(&allocator_info, &allocator); res != VK_SUCCESS)

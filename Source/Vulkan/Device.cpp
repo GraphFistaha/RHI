@@ -45,7 +45,9 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
   vkb::InstanceBuilder builder;
   auto inst_ret = builder
                     .set_app_name(appName)
-#ifdef ENABLE_VALIDATION_LAYERS
+#ifndef ENABLE_VALIDATION_LAYERS
+                    .request_validation_layers(false)
+#else
                     .request_validation_layers()
 #endif
                     .set_debug_callback(VulkanDebugCallback)
@@ -107,8 +109,6 @@ private:
 
 DeviceInternal::DeviceInternal(const RHI::GpuTraits & gpuTraits, RHI::vulkan::Context & ctx)
 {
-  constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_3;
-  constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
   instance = CreateInstance("appName", VulkanAPIVersion, &ctx);
   ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
   physicalDevice = SelectPhysicalDevice(instance, gpuTraits, VulkanAPIVersionPair);
@@ -214,7 +214,7 @@ std::pair<uint32_t, VkQueue> Device::GetQueue(QueueType type) const
 
 uint32_t Device::GetVulkanVersion() const noexcept
 {
-  return VulkanAPIVersion;
+  return GetGpuProperties().apiVersion;
 }
 
 } // namespace RHI::vulkan
