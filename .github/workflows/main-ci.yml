@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         build_type: [Release]
         cpp_standard: [20]
         include:
@@ -81,10 +81,13 @@ jobs:
         
     - name: Configure CMake
       run: | 
-          cmake -B Build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -B CMakeCache -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
     
     - name: Build project
-      run: cmake --build Build --config ${{ matrix.build_type }}
+      run: cmake --build CMakeCache --config ${{ matrix.build_type }}
+
+    - name: Install project
+      run: cmake --install CMakeCache --prefix "Build/${{ matrix.build_type }}" --config ${{ matrix.build_type }}
     
     - name: Run tests
       run: |

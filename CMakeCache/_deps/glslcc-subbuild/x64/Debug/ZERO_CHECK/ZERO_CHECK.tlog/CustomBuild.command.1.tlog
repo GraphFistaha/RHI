@@ -1,0 +1,10 @@
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\70AFE28B73E482E8EE446E8BB0C48443\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild -BC:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

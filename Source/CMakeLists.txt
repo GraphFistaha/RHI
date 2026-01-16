@@ -12,17 +12,17 @@ endif()
 
 target_sources (${this_target}
 PUBLIC
-	"RHI.hpp"
-	"RHI_def.h"
-	"Headers/Images.hpp"
-	"Headers/Images.cpp"
-	"Headers/Descriptors.hpp"
-	"Headers/Utils.hpp"
+	"Public/RHI.hpp"
+	"Public/RHI_def.h"
+	"Public/Images.hpp"
+	"Public/Descriptors.hpp"
+	"Public/Utils.hpp"
 PRIVATE
-	"MultibackendUtils/ImageTraits.hpp"
-	"MultibackendUtils/Types.hpp"
-	"MultibackendUtils/OwnedBy.hpp"
-	"MultibackendUtils/ObjectsTable.hpp"
+	"Private/Images.cpp"
+	"Private/ImageTraits.hpp"
+	"Private/Types.hpp"
+	"Private/OwnedBy.hpp"
+	"Private/ObjectsTable.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})
@@ -32,8 +32,9 @@ endif()
 
 target_include_directories(${this_target} 
 PUBLIC
-   "./"
-   "MultibackendUtils"
+	"Public"
+PRVATE
+	"./"
 )
 
 if (MSVC)
@@ -47,18 +48,12 @@ PRIVATE
 	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
 )
 
-if (${RHI_BUILD_EXAMPLES})
-	SUBDIRLIST(SUBDIRS ${BASE_APP_DIR})
-	foreach(EXAMPLE_DIR ${SUBDIRS})
-		if (NOT ${EXAMPLE_DIR} STREQUAL "Obj")
-			message(STATUS "Add command to copy RHI.dll to ${EXAMPLE_DIR}")
-			add_custom_command(TARGET ${this_target} POST_BUILD
-						COMMAND ${CMAKE_COMMAND} -E copy
-							${BASE_APP_DIR}/${PROJECT_NAME}.dll
-							$<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
-							${BASE_APP_DIR}/${EXAMPLE_DIR}/.
-					)
-		endif()
-	endforeach()
-				
-endif()
+install(TARGETS ${this_target}
+  EXPORT RHI
+  RUNTIME DESTINATION Bin
+  LIBRARY DESTINATION Lib
+  ARCHIVE DESTINATION Lib
+  INCLUDES DESTINATION include
+)
+
+install(DIRECTORY Public/ DESTINATION include/)

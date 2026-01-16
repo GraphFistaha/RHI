@@ -2,7 +2,7 @@
 #include <ImageUtils/ImageLayoutTransferer.hpp>
 #include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryBlock.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan

@@ -1,0 +1,152 @@
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-MKDIR.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -Dcfgdir=/Debug -P C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/tmp/glslcc-populate-mkdirs.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-DOWNLOAD.RULE
+setlocal
+cd C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/download-glslcc-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/verify-glslcc-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/extract-glslcc-populate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-UPDATE.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-update
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-PATCH.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-CONFIGURE.RULE
+setlocal
+cd C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-BUILD.RULE
+setlocal
+cd C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-INSTALL.RULE
+setlocal
+cd C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\6103563A05079A6D0E8D531DB0C274D3\GLSLCC-POPULATE-TEST.RULE
+setlocal
+cd C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-test
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\38C2CDF5973C698E6784A105CC81AD78\GLSLCC-POPULATE-COMPLETE.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/Debug/glslcc-populate-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/Debug/glslcc-populate-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKEFILES\70AFE28B73E482E8EE446E8BB0C48443\GLSLCC-POPULATE.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\ROZHKOV\DESKTOP\RHI\CMAKECACHE\_DEPS\GLSLCC-SUBBUILD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild -BC:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild --check-stamp-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

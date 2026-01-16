@@ -1,8 +1,8 @@
 set(this_target "DownloadImages")
-set(APP_DIR ${BASE_APP_DIR}/${this_target})
 
 add_executable(${this_target} 
  "main.cpp" 
+ "mike_wazowski.jpg"
 )
 
 find_package(stb CONFIG REQUIRED)
@@ -14,24 +14,21 @@ PRIVATE
     test_utils
 )
 
-target_include_directories(${this_target}
-PRIVATE
-	"../ThirdParty/stb"
+install(FILES 
+    "mike_wazowski.jpg"
+    DESTINATION Examples/${this_target}
 )
 
-
-set_target_properties(${this_target} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
-	LIBRARY_OUTPUT_DIRECTORY ${APP_DIR}/Obj
-	ARCHIVE_OUTPUT_DIRECTORY ${APP_DIR}/Obj
+install(TARGETS ${this_target}
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
 )
 
-file(COPY mike_wazowski.jpg DESTINATION ${APP_DIR})
-
-#copy RHI.dll into example's dir
-add_custom_command(TARGET ${this_target} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${BASE_APP_DIR}/${PROJECT_NAME}.dll
-        $<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
-        ${APP_DIR}/.
+install(TARGETS RHI
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
 )

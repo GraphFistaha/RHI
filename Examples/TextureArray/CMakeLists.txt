@@ -1,11 +1,21 @@
 set(this_target "TextureArray")
-set(APP_DIR ${BASE_APP_DIR}/${this_target})
+
+set(TEXTURES 
+	"BT_texture.png"
+	"BT_jackal.jpg"
+	"BT_shrek1.jpg"
+	"BT_shrek2.jpg"
+	"BT_mike_wazowski.jpg"
+	"BT_pepe.jpg"
+)
 
 add_executable(${this_target} 
 	"main.cpp"
 	# shaders
 	"texture_array.frag"
 	"texture_array.vert"
+	#textures
+	${TEXTURES}
 )
 
 target_link_libraries(${this_target} 
@@ -14,29 +24,28 @@ PRIVATE
 	test_utils
 )
 
-set_target_properties(${this_target} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${APP_DIR}
-	LIBRARY_OUTPUT_DIRECTORY ${APP_DIR}/Obj
-	ARCHIVE_OUTPUT_DIRECTORY ${APP_DIR}/Obj
-)
 
 TARGET_PRECOMPILE_SHADERS(TARGET ${this_target} API Vulkan
 SHADERS
 	"texture_array.frag"
 	"texture_array.vert"
-SHADERS_DIRECTORY ${this_target}
+OUTPUT_DIRECTORY "${CMAKE_INSTALL_PREFIX}/Examples/${this_target}"
 )
-file(COPY BT_texture.png DESTINATION ${APP_DIR})
-file(COPY BT_jackal.jpg DESTINATION ${APP_DIR})
-file(COPY BT_shrek1.jpg DESTINATION ${APP_DIR})
-file(COPY BT_shrek2.jpg DESTINATION ${APP_DIR})
-file(COPY BT_mike_wazowski.jpg DESTINATION ${APP_DIR})
-file(COPY BT_pepe.jpg DESTINATION ${APP_DIR})
 
-#copy RHI.dll into example's dir
-add_custom_command(TARGET ${this_target} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${BASE_APP_DIR}/${PROJECT_NAME}.dll
-		$<$<CONFIG:Debug>:${BASE_APP_DIR}/${PROJECT_NAME}.pdb>
-        ${APP_DIR}/.
+install(FILES ${TEXTURES} 
+  DESTINATION Examples/${this_target}
+)
+
+install(TARGETS ${this_target}
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
+)
+
+install(TARGETS RHI
+  EXPORT RHI
+  RUNTIME DESTINATION Examples/${this_target}
+  LIBRARY DESTINATION Examples/${this_target}
+  ARCHIVE DESTINATION Examples/${this_target}
 )

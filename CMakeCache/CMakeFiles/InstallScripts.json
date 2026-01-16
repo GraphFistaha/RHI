@@ -1,0 +1,21 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Source/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Source/Vulkan/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/test_utils/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/HelloWindow/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/HelloTriangle/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/Uniforms/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/ParallelPass/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/Texturing/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/DownloadImages/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/TextureArray/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/LayeredTexture/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/MultiWindow/cmake_install.cmake",
+		"C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/Cube/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

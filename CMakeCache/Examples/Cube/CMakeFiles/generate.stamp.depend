@@ -1,0 +1,9 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeFindDependencyMacro.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/cmakedeps_macros.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/glm-Target-release.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/glm-config-version.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/glm-config.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/glm-release-x86_64-data.cmake
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/glmTargets.cmake
+C:/Users/rozhkov/Desktop/RHI/Examples/Cube/CMakeLists.txt

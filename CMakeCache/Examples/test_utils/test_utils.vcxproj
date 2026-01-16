@@ -1,0 +1,342 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FA3F8FB8-3B0C-3AC7-803F-C5D2CBE4B124}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>test_utils</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">test_utils.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">test_utils</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">test_utils.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">test_utils</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">test_utils.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">test_utils</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">test_utils.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">test_utils</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;TEST_UTILS_BUILD;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;TEST_UTILS_BUILD;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "C:/Users/rozhkov/.conan2/p/glmc7261f667dea4/p/include" /external:I "C:/Users/rozhkov/.conan2/p/stb19b77fb56ffd7/p/include" /external:I "C:/Users/rozhkov/.conan2/p/glfw7e74c5794304a/p/include"</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;STB_TEXTEDIT_KEYTYPE=unsigned;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;STB_TEXTEDIT_KEYTYPE=unsigned;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;C:\Users\rozhkov\.conan2\p\glmc7261f667dea4\p\include;C:\Users\rozhkov\.conan2\p\stb19b77fb56ffd7\p\include;C:\Users\rozhkov\.conan2\p\glfw7e74c5794304a\p\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;C:\Users\rozhkov\.conan2\p\glmc7261f667dea4\p\include;C:\Users\rozhkov\.conan2\p\stb19b77fb56ffd7\p\include;C:\Users\rozhkov\.conan2\p\glfw7e74c5794304a\p\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;TEST_UTILS_BUILD;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\.;C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\..\stb;C:\Users\rozhkov\Desktop\RHI\Source\Public;C:\Users\rozhkov\Desktop\RHI\Source\PRVATE;C:\Users\rozhkov\Desktop\RHI\Source\.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/rozhkov/Desktop/RHI/Examples/test_utils/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI -BC:/Users/rozhkov/Desktop/RHI/CMakeCache --check-stamp-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/test_utils/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeFindDependencyMacro.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\cmakedeps_macros.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3Targets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glmTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_systemTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stbTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/rozhkov/Desktop/RHI/Examples/test_utils/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI -BC:/Users/rozhkov/Desktop/RHI/CMakeCache --check-stamp-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/test_utils/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeFindDependencyMacro.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\cmakedeps_macros.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3Targets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glmTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_systemTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stbTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/rozhkov/Desktop/RHI/Examples/test_utils/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI -BC:/Users/rozhkov/Desktop/RHI/CMakeCache --check-stamp-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/test_utils/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeFindDependencyMacro.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\cmakedeps_macros.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3Targets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glmTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_systemTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stbTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/rozhkov/Desktop/RHI/Examples/test_utils/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rozhkov/Desktop/RHI -BC:/Users/rozhkov/Desktop/RHI/CMakeCache --check-stamp-file C:/Users/rozhkov/Desktop/RHI/CMakeCache/Examples/test_utils/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeFindDependencyMacro.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\cmakedeps_macros.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glfw3Targets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glm-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\glmTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_system-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\opengl_systemTargets.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-Target-release.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config-version.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-config.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stb-release-x86_64-data.cmake;C:\Users\rozhkov\Desktop\RHI\CMakeCache\build\generators\stbTargets.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\rozhkov\Desktop\RHI\CMakeCache\Examples\test_utils\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Camera.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Window.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\TestUtils.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\test_utils_def.h" />
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Camera.cpp" />
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Window.cpp" />
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\TestUtils.cpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI_def.h" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Images.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Descriptors.hpp" />
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Utils.hpp" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\ZERO_CHECK.vcxproj">
+      <Project>{28E60D6C-2B90-3F12-B326-87BC52183675}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\Source\RHI.vcxproj">
+      <Project>{76560718-13FA-3799-AF18-FCD48860A6AB}</Project>
+      <Name>RHI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

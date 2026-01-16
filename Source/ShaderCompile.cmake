@@ -1,3 +1,6 @@
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+
 message(STATUS "Fetch glslcc")
 if (WIN32)
 	FetchContent_Declare(
@@ -25,18 +28,19 @@ FetchContent_MakeAvailable(glslcc)
 
 
 FUNCTION(TARGET_PRECOMPILE_SHADERS)
-	set(oneValueArgs TARGET API SHADERS_DIRECTORY)
+	set(oneValueArgs TARGET API OUTPUT_DIRECTORY)
 	set(multiValueArgs SHADERS)
 	cmake_parse_arguments(PARSED_ARG "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+	string(TOLOWER ${PARSED_ARG_API} API_NAME)
 
-	message(STATUS "Compile shaders for ${PARSED_ARG_TARGET} using ${PARSED_ARG_API} backend")
-	string(TOLOWER ${PARSED_ARG_API} API_FOLDER)
+	get_target_property(TARGET_DIR ${PARSED_ARG_TARGET} SOURCE_DIR)
+	set(RESULT_FOLDER ${PARSED_ARG_OUTPUT_DIRECTORY})
 
-	get_target_property(TARGET_DIR ${PARSED_ARG_TARGET} RUNTIME_OUTPUT_DIRECTORY)
-	set(RESULT_FOLDER ${TARGET_DIR}/.${API_FOLDER})
+	message(STATUS "Shaders found for ${PARSED_ARG_TARGET}; TargetDir = ${TARGET_DIR};
+					backend = ${PARSED_ARG_API}; OutputDir = ${RESULT_FOLDER}")
 	file(MAKE_DIRECTORY ${RESULT_FOLDER})
 
-	if (${API_FOLDER} STREQUAL "vulkan")
+	if (${API_NAME} STREQUAL "vulkan")
 		foreach(ShaderFile ${PARSED_ARG_SHADERS})
 			set(RESULT_FILENAME ${ShaderFile})
 			STRING(REPLACE ".vert" "_vert.spv" RESULT_FILENAME ${RESULT_FILENAME})
@@ -47,22 +51,10 @@ FUNCTION(TARGET_PRECOMPILE_SHADERS)
 				POST_BUILD
 				COMMAND glslc "${ShaderFile}" "-o" "${RESULT_FOLDER}/${RESULT_FILENAME}"
 				COMMENT "Compiling ${ShaderFile}..."
-				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+				WORKING_DIRECTORY ${TARGET_DIR}
 			)
 		endforeach()
 	else()
-		#foreach(ShaderFile ${SHADERS_LIST})
-		#	set(RESULT_FOLDER ${APP_DIR}/${BACKEND_FOLDER}/Shaders)
-		#	set(RESULT_FILENAME ${ShaderFile})
-		#	STRING(REPLACE ".vert" "_vert.spv" RESULT_FILENAME ${RESULT_FILENAME})
-		#	STRING(REPLACE ".frag" "_frag.spv" RESULT_FILENAME ${RESULT_FILENAME})
-		#	STRING(REPLACE ".geom" "_geom.spv" RESULT_FILENAME ${RESULT_FILENAME})
-		#	add_custom_command(
-		#		POST_BUILD
-		#		TARGET ${TARGET_NAME} 
-		#		COMMAND ${glslcc_SOURCE_DIR}/${GLSLCC_EXECUTABLE} "${ShaderFile}" "-o" "${RESULT_FOLDER}/${RESULT_FILENAME}"
-		#		COMMENT "Compiling ${ShaderFile}..."
-		#	)
-		#endforeach()
+		# TODO: Make it for other backends
 	endif()
 ENDFUNCTION(TARGET_PRECOMPILE_SHADERS)

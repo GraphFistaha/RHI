@@ -1,0 +1,12 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The download step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+method=url
+command=C:/Program Files/CMake/bin/cmake.exe;-DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE;-P;C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/download-glslcc-populate.cmake;COMMAND;C:/Program Files/CMake/bin/cmake.exe;-DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE;-P;C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/verify-glslcc-populate.cmake;COMMAND;C:/Program Files/CMake/bin/cmake.exe;-DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE;-P;C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/glslcc-populate-prefix/src/glslcc-populate-stamp/extract-glslcc-populate.cmake
+source_dir=C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-src
+work_dir=C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps
+url(s)=https://github.com/septag/glslcc/releases/download/v1.7.6/glslcc-1.7.6-win64.zip
+hash=MD5=efe6909448f7e3a0d41c919845ec4204
+      no_extract=
+

@@ -1,6 +1,6 @@
 #pragma once
 #include <Memory/MemoryBlock.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan

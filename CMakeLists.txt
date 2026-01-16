@@ -1,24 +1,23 @@
 cmake_minimum_required(VERSION 3.14)
-include(FetchContent)
-set(FETCHCONTENT_QUIET FALSE)
 
 option(RHI_BUILD_EXAMPLES "Build example programs" ON)
 option(RHI_BUILD_SHARED "Build RHI as shared library" ON)
 option(RHI_VULKAN_BACKEND "use vulkan as backend" ON)
 
 project(RHI C CXX)
-set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
-set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
-set(BASE_APP_DIR ${CMAKE_SOURCE_DIR}/Build/${CMAKE_BUILD_TYPE})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${BASE_APP_DIR}/Obj)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BASE_APP_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_APP_DIR})
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_C_STANDATD 17)
 cmake_policy(SET CMP0135 NEW)
 if(LINUX)
 add_compile_options(-fPIC)
 endif()
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "Build/${CMAKE_BUILD_TYPE}" CACHE PATH "Installation directory" FORCE)
+endif()
+
+set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
+set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
 
 include(${SOURCE_DIR}/ShaderCompile.cmake)
 # -------------------- Install conan packages ----------------------

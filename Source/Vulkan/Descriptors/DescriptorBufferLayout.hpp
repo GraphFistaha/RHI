@@ -7,7 +7,7 @@
 #include <Descriptors/BufferUniform.hpp>
 #include <Descriptors/SamplerArrayUniform.hpp>
 #include <Descriptors/SamplerUniform.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
 #include <vulkan/vulkan.hpp>

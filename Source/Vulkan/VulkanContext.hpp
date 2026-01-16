@@ -3,7 +3,7 @@
 #include <GarbageCollector.hpp>
 #include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryAllocator.hpp>
-#include <ObjectsTable.hpp>
+#include <Private/ObjectsTable.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <Resources/Transferer.hpp>

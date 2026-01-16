@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\Renderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI_def.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Images.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Descriptors.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Camera.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\Window.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\TestUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Examples\test_utils\test_utils_def.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\container.png">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\floor.jpg">
+      <Filter>Resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\cube.vert" />
+    <None Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\cube.frag" />
+    <None Include="C:\Users\rozhkov\Desktop\RHI\Examples\Cube\cube.geom" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E53DE424-A14B-3E6C-AE63-50BC51E0AD5C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{715A6241-6E13-3726-A47A-5BDD7FEC2912}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5481C81D-520F-3022-858C-3BB83FF1AE13}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

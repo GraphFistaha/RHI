@@ -10,8 +10,8 @@ PUBLIC
 	"test_utils_def.h"
 PRIVATE
 	"Camera.cpp"
- "Window.cpp"
- "TestUtils.cpp"
+	"Window.cpp"
+	"TestUtils.cpp"
 )
 
 target_include_directories(${this_target} PUBLIC "./")

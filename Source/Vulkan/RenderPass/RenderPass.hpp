@@ -5,7 +5,7 @@
 #include <shared_mutex>
 
 #include <CommandsExecution/Submitter.hpp>
-#include <OwnedBy.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RenderPass/Subpass.hpp>
 #include <RHI.hpp>
 #include <Utils/RenderPassBuilder.hpp>

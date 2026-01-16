@@ -1,0 +1,14 @@
+# Target labels
+ glslcc-populate
+# Source files and their labels
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/glslcc-populate
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/70afe28b73e482e8ee446e8bb0c48443/glslcc-populate.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/38c2cdf5973c698e6784a105cc81ad78/glslcc-populate-complete.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-build.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-configure.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-download.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-install.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-mkdir.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-patch.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-test.rule
+C:/Users/rozhkov/Desktop/RHI/CMakeCache/_deps/glslcc-subbuild/CMakeFiles/6103563a05079a6d0e8d531db0c274d3/glslcc-populate-update.rule

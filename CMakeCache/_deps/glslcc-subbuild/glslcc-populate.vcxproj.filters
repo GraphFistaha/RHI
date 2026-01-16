@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\6103563a05079a6d0e8d531db0c274d3\glslcc-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\38c2cdf5973c698e6784a105cc81ad78\glslcc-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\70afe28b73e482e8ee446e8bb0c48443\glslcc-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\rozhkov\Desktop\RHI\CMakeCache\_deps\glslcc-subbuild\CMakeFiles\glslcc-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{643FB873-8DAA-36DC-A0DC-7EB361681476}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

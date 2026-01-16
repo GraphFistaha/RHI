@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Private\Images.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\VulkanContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\GarbageCollector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Device.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Surface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Memory\MemoryAllocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Memory\MemoryBlock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\Framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\Subpass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\SubpassLayout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\RenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\SubpassConfiguration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\DescriptorBufferLayout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\DescriptorsBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\SamplerUniform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\SamplerArrayUniform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\BufferUniform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\DescriptorSetLayoutBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\FramebufferBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\PipelineBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\PipelineLayoutBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\RenderPassBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\SamplerBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\FenceBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\SemaphoreBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageLayoutTransferer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageFormatsConversation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Attachments\GenericAttachment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Attachments\SurfacedAttachment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\BufferGPU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\Transferer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\CommandBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\Submitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\AsyncTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\CompositeAsyncTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\RHI_def.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Images.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Descriptors.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Public\Utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Private\ImageTraits.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Private\Types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Private\OwnedBy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Private\ObjectsTable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\VulkanContext.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\GarbageCollector.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Device.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Surface.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Memory\MemoryAllocator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Memory\MemoryBlock.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\Framebuffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\Subpass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\SubpassLayout.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\RenderPass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\RenderTarget.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\RenderPass\SubpassConfiguration.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\DescriptorBufferLayout.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\DescriptorsBuffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\BaseUniform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\SamplerUniform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\SamplerArrayUniform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Descriptors\BufferUniform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\CastHelper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\DescriptorSetLayoutBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\FramebufferBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\PipelineBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\PipelineLayoutBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\RenderPassBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\SamplerBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\FenceBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Utils\SemaphoreBuilder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageLayoutTransferer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\InternalImageTraits.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageFormatsConversation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\TextureInterface.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\ImageUtils\ImageUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Attachments\GenericAttachment.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Attachments\Attachment.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Attachments\SurfacedAttachment.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\Texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\BufferGPU.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\Resources\Transferer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\CommandBuffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\Submitter.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\AsyncTask.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\rozhkov\Desktop\RHI\Source\Vulkan\CommandsExecution\CompositeAsyncTask.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\rozhkov\Desktop\RHI\Source\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E53DE424-A14B-3E6C-AE63-50BC51E0AD5C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5481C81D-520F-3022-858C-3BB83FF1AE13}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
