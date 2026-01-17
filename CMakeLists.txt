@@ -39,6 +39,7 @@ conan_cmake_install(PATH_OR_REFERENCE .
                     OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/ConanResult
 )
 
+# TODO: do not find conan_toolchain, make it with CMakePresets
 file(GLOB_RECURSE ToolchainFile
      "${CMAKE_BINARY_DIR}/ConanResult/**/conan_toolchain.cmake"
 )
@@ -46,10 +47,6 @@ get_filename_component(GeneratorsFolder ${ToolchainFile} DIRECTORY)
 
 list(APPEND CMAKE_MODULE_PATH ${GeneratorsFolder})
 list(APPEND CMAKE_PREFIX_PATH ${GeneratorsFolder})
-
-set(dir ${GeneratorsFolder})
-FILE(GLOB genFiles RELATIVE ${dir} ${dir}/*)
-message(STATUS "Generated files in ${dir} = ${genFiles}")
 
 #------------------------------------------------------------------
 
