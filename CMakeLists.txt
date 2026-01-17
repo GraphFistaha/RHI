@@ -35,12 +35,19 @@ message(status ${settings})
 conan_cmake_install(PATH_OR_REFERENCE .
                     BUILD missing
                     REMOTE conancenter
-                    SETTINGS ${settings})
+                    SETTINGS ${settings}
+                    OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/ConanResult
+)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
+file(GLOB_RECURSE ToolchainFile
+     "${CMAKE_BINARY_DIR}/ConanResult/**/conan_toolchain.cmake"
+)
+get_filename_component(GeneratorsFolder ${ToolchainFile} DIRECTORY)
 
-set(dir ${CMAKE_BINARY_DIR}/build/generators)
+list(APPEND CMAKE_MODULE_PATH ${GeneratorsFolder})
+list(APPEND CMAKE_PREFIX_PATH ${GeneratorsFolder})
+
+set(dir ${GeneratorsFolder})
 FILE(GLOB genFiles RELATIVE ${dir} ${dir}/*)
 message(STATUS "Generated files in ${dir} = ${genFiles}")
 
