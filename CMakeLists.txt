@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.25)
 
 option(RHI_BUILD_EXAMPLES "Build example programs" ON)
 option(RHI_BUILD_TESTS "Build unit tests" ON)
@@ -37,8 +37,8 @@ conan_cmake_install(PATH_OR_REFERENCE .
                     REMOTE conancenter
                     SETTINGS ${settings})
 
-#list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
-#list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
 
 #------------------------------------------------------------------
 
