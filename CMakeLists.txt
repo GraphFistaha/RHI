@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 option(RHI_BUILD_EXAMPLES "Build example programs" ON)
+option(RHI_BUILD_TESTS "Build unit tests" ON)
 option(RHI_BUILD_SHARED "Build RHI as shared library" ON)
 option(RHI_VULKAN_BACKEND "use vulkan as backend" ON)
 
@@ -10,6 +11,9 @@ set (CMAKE_C_STANDATD 17)
 cmake_policy(SET CMP0135 NEW)
 if(LINUX)
 add_compile_options(-fPIC)
+endif()
+if (${RHI_BUILD_TESTS})
+    enable_testing()
 endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

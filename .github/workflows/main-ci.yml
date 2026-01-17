@@ -91,5 +91,5 @@ jobs:
     
     - name: Run tests
       run: |
-        cd ${{github.workspace}}/Build
+        cd ${{github.workspace}}/CMakeCache
         ctest --output-on-failure -C ${{ matrix.build_type }}

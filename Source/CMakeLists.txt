@@ -1,4 +1,4 @@
-include(../CMakeUtils.cmake)
+include(CMakeUtils.cmake)
 
 set(this_target ${PROJECT_NAME})
 
@@ -29,6 +29,9 @@ if (${RHI_VULKAN_BACKEND})
 add_subdirectory(Vulkan)
 endif()
 #add_subdirectory(DirectXImpl)
+if (${RHI_BUILD_TESTS})
+	add_subdirectory(Tests)
+endif()
 
 target_include_directories(${this_target} 
 PUBLIC
