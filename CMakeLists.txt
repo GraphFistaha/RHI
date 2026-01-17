@@ -25,10 +25,8 @@ set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
 
 include(${SOURCE_DIR}/ShaderCompile.cmake)
 # -------------------- Install conan packages ----------------------
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/conanfile.txt")
-    message(STATUS "Copy conanfile.txt into CMake cache")
-    configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${CMAKE_BINARY_DIR}/conanfile.txt" COPYONLY)
-endif()
+message(STATUS "Copy conanfile.txt into CMake cache")
+configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${CMAKE_BINARY_DIR}/conanfile.txt" COPYONLY)
 
 include(${SOURCE_DIR}/conan.cmake)
 
