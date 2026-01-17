@@ -94,8 +94,8 @@ PRIVATE
 
 #---------------- Link third-party libraries ---------------
 find_package(Vulkan REQUIRED)
-find_package(VulkanMemoryAllocator REQUIRED)
-find_package(vk-bootstrap REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+find_package(vk-bootstrap CONFIG REQUIRED)
 
 target_compile_definitions(${PROJECT_NAME} 
 PRIVATE
