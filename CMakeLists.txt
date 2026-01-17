@@ -37,8 +37,8 @@ conan_cmake_install(PATH_OR_REFERENCE .
                     REMOTE conancenter
                     SETTINGS ${settings})
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
+#list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/generators)
+#list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
 
 #------------------------------------------------------------------
 
