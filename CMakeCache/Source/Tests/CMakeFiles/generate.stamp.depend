@@ -1,9 +1,0 @@
-# CMake generation dependency list for this directory.
-C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeFindDependencyMacro.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/Catch2-Target-release.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/Catch2-release-x86_64-data.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/Catch2Config.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/Catch2ConfigVersion.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/Catch2Targets.cmake
-C:/Users/rozhkov/Desktop/RHI/CMakeCache/build/generators/cmakedeps_macros.cmake
-C:/Users/rozhkov/Desktop/RHI/Source/Tests/CMakeLists.txt

@@ -54,3 +54,4 @@ CMakeCache.txt
 
 .vs/*
 out/*
+CMakeCache/*
