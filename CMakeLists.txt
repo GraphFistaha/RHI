@@ -42,7 +42,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/generators)
 
 set(dir ${CMAKE_BINARY_DIR}/build/generators)
 FILE(GLOB genFiles RELATIVE ${dir} ${dir}/*)
-message(STATUS "Generated files = ${genFiles}")
+message(STATUS "Generated files in ${dir} = ${genFiles}")
 
 #------------------------------------------------------------------
 
