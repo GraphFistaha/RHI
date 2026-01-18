@@ -88,7 +88,7 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? dynamic_cast<IInternalTexture *>(image)
                          : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetLayout().OnDescriptorChanged(*this);
+  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
 }
 
 void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,

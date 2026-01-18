@@ -42,12 +42,6 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
   void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                         ISamplerArrayUniformDescriptor * outArray[]);
 
-  template<typename DescriptorT>
-  void OnDescriptorChanged(const DescriptorT & uniform) noexcept
-  {
-    GetConfiguration().GetSubpass().OnDescriptorChanged(uniform);
-  }
-
   void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
 
 public:

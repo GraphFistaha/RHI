@@ -32,7 +32,7 @@ struct ObjectsTable final
       m_firstFreedObject = freedObj->next;
 
       obj->SetIndex(idx);
-      auto && newObj = m_data[idx].emplace<InterfaceUPtr>(std::move(obj));
+      auto && newObj = m_data[idx].template emplace<InterfaceUPtr>(std::move(obj));
       return dynamic_cast<ObjectT *>(newObj.get());
     }
     else

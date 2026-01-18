@@ -64,7 +64,7 @@ std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() c
 }
 
 void SamplerArrayUniform::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer,
-                                                      VkImageLayout layout)
+                                                     VkImageLayout layout)
 {
   for (auto * texture : m_boundTextures)
   {
@@ -94,7 +94,7 @@ void SamplerArrayUniform::AssignImage(uint32_t index, ITexture * image)
 {
   m_boundTextures[index] = image ? dynamic_cast<IInternalTexture *>(image)
                                  : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetLayout().OnDescriptorChanged(*this);
+  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
 }
 
 

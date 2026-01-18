@@ -32,22 +32,12 @@ public:
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
   template<typename ObjT>
-  void PushVkObjectToDestroy(ObjT && object, InternalObjectHandle allocator) const noexcept
+  inline void PushVkObjectToDestroy(ObjT && object, InternalObjectHandle allocator) const noexcept
   {
     if (!object)
       return;
     std::lock_guard lk{m_mutex};
     m_queue.push(VkObjectDestroyData{typeid(ObjT), object, allocator});
-  }
-
-  template<>
-  void PushVkObjectToDestroy<memory::MemoryBlock>(memory::MemoryBlock && block,
-                                                  InternalObjectHandle allocator) const noexcept
-  {
-    if (!block)
-      return;
-    std::lock_guard lk{m_mutex};
-    m_queue.push(DestroyableObject{std::move(block)});
   }
 
   void ClearObjects();
@@ -57,5 +47,15 @@ private:
   //TODO: make queue lock-free
   mutable std::queue<DestroyableObject> m_queue;
 };
+
+template<>
+inline void VkObjectsGarbageCollector::PushVkObjectToDestroy<memory::MemoryBlock>(
+  memory::MemoryBlock && block, InternalObjectHandle allocator) const noexcept
+{
+  if (!block)
+    return;
+  std::lock_guard lk{m_mutex};
+  m_queue.push(DestroyableObject{std::move(block)});
+}
 
 } // namespace RHI::vulkan::details

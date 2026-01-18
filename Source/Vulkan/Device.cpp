@@ -4,7 +4,7 @@
 #include <cassert>
 
 #include <VkBootstrap.h>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <VulkanContext.hpp>
 
 namespace
@@ -13,24 +13,24 @@ constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_3;
 constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL
+VKAPI_ATTR VkBool32 VKAPI_CALL
 VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                     VkDebugUtilsMessageTypeFlagsEXT messageType,
                     const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData, void * pUserData)
 {
-  using SeverityBitFlag = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+  using SeverityBitFlag = VkDebugUtilsMessageSeverityFlagBitsEXT;
   using SeverityFlags = VkDebugUtilsMessageSeverityFlagBitsEXT;
-  using TypeBitFlag = vk::DebugUtilsMessageTypeFlagBitsEXT;
+  using TypeBitFlag = VkDebugUtilsMessageTypeFlagBitsEXT;
   using TypeFlags = VkDebugUtilsMessageTypeFlagsEXT;
   RHI::vulkan::Context * ctx = reinterpret_cast<RHI::vulkan::Context *>(pUserData);
 
   if (ctx)
   {
-    if (messageSeverity == static_cast<SeverityFlags>(SeverityBitFlag::eError) ||
-        messageType == static_cast<TypeFlags>(TypeBitFlag::eValidation))
+    if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ||
+        messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
       ctx->Log(RHI::LogMessageStatus::LOG_ERROR, pCallbackData->pMessage);
-    else if (messageSeverity == static_cast<SeverityFlags>(SeverityBitFlag::eWarning) ||
-             messageType == static_cast<TypeFlags>(TypeBitFlag::ePerformance))
+    else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
+             messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
       ctx->Log(RHI::LogMessageStatus::LOG_WARNING, pCallbackData->pMessage);
     else
       ctx->Log(RHI::LogMessageStatus::LOG_INFO, pCallbackData->pMessage);
