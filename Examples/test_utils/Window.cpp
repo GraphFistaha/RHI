@@ -20,8 +20,7 @@ namespace
 // Resize window callback
 void OnResizeWindow(GLFWwindow * window, int width, int height)
 {
-  using namespace RHI::test_examples;
-  Window * wnd = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  auto * wnd = reinterpret_cast<RHI::test_examples::Window *>(glfwGetWindowUserPointer(window));
   if (wnd && wnd->onResize)
     wnd->onResize(width, height);
 }
@@ -38,8 +37,7 @@ void OnKeyAction(GLFWwindow * window, int key, int scancode, int action, int mod
 
 void OnCursorMoved(GLFWwindow * window, double xpos, double ypos)
 {
-  using namespace RHI::test_examples;
-  Window * wnd = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  auto * wnd = reinterpret_cast<RHI::test_examples::Window *>(glfwGetWindowUserPointer(window));
   static bool st_firstCursorMovement = true;
   static std::pair<double, double> g_oldCursorPos{0.0, 0.0};
 
