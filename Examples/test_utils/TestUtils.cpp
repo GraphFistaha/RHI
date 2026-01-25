@@ -1,5 +1,6 @@
 #include "TestUtils.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 
