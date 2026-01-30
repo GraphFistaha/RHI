@@ -9,4 +9,4 @@ libxcb-keysyms1-dev libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-x
 uuid-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev libxcb-util-dev libxcb-util0-dev
 
 #install vulkan libraries
-sudo apt-get install libvulkan-dev
+sudo apt-get install libvulkan-dev glslc

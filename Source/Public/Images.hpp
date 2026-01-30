@@ -105,7 +105,7 @@ struct TextureDescription final
   uint32_t mipLevels = 1;
 };
 
-RHI_API constexpr uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength = 1);
+RHI_API uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength = 1);
 
 struct HostTextureView final
 {
