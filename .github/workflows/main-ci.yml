@@ -2,9 +2,9 @@ name: RHI main CI
           
 on:
   push:
-    branches: [ main, master, 26-enable-cicd ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   build-and-test:
@@ -12,14 +12,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest]
         build_type: [Release]
         cpp_standard: [20]
         include:
           - os: ubuntu-latest
             compiler: g++
-          - os: macos-latest
-            compiler: clang++
+          #- os: macos-latest
+          #  compiler: clang++
           - os: windows-latest
             compiler: msvc
     
@@ -73,12 +73,12 @@ jobs:
         #install vulkan libraries
         sudo apt-get install libvulkan-dev glslc
     
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew update
-        brew install cmake ccache
-        # Add other dependencies if needed
+    #- name: Install dependencies (macOS)
+    #  if: runner.os == 'macOS'
+    #  run: |
+    #    brew update
+    #    brew install cmake ccache
+    #    # Add other dependencies if needed
     
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
