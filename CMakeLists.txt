@@ -26,7 +26,7 @@ set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
 include(${SOURCE_DIR}/ShaderCompile.cmake)
 # -------------------- Install conan packages ----------------------
 message(STATUS "Copy conanfile.txt into CMake cache")
-configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${CMAKE_BINARY_DIR}/conanfile.txt" COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${PROJECT_BINARY_DIR}/conanfile.txt" COPYONLY)
 
 include(${SOURCE_DIR}/conan.cmake)
 
@@ -36,12 +36,12 @@ conan_cmake_install(PATH_OR_REFERENCE .
                     BUILD missing
                     REMOTE conancenter
                     SETTINGS ${settings}
-                    OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/ConanResult
+                    OUTPUT_FOLDER ${PROJECT_BINARY_DIR}/ConanResult
 )
 
 # TODO: do not find conan_toolchain, make it with CMakePresets
 file(GLOB_RECURSE ToolchainFile
-     "${CMAKE_BINARY_DIR}/ConanResult/**/conan_toolchain.cmake"
+     "${PROJECT_BINARY_DIR}/ConanResult/**/conan_toolchain.cmake"
 )
 get_filename_component(GeneratorsFolder ${ToolchainFile} DIRECTORY)
 
