@@ -96,7 +96,9 @@ PRIVATE
 )
 
 #---------------- Link third-party libraries ---------------
-find_package(Vulkan REQUIRED)
+#find_package(Vulkan REQUIRED)
+find_package(VulkanHeaders REQUIRED)
+find_package(VulkanLoader REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 target_compile_definitions(${PROJECT_NAME} 
@@ -106,7 +108,9 @@ PRIVATE
 
 target_link_libraries(${PROJECT_NAME}
 PRIVATE
-	Vulkan::Vulkan
+	#Vulkan::Vulkan
+	vulkan-headers::vulkan-headers
+	Vulkan::Loader
 	vk-bootstrap::vk-bootstrap
 	GPUOpen::VulkanMemoryAllocator
 )

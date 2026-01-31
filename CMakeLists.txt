@@ -16,9 +16,10 @@ if (${RHI_BUILD_TESTS})
     enable_testing()
 endif()
 
-#if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "Build/${CMAKE_BUILD_TYPE}" CACHE PATH "Installation directory" FORCE)
-#endif()
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/Build/${CMAKE_BUILD_TYPE}" CACHE PATH "Installation directory" FORCE)
+endif()
+message(STATUS "Install directory is ${CMAKE_INSTALL_PREFIX}")
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
