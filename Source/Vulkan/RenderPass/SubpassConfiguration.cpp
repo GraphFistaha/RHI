@@ -172,16 +172,9 @@ void SubpassConfiguration::SetInvalid()
   m_invalidPipelineLayout = true;
 }
 
-bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
+void SubpassConfiguration::WaitForPipelineIsValid() const noexcept
 {
-  bool result = false;
-  for (int i = 0; i < 100; ++i)
-  {
-    if (m_invalidPipeline == false)
-      return true;
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
-  }
-  return false;
+  std::atomic_wait(&m_invalidPipeline, true);
 }
 
 const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() const & noexcept

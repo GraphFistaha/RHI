@@ -5,10 +5,9 @@
 
 CubesRenderer::CubesRenderer(RHI::IContext & ctx)
   : m_context(ctx)
-  , m_uniformBuffer(
-      ctx.CreateBuffer(sizeof(UniformBlock), RHI::BufferGPUUsage::UniformBuffer, true))
+  , m_uniformBuffer(ctx.CreateBuffer(sizeof(UniformBlock), RHI::BufferGPUUsage::UniformBuffer, true))
   , m_cubesBuffer(ctx.CreateBuffer(sizeof(CubeDescription) * g_MaxCubesCount,
-                                   RHI::BufferGPUUsage::VertexBuffer, false))
+                                  RHI::BufferGPUUsage::VertexBuffer, false))
 {
   SetCameraTransform(glm::identity<glm::mat4>());
 }
@@ -95,19 +94,17 @@ void CubesRenderer::Draw()
 
   if (m_invalidScene || m_renderPass->ShouldBeInvalidated())
   {
-    if (m_renderPass->BeginPass())
-    {
-      auto extent = m_drawSurface->GetExtent();
-      uint32_t width = extent[0], height = extent[1];
-      m_renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      m_renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    m_renderPass->BeginPass();
+    auto extent = m_drawSurface->GetExtent();
+    uint32_t width = extent[0], height = extent[1];
+    m_renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    m_renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-      m_renderPass->BindVertexBuffer(0, *m_cubesBuffer);
-      m_renderPass->DrawVertices(static_cast<uint32_t>(m_cubesCount), 1);
+    m_renderPass->BindVertexBuffer(0, *m_cubesBuffer);
+    m_renderPass->DrawVertices(static_cast<uint32_t>(m_cubesCount), 1);
 
-      m_renderPass->EndPass();
-      m_invalidScene = false;
-    }
+    m_renderPass->EndPass();
+    m_invalidScene = false;
   }
 }
 

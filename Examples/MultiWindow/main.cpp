@@ -55,25 +55,21 @@ int main()
         if (subpass1->ShouldBeInvalidated())
         {
           auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass1->BeginPass()) // begin drawing pass
-          {
-            subpass1->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            subpass1->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            subpass1->DrawVertices(3, 1);
-            subpass1->EndPass(); // finish drawing pass
-          }
+          subpass1->BeginPass(); // begin drawing pass
+          subpass1->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          subpass1->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          subpass1->DrawVertices(3, 1);
+          subpass1->EndPass(); // finish drawing pass
         }
 
         if (subpass2->ShouldBeInvalidated())
         {
           auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass2->BeginPass()) // begin drawing pass
-          {
-            subpass2->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            subpass2->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            subpass2->DrawVertices(4, 1);
-            subpass2->EndPass(); // finish drawing pass
-          }
+          subpass2->BeginPass(); // begin drawing pass
+          subpass2->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          subpass2->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          subpass2->DrawVertices(4, 1);
+          subpass2->EndPass(); // finish drawing pass
         }
         framebuffer->EndFrame();
         t += 0.0001;
