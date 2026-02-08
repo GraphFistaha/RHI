@@ -33,9 +33,9 @@ int main()
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, ctx->CreateAttachment(surfaceAttachment->GetDescription().format,
-                                                     surfaceAttachment->GetDescription().extent,
-                                                     RHI::RenderBuffering::Triple,
-                                                     RHI::SamplesCount::Eight));
+                                                      surfaceAttachment->GetDescription().extent,
+                                                      RHI::RenderBuffering::Triple,
+                                                      RHI::SamplesCount::Eight));
   framebuffer->AddAttachment(1, surfaceAttachment);
 
   window.onResize = [&framebuffer](int width, int height)
@@ -90,16 +90,18 @@ int main()
         {
           // get size of window
           auto [width, height] = window.GetSize();
-          subpass->BeginPass(); // begin drawing pass
-          // set viewport
-          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-          // set scissor
-          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-          // draw triangle
-          subpass->BindVertexBuffer(0, *vertexBuffer, 0);
-          subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-          subpass->DrawIndexedVertices(IndicesCount, 1);
-          subpass->EndPass(); // finish drawing pass
+          if (subpass->BeginPass()) // begin drawing pass
+          {
+            // set viewport
+            subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+            // set scissor
+            subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+            // draw triangle
+            subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+            subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+            subpass->DrawIndexedVertices(IndicesCount, 1);
+            subpass->EndPass(); // finish drawing pass
+          }
         }
         framebuffer->EndFrame();
       }

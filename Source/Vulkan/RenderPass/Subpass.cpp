@@ -24,11 +24,12 @@ Subpass::~Subpass()
   std::lock_guard lk{m_write_lock};
 }
 
-void Subpass::BeginPass()
+bool Subpass::BeginPass()
 {
   GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   assert(GetRenderPass().GetHandle());
-  m_pipeline.WaitForPipelineIsValid(); // wait while Pipeline has been invalidated
+  if (!m_pipeline.WaitForPipelineIsValid()) // wait while Pipeline has been invalidated
+    return false;
   assert(m_pipeline.GetPipelineHandle());
 
   m_write_lock.lock();
@@ -39,6 +40,7 @@ void Subpass::BeginPass()
   m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer.GetHandle(),
                                               m_pipeline.GetPipelineLayoutHandle(),
                                               VK_PIPELINE_BIND_POINT_GRAPHICS);
+  return true;
 }
 
 void Subpass::EndPass()
