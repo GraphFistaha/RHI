@@ -274,9 +274,7 @@ struct IRenderTarget
 struct ISubpass
 {
   virtual ~ISubpass() = default;
-  /// @brief begins subpass (writing a commands for subpass)
-  /// @return true if can render this subpass
-  virtual bool BeginPass() = 0;
+  virtual void BeginPass() = 0;
   virtual void EndPass() = 0;
   virtual ISubpassConfiguration & GetConfiguration() & noexcept = 0;
   virtual void SetEnabled(bool enabled) noexcept = 0;

@@ -30,8 +30,7 @@ int main()
 
   // create buffers for each uniform variables
   auto tBuf = ctx->CreateBuffer(sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
-  auto transformBuf =
-    ctx->CreateBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
+  auto transformBuf = ctx->CreateBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
   auto * framebuffer = ctx->CreateFramebuffer();
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
@@ -91,18 +90,16 @@ int main()
         {
           // get size of window
           auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass->BeginPass())
-          {
-            // set viewport
-            subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            // set scissor
-            subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            // draw triangle
-            subpass->BindVertexBuffer(0, *vertexBuffer, 0);
-            subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-            subpass->DrawIndexedVertices(IndicesCount, 1);
-            subpass->EndPass();
-          }
+          subpass->BeginPass();
+          // set viewport
+          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          // set scissor
+          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          // draw triangle
+          subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+          subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+          subpass->DrawIndexedVertices(IndicesCount, 1);
+          subpass->EndPass();
         }
 
         framebuffer->EndFrame();

@@ -93,7 +93,7 @@ int main()
 
   auto * framebuffer = defaultFramebuffer = ctx->CreateFramebuffer(3);
   framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(surface));
-  framebuffer->AddAttachment(1, ctx->AllocAttachment(args, RHI::SamplesCount::One));
+  framebuffer->AddAttachment(1, ctx->AllocAttachment(args, RHI::SamplesCount::One)); 
 
   auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
@@ -120,36 +120,34 @@ int main()
         // get size of window
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        if (subpass->BeginPass())
-        {
-          // set viewport
-          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-          // set scissor
-          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        subpass->BeginPass();
+        // set viewport
+        subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+        // set scissor
+        subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-          // draw first quad - Red quad
-          PushConstant constant;
-          constant.color = {1.0, 0.0, 0.0, 1.0};
-          constant.transform = {0.25, 0,    0.0, 0.25, //
-                                0.0,  0.25, 0.0, 0.25, //
-                                0.0,  0.0,  1.0, 0.25, //
-                                0.0,  0.0,  0.0, 1.0};
-          // draw first quad
-          subpass->PushConstant(&constant, sizeof(constant));
-          subpass->DrawVertices(6, 1);
+        // draw first quad - Red quad
+        PushConstant constant;
+        constant.color = {1.0, 0.0, 0.0, 1.0};
+        constant.transform = {0.25, 0,    0.0, 0.25, //
+                              0.0,  0.25, 0.0, 0.25, //
+                              0.0,  0.0,  1.0, 0.25, //
+                              0.0,  0.0,  0.0, 1.0};
+        // draw first quad
+        subpass->PushConstant(&constant, sizeof(constant));
+        subpass->DrawVertices(6, 1);
 
-          //draw second quad - Green quad
-          constant.color = {0.0, 1.0, 0.0, 1.0};
-          constant.transform = {0.25, 0,    0.0, 0.0, //
-                                0.0,  0.25, 0.0, 0.0, //
-                                0.0,  0.0,  1.0, 0.5, //
-                                0.0,  0.0,  0.0, 1.0};
-          subpass->PushConstant(&constant, sizeof(constant));
-          subpass->DrawVertices(6, 1);
-          subpass->EndPass();
+        //draw second quad - Green quad
+        constant.color = {0.0, 1.0, 0.0, 1.0};
+        constant.transform = {0.25, 0,    0.0, 0.0, //
+                              0.0,  0.25, 0.0, 0.0, //
+                              0.0,  0.0,  1.0, 0.5, //
+                              0.0,  0.0,  0.0, 1.0};
+        subpass->PushConstant(&constant, sizeof(constant));
+        subpass->DrawVertices(6, 1);
+        subpass->EndPass();
 
-          ShouldInvalidateScene = false;
-        }
+        ShouldInvalidateScene = false;
       }
       framebuffer->EndFrame();
     }

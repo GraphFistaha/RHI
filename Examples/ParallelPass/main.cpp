@@ -141,16 +141,13 @@ bool Renderer::DrawSceneImpl()
   if (m_subpass->ShouldBeInvalidated())
   {
     auto extent = m_fbo->GetExtent();
-    if (m_subpass->BeginPass())
-    {
-      m_subpass->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
-      m_subpass->SetScissor(0, 0, static_cast<uint32_t>(extent[0]),
-                            static_cast<uint32_t>(extent[1]));
-      m_subpass->BindVertexBuffer(0, *m_vertexBuffer, 0);
-      m_subpass->BindIndexBuffer(*m_indexBuffer, RHI::IndexType::UINT32);
-      m_subpass->DrawIndexedVertices(IndicesCount, 1);
-      m_subpass->EndPass();
-    }
+    m_subpass->BeginPass();
+    m_subpass->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
+    m_subpass->SetScissor(0, 0, static_cast<uint32_t>(extent[0]), static_cast<uint32_t>(extent[1]));
+    m_subpass->BindVertexBuffer(0, *m_vertexBuffer, 0);
+    m_subpass->BindIndexBuffer(*m_indexBuffer, RHI::IndexType::UINT32);
+    m_subpass->DrawIndexedVertices(IndicesCount, 1);
+    m_subpass->EndPass();
   }
   return true;
 }

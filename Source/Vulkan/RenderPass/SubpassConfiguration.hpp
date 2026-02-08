@@ -56,7 +56,7 @@ public: // IInvalidable Interface
   virtual void SetInvalid() override;
 
 public: // public internal API
-  bool WaitForPipelineIsValid() const noexcept;
+  void WaitForPipelineIsValid() const noexcept;
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
