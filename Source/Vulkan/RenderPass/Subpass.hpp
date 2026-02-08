@@ -2,14 +2,13 @@
 #include <atomic>
 #include <mutex>
 
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <Descriptors/DescriptorsBuffer.hpp>
 #include <Private/OwnedBy.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
+#include <RenderPass/SubpassLayout.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include <CommandsExecution/CommandBuffer.hpp>
-#include "../Descriptors/DescriptorsBuffer.hpp"
-#include "SubpassConfiguration.hpp"
-#include "SubpassLayout.hpp"
 
 namespace RHI::vulkan
 {
@@ -31,7 +30,7 @@ struct Subpass : public ISubpass,
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // ISubpass Interface
-  virtual void BeginPass() override;
+  virtual bool BeginPass() override;
   virtual void EndPass() override;
   virtual ISubpassConfiguration & GetConfiguration() & noexcept override;
   virtual void SetEnabled(bool enabled) noexcept override;
