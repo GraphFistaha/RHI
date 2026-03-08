@@ -26,6 +26,8 @@ Subpass::~Subpass()
 
 bool Subpass::BeginPass()
 {
+  if (!IsEnabled())
+    return false;
   GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   assert(GetRenderPass().GetHandle());
   if (!m_pipeline.WaitForPipelineIsValid()) // wait while Pipeline has been invalidated
@@ -64,7 +66,7 @@ void Subpass::SetEnabled(bool enabled) noexcept
 
 bool Subpass::IsEnabled() const noexcept
 {
-  return m_enabled && !m_execBuffer.IsEmpty();
+  return m_enabled;
 }
 
 bool Subpass::ShouldBeInvalidated() const noexcept
@@ -176,6 +178,8 @@ void Subpass::SetInvalid()
 
 void Subpass::Invalidate()
 {
+  if (!IsEnabled())
+    return;
   m_pipeline.Invalidate();
   m_execDescriptorBuffer.Invalidate();
   m_writeDescriptorBuffer.Invalidate();

@@ -18,7 +18,8 @@ RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   // Создает начальный subpass. У RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастся и в целом все сломается.
   auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, family);
-  //TODO: нужен фиктивный шейдер для initialSubpass, иначе не работает HelloWindow
+  // disable subpass to not build pipeline
+  initialSubpass.SetEnabled(false);
 }
 
 RenderPass::~RenderPass()
@@ -29,7 +30,10 @@ RenderPass::~RenderPass()
 ISubpass * RenderPass::CreateSubpass()
 {
   if (m_createSubpassCallsCounter++ == 0)
+  {
+    m_subpasses.front().SetEnabled(true);
     return &m_subpasses.front();
+  }
 
   auto [family, _] = GetContext().GetGpuConnection().GetQueue(QueueType::Graphics);
   auto && subpass = m_subpasses.emplace_back(GetContext(), *this,

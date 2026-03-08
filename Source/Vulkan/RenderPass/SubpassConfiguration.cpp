@@ -175,11 +175,10 @@ void SubpassConfiguration::SetInvalid()
 bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
 {
   bool result = false;
-  for (int i = 0; i < 100; ++i)
+  for (int i = 0; i < 1000; ++i)
   {
     if (m_invalidPipeline == false)
       return true;
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
   }
   return false;
 }
