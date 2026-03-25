@@ -16,11 +16,9 @@ Texture::Texture(Context & ctx, const TextureDescription & args)
                                                              VK_SAMPLE_COUNT_1_BIT))
   , m_layout(m_memBlock.GetImage())
 {
-  m_view =
-    utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(), m_memBlock.GetImage(),
-                           GetInternalFormat(),
-                           utils::CastInterfaceEnum2Vulkan<VkImageViewType>(m_description.type),
-                           VK_IMAGE_ASPECT_COLOR_BIT);
+  m_view = utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
+                                  m_memBlock.GetImage(), GetInternalFormat(), GetImageViewType(),
+                                  VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 Texture::~Texture()
@@ -87,7 +85,8 @@ VkFormat Texture::GetInternalFormat() const noexcept
 
 VkExtent3D Texture::GetInternalExtent() const noexcept
 {
-  return {m_description.extent[0], m_description.extent[1], m_description.extent[2]};
+  auto [extent, _] = utils::UnpackExtentAndLayers(m_description.extent, m_description.type);
+  return extent;
 }
 
 uint32_t Texture::GetMipLevelsCount() const noexcept
@@ -97,7 +96,18 @@ uint32_t Texture::GetMipLevelsCount() const noexcept
 
 uint32_t Texture::GetLayersCount() const noexcept
 {
-  return m_description.layersCount;
+  auto [_, layersCount] = utils::UnpackExtentAndLayers(m_description.extent, m_description.type);
+  return layersCount;
+}
+
+VkImageType Texture::GetImageType() const noexcept
+{
+  return utils::CastInterfaceEnum2Vulkan<VkImageType>(m_description.type);
+}
+
+VkImageViewType Texture::GetImageViewType() const noexcept
+{
+  return utils::CastInterfaceEnum2Vulkan<VkImageViewType>(m_description.type);
 }
 
 } // namespace RHI::vulkan

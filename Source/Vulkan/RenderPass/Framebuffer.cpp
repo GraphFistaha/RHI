@@ -59,7 +59,8 @@ void Framebuffer::Invalidate()
     auto extent = m_attachments[0]->GetInternalExtent();
     // all attachments must have equal count of buffers
     assert(std::all_of(m_attachments.begin(), m_attachments.end(),
-                       [buffersCount, extent](IInternalAttachment * att) {
+                       [buffersCount, extent](IInternalAttachment * att)
+                       {
                          return buffersCount == att->GetBuffering() &&
                                 att->GetInternalExtent() == extent;
                        }));
@@ -212,7 +213,8 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
 RHI::TexelIndex Framebuffer::GetExtent() const
 {
   auto internalExtent = m_attachments[0]->GetInternalExtent();
-  return {internalExtent.width, internalExtent.height, internalExtent.depth};
+  return {static_cast<texel_t>(internalExtent.width), static_cast<texel_t>(internalExtent.height),
+          static_cast<texel_t>(internalExtent.depth)};
 }
 
 } // namespace RHI::vulkan

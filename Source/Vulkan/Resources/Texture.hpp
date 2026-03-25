@@ -33,13 +33,16 @@ public: // ITexture interface
 
 public: // IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) override;
+  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
+                              VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
   virtual VkExtent3D GetInternalExtent() const noexcept override;
   virtual uint32_t GetMipLevelsCount() const noexcept override;
   virtual uint32_t GetLayersCount() const noexcept override;
+  virtual VkImageType GetImageType() const noexcept override;
+  virtual VkImageViewType GetImageViewType() const noexcept override;
 
 private:
   TextureDescription m_description;

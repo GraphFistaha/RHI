@@ -42,6 +42,8 @@ public: //IInternalTexture interface
   virtual VkExtent3D GetInternalExtent() const noexcept override;
   virtual uint32_t GetMipLevelsCount() const noexcept override;
   virtual uint32_t GetLayersCount() const noexcept override;
+  virtual VkImageType GetImageType() const noexcept override;
+  virtual VkImageViewType GetImageViewType() const noexcept override;
 
 public: // IInternalAttachment interface
   virtual void Invalidate() override;

@@ -1,5 +1,6 @@
 #include "MemoryBlock.hpp"
 
+#include <ImageUtils/ImageUtils.hpp>
 #include <Utils/CastHelper.hpp>
 #include <vk_mem_alloc.h>
 
@@ -57,15 +58,15 @@ MemoryBlock::MemoryBlock(MemoryAllocator & allocator, const TextureDescription &
                          VkSharingMode shareMode)
   : OwnedBy<MemoryAllocator>(allocator)
 {
+  auto [extent, layersCount] = utils::UnpackExtentAndLayers(description.extent, description.type);
+
   VkImageCreateInfo imageInfo{};
   {
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = utils::CastInterfaceEnum2Vulkan<VkImageType>(description.type);
-    imageInfo.extent.width = description.extent[0];
-    imageInfo.extent.height = description.extent[1];
-    imageInfo.extent.depth = description.extent[2];
+    imageInfo.extent = extent;
     imageInfo.mipLevels = description.mipLevels;
-    imageInfo.arrayLayers = description.layersCount;
+    imageInfo.arrayLayers = layersCount;
     imageInfo.format = utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
     imageInfo.tiling = /*description.format == RHI::ImageFormat::DEPTH_STENCIL
                        ? VK_IMAGE_TILING_LINEAR

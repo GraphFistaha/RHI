@@ -127,8 +127,6 @@ std::future<DownloadResult> GenericAttachment::DownloadImage(HostImageFormat for
   DownloadImageArgs args{};
   args.format = format;
   args.copyRegion = region;
-  args.layerIndex = 0;
-  args.layersCount = 1;
   return GetContext().GetTransferer().DownloadImage(*this, args);
 }
 
@@ -189,6 +187,17 @@ uint32_t GenericAttachment::GetMipLevelsCount() const noexcept
 uint32_t GenericAttachment::GetLayersCount() const noexcept
 {
   return 1;
+}
+
+VkImageType GenericAttachment::GetImageType() const noexcept
+{
+  assert(m_description.type == RHI::ImageType::Image2D);
+  return VK_IMAGE_TYPE_2D;
+}
+
+VkImageViewType GenericAttachment::GetImageViewType() const noexcept
+{
+  return VK_IMAGE_VIEW_TYPE_2D;
 }
 
 //-------------------- IAttachment interface --------------------
@@ -275,7 +284,8 @@ void GenericAttachment::TransferLayout(VkImageLayout layout) noexcept
 
 void GenericAttachment::Resize(const VkExtent2D & new_extent) noexcept
 {
-  m_description.extent = {new_extent.width, new_extent.height, 1};
+  m_description.extent = {static_cast<texel_t>(new_extent.width),
+                          static_cast<texel_t>(new_extent.height), 1};
   m_changedSize = true;
 }
 

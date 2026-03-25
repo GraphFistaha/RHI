@@ -344,23 +344,6 @@ struct IBufferGPU
   virtual size_t Size() const noexcept = 0;
 };
 
-struct UploadImageArgs final
-{
-  HostTextureView srcTexture;
-  TextureRegion copyRegion;
-  TextureExtent dstOffset;
-  uint32_t layerIndex = 0;
-  uint32_t layersCount = std::numeric_limits<uint32_t>::max();
-};
-
-struct DownloadImageArgs final
-{
-  HostImageFormat format;
-  TextureRegion copyRegion;
-  uint32_t layerIndex = 0;
-  uint32_t layersCount = std::numeric_limits<uint32_t>::max();
-};
-
 /// Image with mipmaps, compression
 struct ITexture
 {
