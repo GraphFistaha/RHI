@@ -22,6 +22,8 @@ struct IInternalTexture
   virtual VkExtent3D GetInternalExtent() const noexcept = 0;
   virtual uint32_t GetMipLevelsCount() const noexcept = 0;
   virtual uint32_t GetLayersCount() const noexcept = 0;
+  virtual VkImageType GetImageType() const noexcept = 0;
+  virtual VkImageViewType GetImageViewType() const noexcept = 0;
 };
 
 } // namespace RHI::vulkan

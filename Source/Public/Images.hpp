@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <limits>
 
 #include <Utils.hpp>
 
@@ -11,7 +12,7 @@ namespace RHI
 
 /// @brief Defines image's layout in memory. Also defines if image can have mipmaps or not
 ///        For example image1d is line of pixels, image2d is a rectangle of pixels
-enum class ImageType
+enum class ImageType : uint8_t
 {
   Image1D, ///< image with height = 1. has only width.Can have one mipmap for a whole image
   Image2D, ///< generic image with width and height. Can have one mipmap for a whole image
@@ -69,7 +70,7 @@ enum class ImageFormat : uint8_t
 };
 
 /// @brief
-enum ShaderAttachmentSlot
+enum ShaderAttachmentSlot : uint8_t
 {
   Color,            ///< color attachment
   DepthStencil,     ///< depth-stencil attachment
@@ -78,28 +79,30 @@ enum ShaderAttachmentSlot
   TOTAL
 };
 
+using texel_t = uint16_t;
 /// For Image1D used only 0'th index
 /// For Image2D used only 0 and 1 index
 /// For Image3D used all 3 indices like width, height and layer
 /// For Image1D used 0 and 1 index as width and i-th array element
 /// For Image2D used all 3 indices as width, height and i-th array element
 /// For Cubemap used all 3 indices as width, height and i-th surface of cube
-using TexelIndex = std::array<uint32_t, 3>;
+using TexelIndex = std::array<texel_t, 3>;
+static constexpr texel_t g_InvalidTexel = std::numeric_limits<texel_t>::max();
 
 /// Gabarit of texture
 using TextureExtent = TexelIndex;
 
-struct TextureRegion
+struct TextureRegion final
 {
-  TexelIndex offset;
-  TextureExtent extent;
+  TexelIndex offset{0, 0, 0};
+  TextureExtent extent{g_InvalidTexel, g_InvalidTexel, g_InvalidTexel};
+  int reserved = 0;
 };
 
 
 struct TextureDescription final
 {
-  TextureExtent extent;
-  uint32_t layersCount = 1;
+  TextureExtent extent; ///< gabarit of texture (width, height, depth/layer)
   ImageType type;
   ImageFormat format;
   uint32_t mipLevels = 1;
@@ -109,10 +112,24 @@ RHI_API uint32_t CalcMaxMipLevels(TextureExtent extent, uint32_t minLength = 1);
 
 struct HostTextureView final
 {
-  TextureExtent extent;
-  uint8_t * pixelData = nullptr;
-  HostImageFormat format;
-  uint32_t layersCount = 1;
+  TextureExtent extent{g_InvalidTexel, g_InvalidTexel,
+                       g_InvalidTexel}; ///< size of image (width, height, depth/layers)
+  uint8_t * pixelData = nullptr;        ///< pointer on pixel data
+  HostImageFormat format;               ///< format of pixel
+  ImageType type;                       ///< type of image (1D, 2D, 3D, Cubemap, etc)
+};
+
+struct UploadImageArgs final
+{
+  HostTextureView srcTexture;    ///< host texture
+  TextureRegion copyRegion{};    ///< subregion of host texture to copy
+  TexelIndex dstOffset{0, 0, 0}; ///< offset in destination where to copy
+};
+
+struct DownloadImageArgs final
+{
+  HostImageFormat format; ///< desired format
+  TextureRegion copyRegion{};
 };
 
 } // namespace RHI

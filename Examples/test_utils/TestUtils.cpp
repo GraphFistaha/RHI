@@ -41,20 +41,18 @@ RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_
 
   RHI::HostTextureView hostTexture{};
   {
-    hostTexture.extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
+    hostTexture.extent = {static_cast<RHI::texel_t>(w), static_cast<RHI::texel_t>(h), 1};
     hostTexture.pixelData = reinterpret_cast<uint8_t *>(pixel_data);
     hostTexture.format = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
-    hostTexture.layersCount = 1;
+    hostTexture.type = RHI::ImageType::Image2D;
   };
 
   RHI::TextureDescription imageArgs{};
   {
     imageArgs.extent = hostTexture.extent;
-    imageArgs.layersCount = hostTexture.layersCount;
     imageArgs.type = RHI::ImageType::Image2D;
     imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
     imageArgs.mipLevels = useMips ? RHI::CalcMaxMipLevels(imageArgs.extent) : 1;
-    ;
   }
   auto texture = ctx->CreateTexture(imageArgs);
 
@@ -62,9 +60,6 @@ RHI::ITexture * UploadTexture(const char * path, RHI::IContext * ctx, bool with_
   {
     args.srcTexture = hostTexture;
     args.copyRegion = {{0, 0, 0}, hostTexture.extent};
-    args.dstOffset = {0, 0, 0};
-    args.layerIndex = 0;
-    args.layersCount = 1;
   }
   texture->UploadImage(args);
   if (useMips)
@@ -91,8 +86,8 @@ RHI::ITexture * UploadLayeredTexture(RHI::IContext * ctx,
 
     auto && hostTexture = textures.emplace_back();
     hostTexture.pixelData = pixel_data;
-    hostTexture.extent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h), 1};
-    hostTexture.layersCount = 1;
+    hostTexture.extent = {static_cast<RHI::texel_t>(w), static_cast<RHI::texel_t>(h), 1};
+    hostTexture.type = RHI::ImageType::Image2D;
     hostTexture.format = with_alpha ? RHI::HostImageFormat::RGBA8 : RHI::HostImageFormat::RGB8;
   }
 
@@ -103,10 +98,10 @@ RHI::ITexture * UploadLayeredTexture(RHI::IContext * ctx,
   RHI::TextureDescription imageArgs{};
   {
     imageArgs.extent = textures.front().extent;
+    imageArgs.extent[2] = static_cast<uint32_t>(textures.size());
     imageArgs.type = RHI::ImageType::Image2D_Array;
     imageArgs.format = with_alpha ? RHI::ImageFormat::RGBA8 : RHI::ImageFormat::RGB8;
     imageArgs.mipLevels = useMips ? RHI::CalcMaxMipLevels(imageArgs.extent) : 1;
-    imageArgs.layersCount = static_cast<uint32_t>(textures.size());
   }
   auto texture = ctx->CreateTexture(imageArgs);
 
@@ -117,9 +112,7 @@ RHI::ITexture * UploadLayeredTexture(RHI::IContext * ctx,
     {
       args.srcTexture = hostTexture;
       args.copyRegion = {{0, 0, 0}, {hostTexture.extent}};
-      args.dstOffset = {0, 0, 0};
-      args.layerIndex = i;
-      args.layersCount = 1;
+      args.dstOffset = {0, 0, static_cast<RHI::texel_t>(i)};
     }
     texture->UploadImage(args);
   }

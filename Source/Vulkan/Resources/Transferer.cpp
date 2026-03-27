@@ -1,6 +1,7 @@
 #include "Transferer.hpp"
 
 #include <ImageUtils/ImageFormatsConversation.hpp>
+#include <ImageUtils/ImageUtils.hpp>
 #include <ImageUtils/InternalImageTraits.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
@@ -156,14 +157,24 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
   const size_t copyingRegionSize =
     RHI::utils::GetSizeOfImage(args.copyRegion.extent, dstImage.GetInternalFormat());
   BufferGPU stagingBuffer(GetContext(), copyingRegionSize, g_stagingUsage, true);
+
+  auto [srcExtent, layersCount] =
+    utils::UnpackExtentAndLayers(args.copyRegion.extent, args.srcTexture.type);
+
+  auto [srcOffset, srcLayerBase] =
+    utils::UnpackOffsetAndBaseLayer(args.copyRegion.offset, args.srcTexture.type);
+
+  auto [dstOffset, dstLayerBase] =
+    utils::UnpackOffsetAndBaseLayer(args.dstOffset, dstImage.GetImageType());
+
   if (auto && mapped_ptr = stagingBuffer.Map())
   {
     MappedGpuTextureView gpuTexture{};
     gpuTexture.pixelData = reinterpret_cast<uint8_t *>(mapped_ptr.get());
     gpuTexture.extent = args.copyRegion.extent;
     gpuTexture.format = dstImage.GetInternalFormat();
-    gpuTexture.baseLayerIndex = args.layerIndex;
-    gpuTexture.layersCount = args.layersCount;
+    gpuTexture.baseLayerIndex = srcLayerBase;
+    gpuTexture.layersCount = layersCount;
     auto dstExtent = dstImage.GetInternalExtent();
     CopyImageFromHost(args.srcTexture, gpuTexture, args.copyRegion);
     mapped_ptr.reset();
@@ -179,15 +190,12 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageExtent = {args.copyRegion.extent[0], args.copyRegion.extent[1],
-                          args.copyRegion.extent[2]};
-    region.imageOffset = {static_cast<int>(args.copyRegion.offset[0]),
-                          static_cast<int>(args.copyRegion.offset[1]),
-                          static_cast<int>(args.copyRegion.offset[2])};
+    region.imageExtent = srcExtent;
+    region.imageOffset = dstOffset;
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = args.layerIndex;
-    region.imageSubresource.layerCount = args.layersCount;
+    region.imageSubresource.baseArrayLayer = dstLayerBase;
+    region.imageSubresource.layerCount = layersCount;
   }
 
   VkImageLayout oldLayout = dstImage.GetLayout();
@@ -208,20 +216,24 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
                           RHI::utils::GetSizeOfImage(args.copyRegion.extent,
                                                      srcImage.GetInternalFormat()),
                           g_stagingUsage, true);
+
+  auto [srcOffset, layerBase] =
+    utils::UnpackOffsetAndBaseLayer(args.copyRegion.offset, srcImage.GetImageType());
+
+  auto [srcExtent, layersCount] =
+    utils::UnpackExtentAndLayers(args.copyRegion.extent, srcImage.GetImageType());
+
   VkBufferImageCopy region{};
   {
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageExtent = {args.copyRegion.extent[0], args.copyRegion.extent[1],
-                          args.copyRegion.extent[2]};
-    region.imageOffset = {static_cast<int>(args.copyRegion.offset[0]),
-                          static_cast<int>(args.copyRegion.offset[1]),
-                          static_cast<int>(args.copyRegion.offset[2])};
+    region.imageExtent = srcExtent;
+    region.imageOffset = srcOffset;
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = args.layerIndex;
-    region.imageSubresource.layerCount = args.layersCount;
+    region.imageSubresource.baseArrayLayer = layerBase;
+    region.imageSubresource.layerCount = layersCount;
   }
 
   auto createDownloadResult =

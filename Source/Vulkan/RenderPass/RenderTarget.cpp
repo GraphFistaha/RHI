@@ -61,7 +61,8 @@ void RenderTarget::SetClearValue(uint32_t attachmentIndex, float depth, uint32_t
 
 TexelIndex RenderTarget::GetExtent() const noexcept
 {
-  return {m_extent.width, m_extent.height, m_extent.depth};
+  return {static_cast<texel_t>(m_extent.width), static_cast<texel_t>(m_extent.height),
+          static_cast<texel_t>(m_extent.depth) /*= 1*/};
 }
 
 void RenderTarget::Invalidate()

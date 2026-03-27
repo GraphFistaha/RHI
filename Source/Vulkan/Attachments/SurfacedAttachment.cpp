@@ -37,8 +37,6 @@ std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat fo
   DownloadImageArgs args{};
   args.format = format;
   args.copyRegion = region;
-  args.layerIndex = 0;
-  args.layersCount = 1;
   return GetContext().GetTransferer().DownloadImage(*this, args);
 }
 
@@ -49,7 +47,8 @@ TextureDescription SurfacedAttachment::GetDescription() const noexcept
     description.mipLevels = 1;
     description.type = RHI::ImageType::Image2D;
     auto extent = GetInternalExtent();
-    description.extent = {extent.width, extent.height, extent.depth};
+    description.extent = {static_cast<texel_t>(extent.width), static_cast<texel_t>(extent.height),
+                          static_cast<texel_t>(extent.depth)};
     description.format = g_imagesFormat;
   }
   return description;
@@ -113,6 +112,16 @@ uint32_t SurfacedAttachment::GetMipLevelsCount() const noexcept
 uint32_t SurfacedAttachment::GetLayersCount() const noexcept
 {
   return 1;
+}
+
+VkImageType SurfacedAttachment::GetImageType() const noexcept
+{
+  return VK_IMAGE_TYPE_2D;
+}
+
+VkImageViewType SurfacedAttachment::GetImageViewType() const noexcept
+{
+  return VK_IMAGE_VIEW_TYPE_2D;
 }
 
 void SurfacedAttachment::BlitTo(ITexture * texture)

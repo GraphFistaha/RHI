@@ -15,8 +15,6 @@ int main()
   RHI::DownloadImageArgs args{};
   args.format = RHI::HostImageFormat::RGB8;
   args.copyRegion = {{0, 0, 0}, texture->GetDescription().extent};
-  args.layerIndex = 0;
-  args.layersCount = 1;
   auto future = texture->DownloadImage(args);
 
   while (future.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout)
