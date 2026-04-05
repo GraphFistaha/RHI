@@ -30,9 +30,6 @@ Checks: >
 # Turn all the warnings from the checks above into errors.
 #WarningsAsErrors: "*"
 
-# Исключения
-HeaderFilterRegex: ".*Source[\\w]+(?!.*(UI|Tools|c3d|external)).*"
-
 CheckOptions:
   - { key: readability-identifier-naming.ClassCase,                value: CamelCase }
   - { key: readability-identifier-naming.ClassMemberPrefix,        value: m_        }
@@ -53,12 +50,10 @@ CheckOptions:
   - { key: readability-identifier-naming.TypeAliasCase,            value: CamelCase }
   - { key: readability-identifier-naming.TypedefCase,              value: CamelCase }
 
-# TODO
   - { key: readability-identifier-naming.TypeAliasIgnoredRegexp,   value: 'type' }
   - { key: readability-identifier-naming.TypedefIgnoredRegexp,     value: 'type' }
 
   - { key: readability-identifier-naming.FunctionCase,             value: CamelCase }
-# TODO ignore common stl and API specific functions (ks.*)
   - { key: readability-identifier-naming.FunctionIgnoredRegexp,    value: "(hash)|(data|begin|end|size|empty|range_begin|range_end|assign|insert|cbegin|cend|clear)|(^ks.*)" }
 
   - { key: readability-identifier-naming.EnumCase,                 value: CamelCase }
