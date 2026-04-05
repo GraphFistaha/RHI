@@ -90,18 +90,18 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
 
   // execute commands for subpasses
   {
-    uint32_t i = 0;
+    size_t i = 0;
     for (auto && subpass : m_subpasses)
     {
       if (subpass.ShouldSwapCommandBuffers())
         subpass.SwapCommandBuffers();
-      if (subpass.IsEnabled())
+      if (subpass.IsEnabled() && !subpass.GetCommandBufferForExecution().IsEmpty())
       {
         VkCommandBuffer buffer = subpass.GetCommandBufferForExecution().GetHandle();
         m_submitter.PushCommand(vkCmdExecuteCommands, 1, &buffer);
-        if (i + 1 != m_subpasses.size())
-          m_submitter.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       }
+      if (i + 1 != m_subpasses.size())
+        m_submitter.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       ++i;
     }
   }
