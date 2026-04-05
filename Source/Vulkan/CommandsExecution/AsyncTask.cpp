@@ -40,8 +40,12 @@ AsyncTask & AsyncTask::operator=(AsyncTask && rhs) noexcept
 
 bool AsyncTask::Wait() noexcept
 {
-  auto res =
-    vkWaitForFences(GetContext().GetGpuConnection().GetDevice(), 1, &m_fence, VK_TRUE, UINT64_MAX);
+  int res = VK_SUCCESS;
+  if (m_fence)
+  {
+    res = vkWaitForFences(GetContext().GetGpuConnection().GetDevice(), 1, &m_fence, VK_TRUE,
+                          UINT64_MAX);
+  }
   return res == VK_SUCCESS;
 }
 

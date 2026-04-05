@@ -12,7 +12,7 @@ namespace RHI::vulkan::details
 struct Submitter : public CommandBuffer
 {
   explicit Submitter(Context & ctx, QueueType type, VkPipelineStageFlags waitStages);
-  virtual ~Submitter() override = default;
+  virtual ~Submitter() override;
   Submitter(Submitter && rhs) noexcept;
   Submitter & operator=(Submitter && rhs) noexcept;
 

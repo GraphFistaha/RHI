@@ -24,7 +24,7 @@ struct Transferer final : public OwnedBy<Context>
   Transferer(Transferer && rhs);
   ~Transferer() override;
 
-  IAwaitable * DoTransfer();
+  IAwaitable * DoTransfer(bool flush = false);
 
   std::future<UploadResult> UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
                                          size_t offset = 0);

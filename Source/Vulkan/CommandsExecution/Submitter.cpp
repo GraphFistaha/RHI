@@ -13,6 +13,12 @@ Submitter::Submitter(Context & ctx, QueueType type, VkPipelineStageFlags waitSta
 {
 }
 
+Submitter::~Submitter()
+{
+  m_oldBarrier.Wait();
+  m_newBarrier.Wait();
+}
+
 Submitter::Submitter(Submitter && rhs) noexcept
   : CommandBuffer(std::move(rhs))
   , m_newBarrier(std::move(rhs.m_newBarrier))

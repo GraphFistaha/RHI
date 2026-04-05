@@ -35,7 +35,7 @@ public: // IContext interface
                                          RHI::SamplesCount samplesCount) override;
   virtual void DeleteAttachment(IAttachment * attachment) override;
   virtual void ClearResources() override; ///< GarbageCollector call
-  virtual void TransferPass() override;
+  virtual void TransferPass(bool flush = false) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;
