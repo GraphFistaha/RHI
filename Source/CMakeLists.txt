@@ -49,6 +49,7 @@ target_compile_definitions(${this_target}
 PRIVATE
 	RHI_BUILD
 	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
+	$<$<BOOL:${RHI_USE_LOG_OUTPUT}>:RHI_USE_LOG_OUTPUT>
 )
 
 install(TARGETS ${this_target}

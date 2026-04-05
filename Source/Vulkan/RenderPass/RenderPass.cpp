@@ -152,9 +152,8 @@ void RenderPass::Invalidate()
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
-                     std::format("build new VkRenderPass - {}",
-                                 static_cast<void *>(new_renderpass)));
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
+                     static_cast<void *>(m_renderPass), static_cast<void *>(new_renderpass));
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;
     UpdateRenderPassValidFlag();

@@ -43,6 +43,12 @@ CommandBuffer::CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBuff
   , m_pool(::CreateCommandPool(ctx.GetGpuConnection().GetDevice(), queue_family))
   , m_buffer(::CreateCommandBuffer(ctx.GetGpuConnection().GetDevice(), m_pool, level))
 {
+  GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkCommandPool has been created - {}",
+                   static_cast<void *>(m_pool));
+  GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkCommandBuffer({}) has been created - {}",
+                   level == VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY ? "Primary"
+                                                                                  : "Secondary",
+                   static_cast<void *>(m_buffer));
 }
 
 CommandBuffer::~CommandBuffer()

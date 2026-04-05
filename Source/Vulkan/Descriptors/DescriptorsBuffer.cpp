@@ -114,10 +114,12 @@ void DescriptorBuffer::Invalidate()
     auto [newPool, newSets] = GetLayout().AllocDescriptorSets();
     std::lock_guard lk{m_setsLock};
     vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
+                     "VkDescriptorPool({}) & Sets have been rebuilt - {}",
+                     static_cast<void *>(m_pool), static_cast<void *>(newPool));
     m_pool = newPool;
     m_sets = std::move(newSets);
     m_cachedLayouts = GetLayout().GetHandles();
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorPool & Sets have been rebuilt");
   }
 }
 

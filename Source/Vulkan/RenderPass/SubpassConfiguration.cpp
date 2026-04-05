@@ -142,10 +142,11 @@ void SubpassConfiguration::Invalidate()
                                                      ? &m_pushConstantRange.value()
                                                      : nullptr);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout({}) has been rebuilt - {}",
+                     static_cast<void *>(m_pipelineLayout), static_cast<void *>(new_layout));
     m_pipelineLayout = new_layout;
     m_invalidPipelineLayout = false;
     m_invalidPipeline = true;
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout has been rebuilt");
   }
 
   if (m_invalidPipeline || !m_pipeline)
@@ -156,10 +157,11 @@ void SubpassConfiguration::Invalidate()
                                                GetSubpass().GetRenderPass().GetHandle(),
                                                m_subpassIndex, m_pipelineLayout);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline({}) has been rebuilt - {}",
+                     static_cast<void *>(m_pipeline), static_cast<void *>(new_pipeline));
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
     m_invalidPipeline.notify_one();
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline has been rebuilt");
     GetSubpass().SetDirtyCacheCommands();
   }
 }

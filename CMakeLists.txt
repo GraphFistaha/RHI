@@ -4,6 +4,7 @@ option(RHI_BUILD_EXAMPLES "Build example programs" ON)
 option(RHI_BUILD_TESTS "Build unit tests" ON)
 option(RHI_BUILD_SHARED "Build RHI as shared library" ON)
 option(RHI_VULKAN_BACKEND "use vulkan as backend" ON)
+option(RHI_USE_LOG_OUTPUT "use debug log output" ON)
 
 project(RHI C CXX)
 set (CMAKE_CXX_STANDARD 20)

@@ -28,12 +28,12 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
   {
     if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ||
         messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-      ctx->Log(RHI::LogMessageStatus::LOG_ERROR, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_ERROR, "{}", std::string_view(pCallbackData->pMessage));
     else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
              messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-      ctx->Log(RHI::LogMessageStatus::LOG_WARNING, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_WARNING, "{}", std::string_view(pCallbackData->pMessage));
     else
-      ctx->Log(RHI::LogMessageStatus::LOG_INFO, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_INFO, "{}", std::string_view(pCallbackData->pMessage));
   }
   return VK_FALSE;
 }
@@ -110,17 +110,20 @@ private:
 DeviceInternal::DeviceInternal(const RHI::GpuTraits & gpuTraits, RHI::vulkan::Context & ctx)
 {
   instance = CreateInstance("appName", VulkanAPIVersion, &ctx);
-  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance ({}) has been created successfully",
+          static_cast<void *>(instance.instance));
   physicalDevice = SelectPhysicalDevice(instance, gpuTraits, VulkanAPIVersionPair);
   ctx.Log(RHI::LogMessageStatus::LOG_DEBUG,
-          "VkPhysicalDevice has been selected successfully - " + physicalDevice.name);
+          "VkPhysicalDevice ({}) has been selected successfully - {}",
+          static_cast<void *>(physicalDevice.physical_device), physicalDevice.name);
   vkb::DeviceBuilder device_builder{physicalDevice};
   auto dev_ret = device_builder.build();
   if (!dev_ret)
   {
     throw std::runtime_error("Failed to create Vulkan device");
   }
-  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDevice ({}) has been created successfully",
+          static_cast<void *>(dev_ret.value().device));
   device = dev_ret.value();
   dispatchTable = device.make_table();
 }

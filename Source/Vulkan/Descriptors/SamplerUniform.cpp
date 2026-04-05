@@ -61,7 +61,7 @@ std::vector<VkDescriptorImageInfo> SamplerUniform::CreateDescriptorInfo() const
 }
 
 void SamplerUniform::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer,
-                                                 VkImageLayout layout)
+                                                VkImageLayout layout)
 {
   if (m_boundTexture)
     m_boundTexture->TransferLayout(commandBuffer, layout);
@@ -72,8 +72,9 @@ void SamplerUniform::Invalidate()
   if (m_invalidSampler || !m_sampler)
   {
     auto new_sampler = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "new VkSampler has been created");
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_sampler, nullptr);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkSampler({}) has been rebuilt - {}",
+                     static_cast<void *>(m_sampler), static_cast<void *>(new_sampler));
     m_sampler = new_sampler;
     m_invalidSampler = false;
   }

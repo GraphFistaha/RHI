@@ -106,7 +106,7 @@ void Context::TransferPass()
     transferer.DoTransfer();
 }
 
-void Context::Log(LogMessageStatus status, const std::string & message) const noexcept
+void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept
 {
 #ifdef NDEBUG
   if (m_logFunc && status != LogMessageStatus::LOG_DEBUG)
