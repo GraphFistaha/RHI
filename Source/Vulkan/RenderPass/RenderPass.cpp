@@ -90,17 +90,20 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
 
   // execute commands for subpasses
   {
-    std::vector<VkCommandBuffer> subpassBuffers;
-    subpassBuffers.reserve(m_subpasses.size());
+    uint32_t i = 0;
     for (auto && subpass : m_subpasses)
     {
       if (subpass.ShouldSwapCommandBuffers())
         subpass.SwapCommandBuffers();
       if (subpass.IsEnabled())
-        subpassBuffers.push_back(subpass.GetCommandBufferForExecution().GetHandle());
+      {
+        VkCommandBuffer buffer = subpass.GetCommandBufferForExecution().GetHandle();
+        m_submitter.PushCommand(vkCmdExecuteCommands, 1, &buffer);
+        if (i + 1 != m_subpasses.size())
+          m_submitter.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+      }
+      ++i;
     }
-    if (!subpassBuffers.empty())
-      m_submitter.AddCommands(subpassBuffers);
   }
 
 
@@ -140,6 +143,7 @@ void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
 
 void RenderPass::Invalidate()
 {
+  bool clearCommands = false;
   if (m_invalidRenderPass || !m_renderPass)
   {
     m_builder.Reset();
@@ -148,15 +152,20 @@ void RenderPass::Invalidate()
     for (auto && subpass : m_subpasses)
       m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "build new VkRenderPass");
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
+                     std::format("build new VkRenderPass - {}",
+                                 static_cast<void *>(new_renderpass)));
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
     m_renderPass = new_renderpass;
     UpdateRenderPassValidFlag();
     m_invalidRenderPass = false;
+    clearCommands = true;
   }
 
   for (auto && subpass : m_subpasses)
   {
+    if (clearCommands)
+      subpass.SetInvalid();
     subpass.Invalidate();
   }
 }
