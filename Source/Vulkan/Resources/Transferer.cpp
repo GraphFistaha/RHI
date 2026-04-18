@@ -416,18 +416,18 @@ Transferer::Transferer(Context & ctx)
 
 
 Transferer::Transferer(Transferer && rhs)
-  : Transferer(rhs.GetOwner())
+  : OwnedBy<Context>(rhs.GetOwner())
+  , m_transferSubmitter(std::move(rhs.m_transferSubmitter))
+  , m_graphicsSubmitter(std::move(rhs.m_graphicsSubmitter))
+  , m_computeSubmitter(std::move(rhs.m_computeSubmitter))
+  , m_pendingTasks(std::move(rhs.m_pendingTasks))
+  , m_awaitable(std::move(rhs.m_awaitable))
 {
-  std::swap(m_transferSubmitter, rhs.m_transferSubmitter);
-  std::swap(m_graphicsSubmitter, rhs.m_graphicsSubmitter);
-  std::swap(m_computeSubmitter, rhs.m_computeSubmitter);
-  std::swap(m_awaitable, rhs.m_awaitable);
-  std::swap(m_pendingTasks, rhs.m_pendingTasks);
 }
 
 Transferer::~Transferer() = default;
 
-IAwaitable * Transferer::DoTransfer()
+IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
 {
   std::lock_guard lk{m_submittingMutex};
   std::vector<IAwaitable *> tasks{m_transferSubmitter.SubmitAndSwap(),
@@ -435,6 +435,8 @@ IAwaitable * Transferer::DoTransfer()
                                   m_computeSubmitter.SubmitAndSwap()};
   m_awaitable.SetTasks(std::move(tasks));
   m_pendingTasks->ProcessSubmittedTasks();
+  if (flush)
+    m_pendingTasks->ProcessSubmittedTasks();
   return &m_awaitable;
 }
 

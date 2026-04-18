@@ -30,7 +30,7 @@ bool CompositeAsyncTask::Wait() noexcept
 {
   std::lock_guard lk{m_mutex};
   bool res = std::accumulate(m_tasks.begin(), m_tasks.end(), true,
-                             [](bool acc, auto && task) { return acc && task->Wait(); });
+                             [](bool acc, auto && task) { return acc && task && task->Wait(); });
   m_tasks.clear();
   return res;
 }

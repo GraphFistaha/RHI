@@ -35,10 +35,9 @@ public: // IContext interface
                                          RHI::SamplesCount samplesCount) override;
   virtual void DeleteAttachment(IAttachment * attachment) override;
   virtual void ClearResources() override; ///< GarbageCollector call
-  virtual void TransferPass() override;
+  virtual void TransferPass(bool flush = false) override;
 
 public: // RHI-only API
-  void Log(LogMessageStatus status, const std::string & message) const noexcept;
   void WaitForIdle() const noexcept;
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
@@ -48,6 +47,17 @@ public: // RHI-only API
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
   RHI::ITexture * GetNullTexture() const noexcept;
+
+  template<typename... Args>
+  void Log(LogMessageStatus status, const std::format_string<Args...> fmt, Args &&... args)
+  {
+#ifdef RHI_USE_LOG_OUTPUT
+    LogImpl(status, std::format(fmt, std::forward<Args>(args)...));
+#endif
+  }
+
+private:
+  void LogImpl(LogMessageStatus status, const std::string & message) const noexcept;
 
 private:
   static constexpr size_t kValidationMark = 0xABCDEF00ABCDEF00;

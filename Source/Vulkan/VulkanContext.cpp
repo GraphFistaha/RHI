@@ -100,13 +100,20 @@ void Context::ClearResources()
   m_gc.ClearObjects();
 }
 
-void Context::TransferPass()
+void Context::TransferPass(bool flush /* = false*/)
 {
+  std::vector<RHI::IAwaitable *> awaits;
   for (auto && [thread_id, transferer] : m_transferers)
-    transferer.DoTransfer();
+    awaits.push_back(transferer.DoTransfer(flush));
+
+  if (flush)
+  {
+    for (auto && await : awaits)
+      await->Wait();
+  }
 }
 
-void Context::Log(LogMessageStatus status, const std::string & message) const noexcept
+void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept
 {
 #ifdef NDEBUG
   if (m_logFunc && status != LogMessageStatus::LOG_DEBUG)

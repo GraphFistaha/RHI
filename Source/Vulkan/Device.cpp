@@ -2,6 +2,7 @@
 #include "Device.hpp"
 
 #include <cassert>
+#include <sstream>
 
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.h>
@@ -9,8 +10,8 @@
 
 namespace
 {
-constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_3;
-constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
+constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_2;
+constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 2};
 
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -28,12 +29,12 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
   {
     if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ||
         messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-      ctx->Log(RHI::LogMessageStatus::LOG_ERROR, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_ERROR, "{}", std::string_view(pCallbackData->pMessage));
     else if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ||
              messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-      ctx->Log(RHI::LogMessageStatus::LOG_WARNING, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_WARNING, "{}", std::string_view(pCallbackData->pMessage));
     else
-      ctx->Log(RHI::LogMessageStatus::LOG_INFO, pCallbackData->pMessage);
+      ctx->Log(RHI::LogMessageStatus::LOG_INFO, "{}", std::string_view(pCallbackData->pMessage));
   }
   return VK_FALSE;
 }
@@ -56,7 +57,11 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
                     .build();
   if (!inst_ret || !inst_ret.has_value())
   {
-    throw std::runtime_error("Failed to create Vulkan instance");
+    std::stringstream ss;
+    ss << "Failed to create Vulkan instance: ";
+    for (auto && errMsg : inst_ret.detailed_failure_reasons())
+      ss << errMsg << "; ";
+    throw std::runtime_error(ss.str());
   }
   else
   {
@@ -84,7 +89,11 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTrait
 
   if (!phys_ret)
   {
-    throw std::runtime_error("Failed to select Vulkan Physical Device");
+    std::stringstream ss;
+    ss << "Failed to select Vulkan Physical Device: ";
+    for (auto && errMsg : phys_ret.detailed_failure_reasons())
+      ss << errMsg << "; ";
+    throw std::runtime_error(ss.str());
   }
   return phys_ret.value();
 }
@@ -110,17 +119,24 @@ private:
 DeviceInternal::DeviceInternal(const RHI::GpuTraits & gpuTraits, RHI::vulkan::Context & ctx)
 {
   instance = CreateInstance("appName", VulkanAPIVersion, &ctx);
-  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance has been created successfully");
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance ({}) has been created successfully",
+          static_cast<void *>(instance.instance));
   physicalDevice = SelectPhysicalDevice(instance, gpuTraits, VulkanAPIVersionPair);
   ctx.Log(RHI::LogMessageStatus::LOG_DEBUG,
-          "VkPhysicalDevice has been selected successfully - " + physicalDevice.name);
+          "VkPhysicalDevice ({}) has been selected successfully - {}",
+          static_cast<void *>(physicalDevice.physical_device), physicalDevice.name);
   vkb::DeviceBuilder device_builder{physicalDevice};
   auto dev_ret = device_builder.build();
   if (!dev_ret)
   {
-    throw std::runtime_error("Failed to create Vulkan device");
+    std::stringstream ss;
+    ss << "Failed to create Vulkan device: ";
+    for (auto && errMsg : dev_ret.detailed_failure_reasons())
+      ss << errMsg << "; ";
+    throw std::runtime_error(ss.str());
   }
-  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDevice has been created successfully");
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDevice ({}) has been created successfully",
+          static_cast<void *>(dev_ret.value().device));
   device = dev_ret.value();
   dispatchTable = device.make_table();
 }

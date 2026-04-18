@@ -77,9 +77,10 @@ void RenderTarget::Invalidate()
     auto new_framebuffer =
       m_builder.Make(GetContext().GetGpuConnection().GetDevice(), m_boundRenderPass, m_extent);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkFramebuffer({}) has been rebuilt - {}",
+                     static_cast<void *>(m_framebuffer), static_cast<void *>(new_framebuffer));
     m_framebuffer = new_framebuffer;
     m_invalidFramebuffer = false;
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkFramebuffer has been rebuilt");
   }
 }
 

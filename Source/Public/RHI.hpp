@@ -377,7 +377,7 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual void ClearResources() = 0;
-  virtual void TransferPass() = 0;
+  virtual void TransferPass(bool flush = false) = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;

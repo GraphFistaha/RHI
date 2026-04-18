@@ -89,9 +89,11 @@ void DescriptorBufferLayout::Invalidate()
     {
       auto newLayout = m_builders[i].Make(GetContext().GetGpuConnection().GetDevice());
       GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layouts[i], nullptr);
+      GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
+                       "VkDescriptorSetLayout({}) has been rebuilt - {}",
+                       static_cast<void *>(m_layouts[i]), static_cast<void *>(newLayout));
       m_layouts[i] = newLayout;
       m_invalidLayouts[i] = ValidityFlag::Valid;
-      GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorSetLayout has been rebuilt");
     }
   }
 
@@ -149,7 +151,8 @@ void DescriptorBufferLayout::DeclareSamplerArrayUniformsArray(
   for (uint32_t i = 0; i < size; ++i)
   {
     auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
-    auto && newDescriptor = m_samplerArrayDescriptors.emplace_back(GetContext(), *this, 0, type, index, i);
+    auto && newDescriptor =
+      m_samplerArrayDescriptors.emplace_back(GetContext(), *this, 0, type, index, i);
     it->second.push_back(&newDescriptor);
     outArray[i] = &newDescriptor;
   }

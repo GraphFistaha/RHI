@@ -13,6 +13,12 @@ Submitter::Submitter(Context & ctx, QueueType type, VkPipelineStageFlags waitSta
 {
 }
 
+Submitter::~Submitter()
+{
+  m_oldBarrier.Wait();
+  m_newBarrier.Wait();
+}
+
 Submitter::Submitter(Submitter && rhs) noexcept
   : CommandBuffer(std::move(rhs))
   , m_newBarrier(std::move(rhs.m_newBarrier))
@@ -53,7 +59,7 @@ AsyncTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore>
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-  submitInfo.pWaitSemaphores = reinterpret_cast<const VkSemaphore *>(waitSemaphores.data());
+  submitInfo.pWaitSemaphores = waitSemaphores.data();
   submitInfo.pWaitDstStageMask = waitStages.data();
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &buffer;

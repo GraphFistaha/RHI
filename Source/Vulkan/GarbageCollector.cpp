@@ -79,7 +79,7 @@ VkObjectsGarbageCollector::~VkObjectsGarbageCollector()
 void VkObjectsGarbageCollector::ClearObjects()
 {
   auto && visitor = overloads{
-    [device = GetContext().GetGpuConnection().GetDevice()](VkObjectDestroyData & data)
+    [device = GetContext().GetGpuConnection().GetDevice(), this](VkObjectDestroyData & data)
     {
       auto it = kDestroyFuncs.find(data.objectType);
       if (it == kDestroyFuncs.end())
@@ -90,6 +90,7 @@ void VkObjectsGarbageCollector::ClearObjects()
       }
 
       auto && destroyFunc = it->second;
+      GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "Destroy object {}({})", data.objectType.name(), data.object);
       destroyFunc(device, data.object,
                   reinterpret_cast<const VkAllocationCallbacks *>(data.allocator));
     },
