@@ -152,7 +152,7 @@ IRenderTarget * Framebuffer::BeginFrame()
 
   m_imagesAvailabilitySemaphores = std::move(semaphores);
   m_activeTarget = (m_activeTarget + 1) % m_targets.size();
-
+  //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
   m_targets[m_activeTarget].SetAttachments(std::move(renderingImages));
   m_targets[m_activeTarget].Invalidate(); // rebuilds VkFramebuffer if need it
   return &m_targets[m_activeTarget];
