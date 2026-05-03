@@ -12,7 +12,7 @@ namespace RHI::vulkan
 static constexpr uint32_t g_stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                            VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-/// Submits transfer commands to one queue (transfer or graphic)
+/// Submits transfer commands to one queue (transfer or graphic or compute)
 struct Transferer::PendingTasksContainer final : public OwnedBy<Context>
 {
   PendingTasksContainer(Context & ctx);
@@ -349,23 +349,23 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   VkOffset3D mipExtent = extentDiv2(oldMipExtent);
 
   /*
-    Algorithm description:
-    Given an texture with N layers and M mip levels to generate.
-    you should generate all mip levels for each layer
-    note: the texture must be in the same layout as it was before the algorithm
+                Algorithm description:
+                Given an texture with N layers and M mip levels to generate.
+                you should generate all mip levels for each layer
+                note: the texture must be in the same layout as it was before the algorithm
 
-    1) remember layout of the texture to restore it after the execution
-    2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-    3) for i = 1 to M:
-         3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level. 
-                This step blocks mip level for reading
-         3.2) blit image (all N layers) from i - 1 to i mip level with linear filteration. 
-                Note: i'th level has only half of i-1'th level's extent
-         3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
-                this step waits for reading is completed and blocks for writing
-         3.4) div extent in 2
-    4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
-  */
+                1) remember layout of the texture to restore it after the execution
+                2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+                3) for i = 1 to M:
+                     3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
+                            This step blocks mip level for reading
+                     3.2) blit image (all N layers) from i - 1 to i mip level with linear filteration.
+                            Note: i'th level has only half of i-1'th level's extent
+                     3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                            this step waits for reading is completed and blocks for writing
+                     3.4) div extent in 2
+                4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+              */
 
   VkImageLayout oldLayout = dst.GetLayout();
   dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -467,24 +467,24 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   }
 
   /*
-      Algorithm description:
-      Given an texture with N layers and M mip levels to generate.
-      you should generate all mip levels for each layer
-      Also given Regions array to create mip levels from
-      note: the texture must be in the same layout as it was before the algorithm
+                  Algorithm description:
+                  Given an texture with N layers and M mip levels to generate.
+                  you should generate all mip levels for each layer
+                  Also given Regions array to create mip levels from
+                  note: the texture must be in the same layout as it was before the algorithm
 
-      1) remember layout of the texture to restore it after the execution
-      2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-      3) for i = 1 to M:
-           3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
-                  This step blocks mip level for reading
-           3.2) for j = 1 to R:
-               3.2.1) blit subimage from i - 1 to i mip level with linear filteration.
-                      Note: i'th level has only half of i-1'th level's extent
-           3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
-                  this step waits for reading is completed and blocks for writing
-      4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
-    */
+                  1) remember layout of the texture to restore it after the execution
+                  2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+                  3) for i = 1 to M:
+                       3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
+                              This step blocks mip level for reading
+                       3.2) for j = 1 to R:
+                           3.2.1) blit subimage from i - 1 to i mip level with linear filteration.
+                                  Note: i'th level has only half of i-1'th level's extent
+                       3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                              this step waits for reading is completed and blocks for writing
+                  4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+                */
 
   VkImageLayout oldLayout = dst.GetLayout();
   dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -547,6 +547,10 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   return data.second.get_future();
 }
 
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan
+{
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
@@ -603,7 +607,6 @@ std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
                                                   const UploadImageArgs & args)
 {
   std::lock_guard lk{m_submittingMutex};
-  //TODO: return transferQueue
   return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, args);
 }
 
@@ -634,6 +637,10 @@ std::future<MipmapsGenerationResult> Transferer::GenerateMipmapsByRegions(
   return m_pendingTasks->GenerateMipmapsByRegions(m_graphicsSubmitter.GetWritingBuffer(), texture,
                                                   regions);
 }
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan
+{
 
 Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)
   : m_writingBuffer(ctx, type, VK_PIPELINE_STAGE_TRANSFER_BIT)

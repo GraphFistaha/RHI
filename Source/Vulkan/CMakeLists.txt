@@ -59,6 +59,8 @@ PRIVATE
 	"Utils/FenceBuilder.cpp"
 	"Utils/SemaphoreBuilder.hpp"
 	"Utils/SemaphoreBuilder.cpp"
+	"Utils/EventBuilder.hpp"
+	"Utils/EventBuilder.cpp"
 	
 	
 	"ImageUtils/ImageLayoutTransferer.cpp"
@@ -90,7 +92,7 @@ PRIVATE
 	"CommandsExecution/Submitter.hpp"
 	"CommandsExecution/AsyncTask.cpp"
 	"CommandsExecution/AsyncTask.hpp"
-
+	
 	"CommandsExecution/CompositeAsyncTask.cpp"
 	"CommandsExecution/CompositeAsyncTask.hpp"
 )

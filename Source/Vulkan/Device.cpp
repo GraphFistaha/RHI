@@ -50,6 +50,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
                     .request_validation_layers(false)
 #else
                     .request_validation_layers()
+                    .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT)
                     .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT)
                     .add_validation_feature_enable(
                       VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
@@ -77,18 +78,37 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTrait
                                          const std::pair<uint32_t, uint32_t> & apiVersion)
 {
   vkb::PhysicalDeviceSelector selector{inst};
-  VkPhysicalDeviceFeatures features{};
+  // init features for vulkan 1.1
   VkPhysicalDeviceVulkan11Features features11{};
+  {
+    features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  }
+  // init features for vulkan 1.2
   VkPhysicalDeviceVulkan12Features features12{};
+  {
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  }
+  // init features for vulkan 1.3
   VkPhysicalDeviceVulkan13Features features13{};
+  {
+    features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    features13.synchronization2 = VK_TRUE;
+  }
+  // init features for vulkan 1.4
   VkPhysicalDeviceVulkan14Features features14{};
-  if (gpuTraits.require_geometry_shaders)
-    features.geometryShader = VK_TRUE;
-  if (gpuTraits.name.has_value())
-    selector.set_name(*gpuTraits.name);
-  if (gpuTraits.require_presentation)
-    selector.defer_surface_initialization();
-  features13.synchronization2 = VK_TRUE;
+  {
+    features14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+  }
+  // init other features
+  VkPhysicalDeviceFeatures features{};
+  {
+    if (gpuTraits.require_geometry_shaders)
+      features.geometryShader = VK_TRUE;
+    if (gpuTraits.name.has_value())
+      selector.set_name(*gpuTraits.name);
+    if (gpuTraits.require_presentation)
+      selector.defer_surface_initialization();
+  }
   auto phys_ret =
     selector.set_required_features(features)
       .set_required_features_11(features11)

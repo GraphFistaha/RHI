@@ -18,6 +18,7 @@ struct CommandBuffer;
 
 namespace RHI::vulkan
 {
+/// @brief watches on image layout and can set new layout for image
 struct ImageLayoutTransferer final
 {
   explicit ImageLayoutTransferer(VkImage image);
