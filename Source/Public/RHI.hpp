@@ -353,6 +353,9 @@ struct ITexture
   /// @brief generate mipmaps as declared in TextureDescription
   /// @return future with count of generated mip levels
   virtual std::future<MipmapsGenerationResult> GenerateMipmaps() = 0;
+  virtual std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
+    const std::vector<RHI::TextureRegion> & regions) = 0;
+
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   //virtual void SetSwizzle() = 0;

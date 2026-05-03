@@ -10,8 +10,8 @@
 
 namespace
 {
-constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_2;
-constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 2};
+constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_0;
+constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 0};
 
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -50,6 +50,9 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
                     .request_validation_layers(false)
 #else
                     .request_validation_layers()
+                    .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT)
+                    .add_validation_feature_enable(
+                      VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
 #endif
                     .set_debug_callback(VulkanDebugCallback)
                     .set_debug_callback_user_data_pointer(debugUserData)

@@ -32,9 +32,9 @@ constexpr VkAccessFlags LayoutTransfer_MakeAccessFlag(VkImageLayout layout) noex
       return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: // write to picture
-      return VK_ACCESS_TRANSFER_WRITE_BIT;
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: // read from picture
       return VK_ACCESS_TRANSFER_READ_BIT;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: // read from picture
+      return VK_ACCESS_TRANSFER_WRITE_BIT;
 
     case VK_IMAGE_LAYOUT_GENERAL:
     case VK_IMAGE_LAYOUT_PREINITIALIZED:

@@ -42,6 +42,12 @@ std::future<MipmapsGenerationResult> Texture::GenerateMipmaps()
   return GetContext().GetTransferer().GenerateMipmaps(*this);
 }
 
+std::future<MipmapsGenerationResult> Texture::GenerateMipmapsByRegions(
+  const std::vector<RHI::TextureRegion> & regions)
+{
+  return GetContext().GetTransferer().GenerateMipmapsByRegions(*this, regions);
+}
+
 TextureDescription Texture::GetDescription() const noexcept
 {
   return m_description;

@@ -42,6 +42,10 @@ public:
   std::future<MipmapsGenerationResult> GenerateMipmaps(details::CommandBuffer & commands,
                                                        IInternalTexture & dst);
 
+  std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
+    details::CommandBuffer & commands, IInternalTexture & dst,
+    const std::vector<RHI::TextureRegion> & regions);
+
 private:
   /// function to copy texels from downloaded staging buffer to host memory
   using CreateDownloadResultFunc = std::function<DownloadResult(BufferGPU &)>;
@@ -404,6 +408,148 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   return data.second.get_future();
 }
 
+std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmapsByRegions(
+  details::CommandBuffer & commands, IInternalTexture & dst,
+  const std::vector<RHI::TextureRegion> & regions)
+{
+  auto calcMipExtent = [](const VkExtent3D & srcExtent, uint32_t layer) -> VkOffset3D
+  {
+    return VkOffset3D{std::max(1, static_cast<int32_t>(srcExtent.width >> layer)),
+                      std::max(1, static_cast<int32_t>(srcExtent.height >> layer)),
+                      std::max(1, static_cast<int32_t>(srcExtent.depth >> layer))};
+  };
+
+  auto calcMipOffset = [](const VkOffset3D & srcOffset, uint32_t layer) -> VkOffset3D
+  {
+    return VkOffset3D{srcOffset.x >> layer, srcOffset.y >> layer, srcOffset.z >> layer};
+  };
+
+
+  const uint32_t transferQueue =
+    GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
+
+  // lambda to make a barrier for mip level
+  auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
+                                                                    VkImageLayout newLayout,
+                                                                    uint32_t level)
+  {
+    assert(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    assert(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
+           newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    VkImageMemoryBarrier barrier{};
+    {
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.oldLayout = oldLayout;
+      barrier.newLayout = newLayout;
+      barrier.srcQueueFamilyIndex = transferQueue;
+      barrier.dstQueueFamilyIndex = transferQueue;
+      barrier.image = dst.GetHandle();
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseMipLevel = level;
+      barrier.subresourceRange.levelCount = 1;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+      barrier.srcAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_WRITE_BIT
+                              : VK_ACCESS_TRANSFER_READ_BIT;
+      barrier.dstAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                              ? VK_ACCESS_TRANSFER_READ_BIT
+                              : VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    commands.PushCommand(vkCmdPipelineBarrier, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+  };
+
+  // if texture has no mip levels, then do nothing
+  if (dst.GetMipLevelsCount() <= 1)
+  {
+    std::promise<MipmapsGenerationResult> result;
+    result.set_value(0);
+    return result.get_future();
+  }
+
+  /*
+      Algorithm description:
+      Given an texture with N layers and M mip levels to generate.
+      you should generate all mip levels for each layer
+      Also given Regions array to create mip levels from
+      note: the texture must be in the same layout as it was before the algorithm
+
+      1) remember layout of the texture to restore it after the execution
+      2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+      3) for i = 1 to M:
+           3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
+                  This step blocks mip level for reading
+           3.2) for j = 1 to R:
+               3.2.1) blit subimage from i - 1 to i mip level with linear filteration.
+                      Note: i'th level has only half of i-1'th level's extent
+           3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                  this step waits for reading is completed and blocks for writing
+      4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+    */
+
+  VkImageLayout oldLayout = dst.GetLayout();
+  dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  std::vector<VkImageBlit> blits;
+  blits.reserve(regions.size());
+  for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
+  {
+    blits.clear();
+
+    for (auto && region : regions)
+    {
+      auto [srcExtent, layersCount] =
+        utils::UnpackExtentAndLayers(region.extent, dst.GetImageType());
+      auto [srcOffset, baseLayer] =
+        utils::UnpackOffsetAndBaseLayer(region.offset, dst.GetImageType());
+      VkOffset3D oldMipExtent = calcMipExtent(srcExtent, level - 1);
+      VkOffset3D oldMipOffset = calcMipOffset(srcOffset, level - 1);
+      VkOffset3D mipExtent = calcMipExtent(srcExtent, level);
+      VkOffset3D mipOffset = calcMipOffset(srcOffset, level);
+
+      if (oldMipExtent.x == 1 && oldMipExtent.y == 1 && oldMipExtent.z == 1)
+        continue;
+
+      VkImageBlit blit{};
+      {
+        blit.srcOffsets[0] = oldMipOffset;
+        blit.srcOffsets[1] = oldMipExtent;
+        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.srcSubresource.mipLevel = level - 1;
+        blit.srcSubresource.baseArrayLayer = baseLayer;
+        blit.srcSubresource.layerCount = layersCount;
+        blit.dstOffsets[0] = mipOffset;
+        blit.dstOffsets[1] = mipExtent;
+        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        blit.dstSubresource.mipLevel = level;
+        blit.dstSubresource.baseArrayLayer = baseLayer;
+        blit.dstSubresource.layerCount = layersCount;
+      }
+      blits.push_back(blit);
+    }
+
+    if (!blits.empty())
+    {
+      transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
+
+      commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           static_cast<uint32_t>(blits.size()), blits.data(), VK_FILTER_LINEAR);
+
+      transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, level - 1);
+    }
+  }
+
+  dst.TransferLayout(commands, oldLayout);
+
+  std::promise<MipmapsGenerationResult> promise;
+  auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
+  return data.second.get_future();
+}
+
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
@@ -481,6 +627,14 @@ std::future<MipmapsGenerationResult> Transferer::GenerateMipmaps(IInternalTextur
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->GenerateMipmaps(m_graphicsSubmitter.GetWritingBuffer(), texture);
+}
+
+std::future<MipmapsGenerationResult> Transferer::GenerateMipmapsByRegions(
+  IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions)
+{
+  std::lock_guard lk{m_submittingMutex};
+  return m_pendingTasks->GenerateMipmapsByRegions(m_graphicsSubmitter.GetWritingBuffer(), texture,
+                                                  regions);
 }
 
 Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)

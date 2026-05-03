@@ -26,6 +26,9 @@ public: // ITexture interface
   virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) override;
   virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) override;
   virtual std::future<MipmapsGenerationResult> GenerateMipmaps() override;
+  virtual std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
+    const std::vector<RHI::TextureRegion> & regions) override;
+
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
   //virtual void SetSwizzle() = 0;

@@ -36,6 +36,8 @@ struct Transferer final : public OwnedBy<Context>
   std::future<BlitResult> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                            const TextureRegion & region);
   std::future<MipmapsGenerationResult> GenerateMipmaps(IInternalTexture & texture);
+  std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
+    IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions);
 
 private:
   struct Bufferchain final
