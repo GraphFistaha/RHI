@@ -59,6 +59,16 @@ size_t SurfacedAttachment::Size() const
   return RHI::utils::GetSizeOfImage(GetInternalExtent(), GetInternalFormat());
 }
 
+void SurfacedAttachment::SetClearValue(float r, float g, float b, float a)
+{
+  m_clearValue.color = VkClearColorValue{r, g, b, a};
+}
+
+void SurfacedAttachment::SetClearValue(float depth, uint32_t stencil)
+{
+  m_clearValue.depthStencil = VkClearDepthStencilValue{depth, stencil};
+}
+
 // -------------------- ITexture interface ---------------------
 
 VkImageView SurfacedAttachment::GetImageView() const noexcept

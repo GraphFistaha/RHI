@@ -20,6 +20,10 @@ struct IInternalAttachment : public IInternalTexture
   virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
   virtual void TransferLayout(VkImageLayout layout) noexcept = 0;
   virtual void Resize(const VkExtent2D & new_extent) noexcept = 0;
+  VkClearValue GetClearValue() const noexcept { return m_clearValue; }
+
+protected:
+  VkClearValue m_clearValue;
 };
 
 } // namespace RHI::vulkan

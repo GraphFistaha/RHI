@@ -113,6 +113,17 @@ void Context::TransferPass(bool flush /* = false*/)
   }
 }
 
+void Context::RenderPass(IFramebuffer * framebuffer)
+{
+  if (!framebuffer)
+    return;
+  auto * fbo = dynamic_cast<Framebuffer *>(framebuffer);
+  if (RenderTarget * renderTarget = fbo->BeginFrame())
+  {
+    fbo->EndFrame();
+  }
+}
+
 void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept
 {
 #ifdef NDEBUG

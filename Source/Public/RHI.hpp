@@ -260,17 +260,6 @@ struct ISubpassConfiguration : public IInvalidable
   virtual uint32_t GetSubpassIndex() const = 0;
 };
 
-// IRenderTarget
-/// @brief Framebuffer is a set of images to render
-struct IRenderTarget
-{
-  virtual ~IRenderTarget() = default;
-  virtual TexelIndex GetExtent() const noexcept = 0;
-  virtual void SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
-                             float a) noexcept = 0;
-  virtual void SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept = 0;
-};
-
 struct ISubpass
 {
   virtual ~ISubpass() = default;
@@ -306,8 +295,6 @@ struct ISubpass
 struct IFramebuffer
 {
   virtual ~IFramebuffer() = default;
-  virtual IRenderTarget * BeginFrame() = 0;
-  virtual IAwaitable * EndFrame() = 0;
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
   virtual RHI::TexelIndex GetExtent() const = 0;
@@ -363,7 +350,6 @@ struct ITexture
 };
 
 /// swapchained image sequence to attach it to framebuffer
-// TODO: remove it. Only renderTarget should stay
 struct IAttachment
 {
   virtual ~IAttachment() = default;
@@ -372,6 +358,8 @@ struct IAttachment
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   virtual void BlitTo(ITexture * texture) = 0;
+  virtual void SetClearValue(float r, float g, float b, float a) = 0;
+  virtual void SetClearValue(float depth, uint32_t stencil) = 0;
 };
 
 /// @brief Context is a main container for all objects above. It can creates some user-defined objects like buffers, framebuffers, etc
@@ -381,6 +369,7 @@ struct IContext
 
   virtual void ClearResources() = 0;
   virtual void TransferPass(bool flush = false) = 0;
+  virtual void RenderPass(IFramebuffer * framebuffer) = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;

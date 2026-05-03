@@ -142,6 +142,16 @@ void GenericAttachment::BlitTo(ITexture * texture)
     GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
+void GenericAttachment::SetClearValue(float r, float g, float b, float a)
+{
+  m_clearValue.color = VkClearColorValue{r, g, b, a};
+}
+
+void GenericAttachment::SetClearValue(float depth, uint32_t stencil)
+{
+  m_clearValue.depthStencil = VkClearDepthStencilValue{depth, stencil};
+}
+
 TextureDescription GenericAttachment::GetDescription() const noexcept
 {
   return m_description;

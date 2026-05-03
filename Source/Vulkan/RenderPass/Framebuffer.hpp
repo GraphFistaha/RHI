@@ -4,12 +4,12 @@
 #include <vector>
 
 #include <Private/OwnedBy.hpp>
+#include <RenderPass/RenderPass.hpp>
+#include <RenderPass/RenderTarget.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "../Attachments/Attachment.hpp"
-#include <RenderPass/RenderPass.hpp>
-#include <RenderPass/RenderTarget.hpp>
 
 namespace RHI::vulkan
 {
@@ -23,10 +23,6 @@ struct Framebuffer : public IFramebuffer,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IFramebuffer interface
-  /// begins rendering
-  virtual IRenderTarget * BeginFrame() override;
-  /// finish rendering
-  virtual IAwaitable * EndFrame() override;
   ///
   virtual ISubpass * CreateSubpass() override;
   /// @brief adds attachment to all frames
@@ -42,6 +38,10 @@ public: // IFramebuffer interface
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
   void Invalidate();
+  /// begins rendering
+  RenderTarget * BeginFrame();
+  /// finish rendering
+  IAwaitable * EndFrame();
 
   using AttachmentProcessFunc = std::function<void(IInternalAttachment *)>;
   void ForEachAttachment(AttachmentProcessFunc && func);

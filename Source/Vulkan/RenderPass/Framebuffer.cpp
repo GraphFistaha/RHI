@@ -117,7 +117,7 @@ RHI::SamplesCount Framebuffer::CalcSamplesCount() const noexcept
   return RHI::SamplesCount::One;
 }
 
-IRenderTarget * Framebuffer::BeginFrame()
+RenderTarget * Framebuffer::BeginFrame()
 {
   if (m_attachments.empty())
     return nullptr;
@@ -126,12 +126,14 @@ IRenderTarget * Framebuffer::BeginFrame()
 
   std::vector<VkImageView> renderingImages;
   std::vector<VkSemaphore> semaphores;
+  std::vector<VkClearValue> clearValues;
   renderingImages.reserve(m_attachments.size());
   semaphores.reserve(m_attachments.size());
+  clearValues.reserve(m_attachments.size());
   bool success = true;
 
   auto processAttachment =
-    [&renderingImages, &semaphores, &success](IInternalAttachment * attachment)
+    [&renderingImages, &semaphores, &clearValues, &success](IInternalAttachment * attachment)
   {
     if (attachment && success)
     {
@@ -141,6 +143,7 @@ IRenderTarget * Framebuffer::BeginFrame()
       if (imgAvailSemaphore)
         semaphores.push_back(imgAvailSemaphore);
       renderingImages.push_back(imageView);
+      clearValues.push_back(attachment->GetClearValue());
     }
   };
 
@@ -154,7 +157,7 @@ IRenderTarget * Framebuffer::BeginFrame()
   m_imagesAvailabilitySemaphores = std::move(semaphores);
   m_activeTarget = (m_activeTarget + 1) % m_targets.size();
   //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
-  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages));
+  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages), std::move(clearValues));
   m_targets[m_activeTarget].Invalidate(); // rebuilds VkFramebuffer if need it
   return &m_targets[m_activeTarget];
 }

@@ -34,8 +34,11 @@ public: // IContext interface
                                          RenderBuffering buffering,
                                          RHI::SamplesCount samplesCount) override;
   virtual void DeleteAttachment(IAttachment * attachment) override;
+
+  // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
   virtual void TransferPass(bool flush = false) override;
+  virtual void RenderPass(IFramebuffer * framebuffer) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;

@@ -29,6 +29,8 @@ public: // ITexture interface
                                                     const TextureRegion & region) override;
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
+  virtual void SetClearValue(float r, float g, float b, float a) override;
+  virtual void SetClearValue(float depth, uint32_t stencil) override;
 
 public: //IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
