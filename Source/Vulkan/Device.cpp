@@ -10,8 +10,8 @@
 
 namespace
 {
-constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_0;
-constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 0};
+constexpr uint32_t VulkanAPIVersion = VK_API_VERSION_1_3;
+constexpr std::pair<uint32_t, uint32_t> VulkanAPIVersionPair = {1, 3};
 
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -78,15 +78,23 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTrait
 {
   vkb::PhysicalDeviceSelector selector{inst};
   VkPhysicalDeviceFeatures features{};
+  VkPhysicalDeviceVulkan11Features features11{};
+  VkPhysicalDeviceVulkan12Features features12{};
+  VkPhysicalDeviceVulkan13Features features13{};
+  VkPhysicalDeviceVulkan14Features features14{};
   if (gpuTraits.require_geometry_shaders)
     features.geometryShader = VK_TRUE;
   if (gpuTraits.name.has_value())
     selector.set_name(*gpuTraits.name);
   if (gpuTraits.require_presentation)
     selector.defer_surface_initialization();
+  features13.synchronization2 = VK_TRUE;
   auto phys_ret =
-    selector
-      .set_required_features(features)
+    selector.set_required_features(features)
+      .set_required_features_11(features11)
+      .set_required_features_12(features12)
+      .set_required_features_13(features13)
+      .set_required_features_14(features14)
       //.set_minimum_version(apiVersion.first, apiVersion.second) // RenderDoc doesn't work with it
       .select();
 

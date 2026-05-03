@@ -36,12 +36,14 @@ struct CommandBuffer : public OwnedBy<Context>
   }
 
   bool IsEmpty() const noexcept { return m_commandsCount == 0; }
+  uint32_t GetBoundQueueFamily() const noexcept;
 
 public:
   VkCommandBuffer GetHandle() const noexcept { return m_buffer; }
 
 private:
   VkCommandBufferLevel m_level;
+  uint32_t m_queueFamily = 0;
   VkCommandPool m_pool = VK_NULL_HANDLE;
   VkCommandBuffer m_buffer = VK_NULL_HANDLE;
   size_t m_commandsCount = 0;

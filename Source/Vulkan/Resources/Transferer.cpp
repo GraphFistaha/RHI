@@ -298,8 +298,7 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   };
 
 
-  const uint32_t transferQueue =
-    GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
+  const uint32_t transferQueue = commands.GetBoundQueueFamily();
 
   // lambda to make a barrier for mip level
   auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
@@ -344,8 +343,9 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
 
   // help variables for algorithm
   VkExtent3D extent = dst.GetInternalExtent();
-  VkOffset3D oldMipExtent = {static_cast<int>(extent.width), static_cast<int>(extent.height),
-                             static_cast<int>(extent.depth)};
+  VkOffset3D oldMipExtent = {static_cast<int32_t>(extent.width),
+                             static_cast<int32_t>(extent.height),
+                             static_cast<int32_t>(extent.depth)};
   VkOffset3D mipExtent = extentDiv2(oldMipExtent);
 
   /*
@@ -371,9 +371,6 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
   {
-    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
-
     VkImageBlit blit{};
     {
       blit.srcOffsets[0] = {0, 0, 0};
@@ -389,6 +386,9 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
       blit.dstSubresource.baseArrayLayer = 0;
       blit.dstSubresource.layerCount = dst.GetLayersCount();
     }
+
+    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
 
     commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                          dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
@@ -412,21 +412,18 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
   details::CommandBuffer & commands, IInternalTexture & dst,
   const std::vector<RHI::TextureRegion> & regions)
 {
-  auto calcMipExtent = [](const VkExtent3D & srcExtent, uint32_t layer) -> VkOffset3D
+  auto calcMipOffset = [](const VkOffset3D & srcOffset, const VkExtent3D & srcExtent,
+                          uint32_t layer) -> std::array<VkOffset3D, 2>
   {
-    return VkOffset3D{std::max(1, static_cast<int32_t>(srcExtent.width >> layer)),
-                      std::max(1, static_cast<int32_t>(srcExtent.height >> layer)),
-                      std::max(1, static_cast<int32_t>(srcExtent.depth >> layer))};
+    VkOffset3D offset0{srcOffset.x >> layer, srcOffset.y >> layer, srcOffset.z >> layer};
+    VkOffset3D offset1 = {offset0.x + std::max(1, static_cast<int32_t>(srcExtent.width >> layer)),
+                          offset0.y + std::max(1, static_cast<int32_t>(srcExtent.height >> layer)),
+                          offset0.z + std::max(1, static_cast<int32_t>(srcExtent.depth >> layer))};
+    return {offset0, offset1};
   };
 
-  auto calcMipOffset = [](const VkOffset3D & srcOffset, uint32_t layer) -> VkOffset3D
-  {
-    return VkOffset3D{srcOffset.x >> layer, srcOffset.y >> layer, srcOffset.z >> layer};
-  };
 
-
-  const uint32_t transferQueue =
-    GetContext().GetGpuConnection().GetQueue(RHI::vulkan::QueueType::Transfer).first;
+  const uint32_t transferQueue = commands.GetBoundQueueFamily();
 
   // lambda to make a barrier for mip level
   auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
@@ -503,24 +500,24 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
         utils::UnpackExtentAndLayers(region.extent, dst.GetImageType());
       auto [srcOffset, baseLayer] =
         utils::UnpackOffsetAndBaseLayer(region.offset, dst.GetImageType());
-      VkOffset3D oldMipExtent = calcMipExtent(srcExtent, level - 1);
-      VkOffset3D oldMipOffset = calcMipOffset(srcOffset, level - 1);
-      VkOffset3D mipExtent = calcMipExtent(srcExtent, level);
-      VkOffset3D mipOffset = calcMipOffset(srcOffset, level);
+      auto [oldMipOffset0, oldMipOffset1] = calcMipOffset(srcOffset, srcExtent, level - 1);
+      auto [mipOffset0, mipOffset1] = calcMipOffset(srcOffset, srcExtent, level);
 
-      if (oldMipExtent.x == 1 && oldMipExtent.y == 1 && oldMipExtent.z == 1)
-        continue;
+      // probably it's need to filter double copying
+      //if (oldMipOffset1.x - oldMipOffset0.x == 1 && oldMipOffset1.y - oldMipOffset0.y == 1 &&
+      //    oldMipOffset1.z - oldMipOffset0.z == 1)
+      //  continue;
 
       VkImageBlit blit{};
       {
-        blit.srcOffsets[0] = oldMipOffset;
-        blit.srcOffsets[1] = oldMipExtent;
+        blit.srcOffsets[0] = oldMipOffset0;
+        blit.srcOffsets[1] = oldMipOffset1;
         blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         blit.srcSubresource.mipLevel = level - 1;
         blit.srcSubresource.baseArrayLayer = baseLayer;
         blit.srcSubresource.layerCount = layersCount;
-        blit.dstOffsets[0] = mipOffset;
-        blit.dstOffsets[1] = mipExtent;
+        blit.dstOffsets[0] = mipOffset0;
+        blit.dstOffsets[1] = mipOffset1;
         blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         blit.dstSubresource.mipLevel = level;
         blit.dstSubresource.baseArrayLayer = baseLayer;
@@ -606,6 +603,7 @@ std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
                                                   const UploadImageArgs & args)
 {
   std::lock_guard lk{m_submittingMutex};
+  //TODO: return transferQueue
   return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, args);
 }
 

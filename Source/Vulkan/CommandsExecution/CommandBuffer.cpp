@@ -40,6 +40,7 @@ namespace RHI::vulkan::details
 CommandBuffer::CommandBuffer(Context & ctx, uint32_t queue_family, VkCommandBufferLevel level)
   : OwnedBy<Context>(ctx)
   , m_level(level)
+  , m_queueFamily(queue_family)
   , m_pool(::CreateCommandPool(ctx.GetGpuConnection().GetDevice(), queue_family))
   , m_buffer(::CreateCommandBuffer(ctx.GetGpuConnection().GetDevice(), m_pool, level))
 {
@@ -68,6 +69,7 @@ CommandBuffer::CommandBuffer(CommandBuffer && rhs) noexcept
   std::swap(rhs.m_buffer, m_buffer);
   std::swap(rhs.m_commandsCount, m_commandsCount);
   std::swap(rhs.m_level, m_level);
+  std::swap(rhs.m_queueFamily, m_queueFamily);
 }
 
 CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs) noexcept
@@ -79,6 +81,7 @@ CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs) noexcept
     std::swap(rhs.m_buffer, m_buffer);
     std::swap(rhs.m_commandsCount, m_commandsCount);
     std::swap(rhs.m_level, m_level);
+    std::swap(rhs.m_queueFamily, m_queueFamily);
   }
   return *this;
 }
@@ -137,6 +140,11 @@ void CommandBuffer::AddCommands(const std::vector<VkCommandBuffer> & buffers)
 {
   assert(m_level == VK_COMMAND_BUFFER_LEVEL_PRIMARY);
   vkCmdExecuteCommands(m_buffer, static_cast<uint32_t>(buffers.size()), buffers.data());
+}
+
+uint32_t CommandBuffer::GetBoundQueueFamily() const noexcept
+{
+  return m_queueFamily;
 }
 
 } // namespace RHI::vulkan::details

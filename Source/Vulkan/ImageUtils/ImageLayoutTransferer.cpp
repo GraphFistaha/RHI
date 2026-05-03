@@ -116,8 +116,8 @@ void ImageLayoutTransferer::TransferLayout(details::CommandBuffer & commandBuffe
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = m_layout;
     barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.srcQueueFamilyIndex = commandBuffer.GetBoundQueueFamily();
+    barrier.dstQueueFamilyIndex = commandBuffer.GetBoundQueueFamily();
     barrier.image = m_image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
