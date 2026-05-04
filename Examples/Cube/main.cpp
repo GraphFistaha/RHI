@@ -113,15 +113,17 @@ int main()
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  auto * depthAttachment = ctx->CreateAttachment(RHI::ImageFormat::DEPTH_STENCIL,
+                                                 surfaceAttachment->GetDescription().extent,
+                                                 RHI::RenderBuffering::Triple,
+                                                 RHI::SamplesCount::Eight);
+  auto * colorAttachment =
+    ctx->CreateAttachment(RHI::ImageFormat::RGBA8, surfaceAttachment->GetDescription().extent,
+                          RHI::RenderBuffering::Triple, RHI::SamplesCount::Eight);
+
   framebuffer->AddAttachment(2, surfaceAttachment);
-  framebuffer->AddAttachment(1, ctx->CreateAttachment(RHI::ImageFormat::DEPTH_STENCIL,
-                                                     surfaceAttachment->GetDescription().extent,
-                                                     RHI::RenderBuffering::Triple,
-                                                     RHI::SamplesCount::Eight));
-  framebuffer->AddAttachment(0, ctx->CreateAttachment(RHI::ImageFormat::RGBA8,
-                                                     surfaceAttachment->GetDescription().extent,
-                                                     RHI::RenderBuffering::Triple,
-                                                     RHI::SamplesCount::Eight));
+  framebuffer->AddAttachment(1, depthAttachment);
+  framebuffer->AddAttachment(0, colorAttachment);
 
   CubesRenderer renderer(*ctx);
   renderer.BindDrawSurface(framebuffer);
@@ -143,6 +145,9 @@ int main()
   std::atomic_bool isRunningFlag = false;
   std::thread game_thread(game_thread_main, std::ref(renderer), std::ref(isRunningFlag));
 
+  surfaceAttachment->SetClearValue(0, 0, 0, 1);
+  colorAttachment->SetClearValue(0.1f, 0.2f, 0.4f, 1.0f);
+  depthAttachment->SetClearValue(1.0f, 0);
   window.MainLoop(
     [&](float delta)
     {
@@ -150,13 +155,7 @@ int main()
       renderer.SetCameraTransform(camera.GetVP());
       const auto start{std::chrono::steady_clock::now()};
       ctx->TransferPass();
-
-      if (auto * renderTarget = framebuffer->BeginFrame())
-      {
-        renderTarget->SetClearValue(0, 0.1f, 0.2f, 0.4f, 1.0f);
-        renderTarget->SetClearValue(1, 1.0f, 0);
-        framebuffer->EndFrame();
-      }
+      ctx->RenderPass(framebuffer);
 
       ctx->ClearResources();
       const auto finish{std::chrono::steady_clock::now()};

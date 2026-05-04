@@ -69,9 +69,8 @@ private:
   Device m_device;
   memory::MemoryAllocator m_allocator;
   details::VkObjectsGarbageCollector m_gc;
-  std::unordered_map<std::thread::id, Transferer> m_transferers;
+  Transferer m_transferer;
 
-  // TODO: replace deque with pool
   RHI::utils::ObjectsTable<IFramebuffer> m_framebuffers;
   RHI::utils::ObjectsTable<IBufferGPU> m_buffers;
   RHI::utils::ObjectsTable<IAttachment> m_attachments;

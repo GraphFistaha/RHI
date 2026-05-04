@@ -88,12 +88,16 @@ CommandBuffer & CommandBuffer::operator=(CommandBuffer && rhs) noexcept
 
 void CommandBuffer::BeginWriting() const
 {
-  if (m_level != VK_COMMAND_BUFFER_LEVEL_PRIMARY)
-    throw std::invalid_argument("Called writing in primary CommandBuffer, but buffer is secondary");
+  VkCommandBufferInheritanceInfo inheritanceInfo{};
+  inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+  uint32_t flags = 0;
+  if (m_level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+    flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = 0; // Optional
-  beginInfo.pInheritanceInfo = nullptr;
+  beginInfo.flags = flags;
+  beginInfo.pInheritanceInfo = &inheritanceInfo;
   if (vkBeginCommandBuffer(m_buffer, &beginInfo) != VK_SUCCESS)
     throw std::runtime_error("failed to begin recording command buffer!");
 }

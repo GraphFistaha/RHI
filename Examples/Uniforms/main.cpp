@@ -34,8 +34,9 @@ int main()
     ctx->CreateBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
   auto * framebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Triple));
+  auto * colorAttachment =
+    ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  framebuffer->AddAttachment(0, colorAttachment);
 
   auto * subpass = framebuffer->CreateSubpass();
   auto && trianglePipeline = subpass->GetConfiguration();
@@ -72,6 +73,7 @@ int main()
   };
 
   float x = 0.0f;
+  colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(
     [&](float delta)
     {
@@ -82,33 +84,27 @@ int main()
       transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
       x += 0.001f;
-      ctx->TransferPass();
-
-      if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
-      {
-        renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
-        if (subpass->ShouldBeInvalidated())
-        {
-          // get size of window
-          auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass->BeginPass())
-          {
-            // set viewport
-            subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            // set scissor
-            subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            // draw triangle
-            subpass->BindVertexBuffer(0, *vertexBuffer, 0);
-            subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
-            subpass->DrawIndexedVertices(IndicesCount, 1);
-            subpass->EndPass();
-          }
-        }
-
-        framebuffer->EndFrame();
-      }
-
       ctx->ClearResources();
+      ctx->TransferPass();
+      ctx->RenderPass(framebuffer);
+
+      if (subpass->ShouldBeInvalidated())
+      {
+        // get size of window
+        auto [width, height, _] = framebuffer->GetExtent();
+        if (subpass->BeginPass())
+        {
+          // set viewport
+          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          // set scissor
+          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          // draw triangle
+          subpass->BindVertexBuffer(0, *vertexBuffer, 0);
+          subpass->BindIndexBuffer(*indexBuffer, RHI::IndexType::UINT32);
+          subpass->DrawIndexedVertices(IndicesCount, 1);
+          subpass->EndPass();
+        }
+      }
     });
 
   return 0;

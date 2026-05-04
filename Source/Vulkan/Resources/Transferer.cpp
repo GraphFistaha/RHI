@@ -554,15 +554,15 @@ namespace RHI::vulkan
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_transferSubmitter(ctx, QueueType::Transfer)
-  , m_graphicsSubmitter(ctx, QueueType::Graphics)
-  , m_computeSubmitter(ctx, QueueType::Compute)
+  , m_transferSubmitter(ctx, QueueType::Transfer, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_graphicsSubmitter(ctx, QueueType::Graphics, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_computeSubmitter(ctx, QueueType::Compute, VK_PIPELINE_STAGE_TRANSFER_BIT)
   , m_pendingTasks(new Transferer::PendingTasksContainer(ctx))
 {
 }
 
 
-Transferer::Transferer(Transferer && rhs)
+Transferer::Transferer(Transferer && rhs) noexcept
   : OwnedBy<Context>(rhs.GetOwner())
   , m_transferSubmitter(std::move(rhs.m_transferSubmitter))
   , m_graphicsSubmitter(std::move(rhs.m_graphicsSubmitter))
@@ -577,9 +577,9 @@ Transferer::~Transferer() = default;
 IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
 {
   std::lock_guard lk{m_submittingMutex};
-  std::vector<IAwaitable *> tasks{m_transferSubmitter.SubmitAndSwap(),
-                                  m_graphicsSubmitter.SubmitAndSwap(),
-                                  m_computeSubmitter.SubmitAndSwap()};
+  std::vector<IAwaitable *> tasks{m_transferSubmitter.Submit(true, {}),
+                                  m_graphicsSubmitter.Submit(true, {}),
+                                  m_computeSubmitter.Submit(true, {})};
   m_awaitable.SetTasks(std::move(tasks));
   m_pendingTasks->ProcessSubmittedTasks();
   if (flush)
@@ -637,29 +637,4 @@ std::future<MipmapsGenerationResult> Transferer::GenerateMipmapsByRegions(
   return m_pendingTasks->GenerateMipmapsByRegions(m_graphicsSubmitter.GetWritingBuffer(), texture,
                                                   regions);
 }
-} // namespace RHI::vulkan
-
-namespace RHI::vulkan
-{
-
-Transferer::Bufferchain::Bufferchain(Context & ctx, QueueType type)
-  : m_writingBuffer(ctx, type, VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_executingBuffer(ctx, type, VK_PIPELINE_STAGE_TRANSFER_BIT)
-{
-  m_writingBuffer.BeginWriting();
-}
-
-IAwaitable * Transferer::Bufferchain::SubmitAndSwap()
-{
-  if (m_writingBuffer.IsEmpty())
-    return nullptr;
-  m_writingBuffer.EndWriting();
-  IAwaitable * result = m_writingBuffer.Submit(true, {});
-  std::swap(m_writingBuffer, m_executingBuffer);
-  m_writingBuffer.WaitForSubmitCompleted();
-  m_writingBuffer.Reset();
-  m_writingBuffer.BeginWriting();
-  return result;
-}
-
 } // namespace RHI::vulkan

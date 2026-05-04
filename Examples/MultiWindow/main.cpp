@@ -18,10 +18,12 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window1.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Triple));
-  framebuffer->AddAttachment(1, ctx->CreateSurfacedAttachment(window2.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Triple));
+  auto * surface1 =
+    ctx->CreateSurfacedAttachment(window1.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  auto * surface2 =
+    ctx->CreateSurfacedAttachment(window2.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  framebuffer->AddAttachment(0, surface1);
+  framebuffer->AddAttachment(1, surface2);
 
   auto subpass1 = framebuffer->CreateSubpass();
   {
@@ -47,37 +49,34 @@ int main()
   window1.MainLoop(
     [&](float delta)
     {
-      if (auto * renderTarget = framebuffer->BeginFrame())
+      surface1->SetClearValue(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
+      surface2->SetClearValue(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
+      ctx->RenderPass(framebuffer);
+
+      if (subpass1->ShouldBeInvalidated())
       {
-        renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-        renderTarget->SetClearValue(1, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-
-        if (subpass1->ShouldBeInvalidated())
+        auto [width, height, _] = surface1->GetDescription().extent;
+        if (subpass1->BeginPass()) // begin drawing pass
         {
-          auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass1->BeginPass()) // begin drawing pass
-          {
-            subpass1->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            subpass1->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            subpass1->DrawVertices(3, 1);
-            subpass1->EndPass(); // finish drawing pass
-          }
+          subpass1->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          subpass1->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          subpass1->DrawVertices(3, 1);
+          subpass1->EndPass(); // finish drawing pass
         }
-
-        if (subpass2->ShouldBeInvalidated())
-        {
-          auto [width, height, _] = renderTarget->GetExtent();
-          if (subpass2->BeginPass()) // begin drawing pass
-          {
-            subpass2->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            subpass2->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            subpass2->DrawVertices(4, 1);
-            subpass2->EndPass(); // finish drawing pass
-          }
-        }
-        framebuffer->EndFrame();
-        t += 0.0001;
       }
+
+      if (subpass2->ShouldBeInvalidated())
+      {
+        auto [width, height, _] = surface2->GetDescription().extent;
+        if (subpass2->BeginPass()) // begin drawing pass
+        {
+          subpass2->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          subpass2->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          subpass2->DrawVertices(4, 1);
+          subpass2->EndPass(); // finish drawing pass
+        }
+      }
+      t += 0.0001;
     });
 
   return 0;

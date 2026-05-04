@@ -26,6 +26,7 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   , m_device(*this, gpuTraits)
   , m_allocator(*this)
   , m_gc(*this)
+  , m_transferer(*this)
 {
   // alloc null texture
   RHI::TextureDescription args{};
@@ -103,8 +104,7 @@ void Context::ClearResources()
 void Context::TransferPass(bool flush /* = false*/)
 {
   std::vector<RHI::IAwaitable *> awaits;
-  for (auto && [thread_id, transferer] : m_transferers)
-    awaits.push_back(transferer.DoTransfer(flush));
+  awaits.push_back(m_transferer.DoTransfer(flush));
 
   if (flush)
   {
@@ -147,15 +147,7 @@ const Device & Context::GetGpuConnection() const & noexcept
 
 Transferer & Context::GetTransferer() & noexcept
 {
-  auto id = std::this_thread::get_id();
-  auto it = m_transferers.find(id);
-  if (it == m_transferers.end())
-  {
-    bool inserted = false;
-    std::tie(it, inserted) = m_transferers.insert({id, Transferer(*this)});
-    assert(inserted);
-  }
-  return it->second;
+  return m_transferer;
 }
 
 memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept

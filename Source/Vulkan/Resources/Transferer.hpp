@@ -3,7 +3,7 @@
 #include <queue>
 
 #include <CommandsExecution/CompositeAsyncTask.hpp>
-#include <CommandsExecution/Submitter.hpp>
+#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Device.hpp>
 #include <ImageUtils/TextureInterface.hpp>
 #include <Private/OwnedBy.hpp>
@@ -21,8 +21,8 @@ namespace RHI::vulkan
 struct Transferer final : public OwnedBy<Context>
 {
   explicit Transferer(Context & ctx);
-  Transferer(Transferer && rhs);
-  ~Transferer() override;
+  Transferer(Transferer && rhs) noexcept;
+  virtual ~Transferer() override;
 
   IAwaitable * DoTransfer(bool flush = false);
 
@@ -40,22 +40,10 @@ struct Transferer final : public OwnedBy<Context>
     IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions);
 
 private:
-  struct Bufferchain final
-  {
-    explicit Bufferchain(Context & ctx, QueueType type);
-
-    details::CommandBuffer & GetWritingBuffer() & noexcept { return m_writingBuffer; }
-    IAwaitable * SubmitAndSwap();
-
-  private:
-    details::Submitter m_writingBuffer;
-    details::Submitter m_executingBuffer;
-  };
-
   std::mutex m_submittingMutex;
-  Bufferchain m_transferSubmitter;
-  Bufferchain m_graphicsSubmitter;
-  Bufferchain m_computeSubmitter;
+  DoubleBufferedSubmitter m_transferSubmitter;
+  DoubleBufferedSubmitter m_graphicsSubmitter;
+  DoubleBufferedSubmitter m_computeSubmitter;
 
   struct PendingTasksContainer;
   std::unique_ptr<PendingTasksContainer> m_pendingTasks;

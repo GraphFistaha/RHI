@@ -56,8 +56,9 @@ int main()
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Triple));
+  RHI::IAttachment * colorAttachment =
+    ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  framebuffer->AddAttachment(0, colorAttachment);
 
   Renderer triangleRenderer(*ctx, *framebuffer);
   triangleRenderer.AsyncDrawScene();
@@ -68,16 +69,13 @@ int main()
     triangleRenderer.AsyncDrawScene();
   };
 
+  colorAttachment->SetClearValue(0.1f, 1.0f, 0.4f, 1.0f);
   window.MainLoop(
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
       triangleRenderer.UpdateGeometry();
       ctx->TransferPass();
-      if (auto * renderTarget = framebuffer->BeginFrame())
-      {
-        renderTarget->SetClearValue(0, 0.1f, 1.0f, 0.4f, 1.0f);
-        framebuffer->EndFrame();
-      }
+      ctx->RenderPass(framebuffer);
     });
 
   return 0;

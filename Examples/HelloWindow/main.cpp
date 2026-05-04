@@ -15,13 +15,13 @@ int main()
 
   RHI::GpuTraits gpuTraits{};
   gpuTraits.require_presentation = true;
-  std::unique_ptr<RHI::IContext> ctx =
-    RHI::CreateContext(gpuTraits, ConsoleLog);
+  std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
   assert(ctx);
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Double));
+  RHI::IAttachment * colorAttachment =
+    ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Double);
+  framebuffer->AddAttachment(0, colorAttachment);
 
   window.onResize = [&framebuffer](int width, int height)
   {
@@ -30,13 +30,10 @@ int main()
 
   float t = 0.0;
   window.MainLoop(
-    [=, &t](float delta)
+    [=, &t, &ctx](float delta)
     {
-      if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
-      {
-        renderTarget->SetClearValue(0, 0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
-        framebuffer->EndFrame();
-      }
+      colorAttachment->SetClearValue(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
+      ctx->RenderPass(framebuffer);
       t += 0.001f;
     });
 

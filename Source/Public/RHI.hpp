@@ -197,6 +197,13 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
+enum class GpuPass : uint8_t
+{
+  TransferPass,
+  RenderPass,
+  ComputePass
+};
+
 //----------------- Images ---------------------
 
 struct IBufferGPU;

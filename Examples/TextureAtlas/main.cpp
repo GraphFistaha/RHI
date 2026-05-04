@@ -30,8 +30,9 @@ int main()
 
 
   RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
-  framebuffer->AddAttachment(0, ctx->CreateSurfacedAttachment(window.GetDrawSurface(),
-                                                              RHI::RenderBuffering::Triple));
+  auto * colorAttachment =
+    ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
+  framebuffer->AddAttachment(0, colorAttachment);
 
   window.onResize = [framebuffer](int width, int height)
   {
@@ -55,28 +56,24 @@ int main()
     sampler->AssignImage(texture);
   }
 
+  colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(
     [&](float delta)
     {
       ctx->TransferPass();
+      ctx->RenderPass(framebuffer);
 
-      if (RHI::IRenderTarget * renderTarget = framebuffer->BeginFrame())
+      if (subpass->ShouldBeInvalidated())
       {
-        renderTarget->SetClearValue(0, 0.3f, 0.3f, 0.5f, 1.0f);
-
-        if (subpass->ShouldBeInvalidated())
+        auto [width, height, depth] = framebuffer->GetExtent();
+        if (subpass->BeginPass())
         {
-          auto [width, height, depth] = renderTarget->GetExtent();
-          if (subpass->BeginPass())
-          {
-            subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-            subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-            subpass->DrawVertices(6, 1);
+          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+          subpass->DrawVertices(6, 1);
 
-            subpass->EndPass();
-          }
+          subpass->EndPass();
         }
-        framebuffer->EndFrame();
       }
     });
 
