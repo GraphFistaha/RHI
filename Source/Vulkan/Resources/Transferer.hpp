@@ -41,9 +41,9 @@ struct Transferer final : public OwnedBy<Context>
 
 private:
   std::mutex m_submittingMutex;
-  DoubleBufferedSubmitter m_transferSubmitter;
-  DoubleBufferedSubmitter m_graphicsSubmitter;
-  DoubleBufferedSubmitter m_computeSubmitter;
+  BufferedSubmitter m_transferSubmitter;
+  BufferedSubmitter m_graphicsSubmitter;
+  BufferedSubmitter m_computeSubmitter;
 
   struct PendingTasksContainer;
   std::unique_ptr<PendingTasksContainer> m_pendingTasks;

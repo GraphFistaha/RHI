@@ -2,30 +2,39 @@
 
 namespace RHI::vulkan
 {
-DoubleBufferedSubmitter::DoubleBufferedSubmitter(Context & ctx, QueueType type,
-                                                 VkPipelineStageFlags waitStages)
-  : m_writingBuffer(ctx, type, waitStages)
-  , m_executingBuffer(ctx, type, waitStages)
+BufferedSubmitter::BufferedSubmitter(Context & ctx, QueueType type, uint32_t buffersCount,
+                                     VkPipelineStageFlags waitStages)
+
 {
-  m_writingBuffer.BeginWriting();
+  m_submitters.reserve(buffersCount);
+  for (uint32_t i = 0; i < buffersCount; ++i)
+    m_submitters.emplace_back(ctx, type, waitStages);
+  GetWritingBuffer().BeginWriting();
 }
 
-void DoubleBufferedSubmitter::WaitForSubmitCompleted()
+void BufferedSubmitter::WaitForSubmitCompleted()
 {
-  m_executingBuffer.WaitForSubmitCompleted();
+  if (m_executingSubmitterIdx != -1)
+    m_submitters[m_executingSubmitterIdx].WaitForSubmitCompleted();
 }
 
-IAwaitable * DoubleBufferedSubmitter::Submit(bool waitPrevSubmitOnGPU,
-                                             std::vector<VkSemaphore> && waitSemaphores)
+AsyncTask * BufferedSubmitter::Submit(bool waitPrevSubmitOnGPU,
+                                      std::vector<VkSemaphore> && waitSemaphores)
 {
-  if (m_writingBuffer.IsEmpty())
+  if (m_submitters[m_writingSubmitterIdx].IsEmpty())
+  {
+    m_executingSubmitterIdx = -1;
     return nullptr;
-  m_writingBuffer.EndWriting();
-  IAwaitable * result = m_writingBuffer.Submit(waitPrevSubmitOnGPU, std::move(waitSemaphores));
-  std::swap(m_writingBuffer, m_executingBuffer);
-  m_writingBuffer.WaitForSubmitCompleted();
-  m_writingBuffer.Reset();
-  m_writingBuffer.BeginWriting();
+  }
+  m_submitters[m_writingSubmitterIdx].EndWriting();
+  AsyncTask * result =
+    m_submitters[m_writingSubmitterIdx].Submit(waitPrevSubmitOnGPU, std::move(waitSemaphores));
+  m_executingSubmitterIdx =
+    std::exchange(m_writingSubmitterIdx,
+                  static_cast<uint32_t>((m_writingSubmitterIdx + 1u) % m_submitters.size()));
+  m_submitters[m_writingSubmitterIdx].WaitForSubmitCompleted();
+  m_submitters[m_writingSubmitterIdx].Reset();
+  m_submitters[m_writingSubmitterIdx].BeginWriting();
   return result;
 }
 } // namespace RHI::vulkan

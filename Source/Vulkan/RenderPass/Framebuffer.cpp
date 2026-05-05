@@ -66,7 +66,7 @@ void Framebuffer::Invalidate()
                        }));
 
     // set attachments to render Pass
-    m_renderPass.SetAttachments(m_attachmentDescriptions);
+    m_renderPass.SetAttachments(buffersCount, m_attachmentDescriptions);
     targetsChanged = true;
   }
 

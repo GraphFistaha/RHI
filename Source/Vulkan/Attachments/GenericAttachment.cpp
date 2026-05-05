@@ -87,9 +87,13 @@ VkAttachmentDescription BuildAttachmentDescription(const RHI::TextureDescription
     attachmentDescription.initialLayout = MakeAttachmentInitialLayout(description.format);
     attachmentDescription.finalLayout = MakeAttachmentFinalLayout(description.format);
     attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescription.storeOp = samplesCount == RHI::SamplesCount::One
+                                    ? VK_ATTACHMENT_STORE_OP_STORE
+                                    : VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescription.stencilStoreOp = samplesCount == RHI::SamplesCount::One
+                                           ? VK_ATTACHMENT_STORE_OP_STORE
+                                           : VK_ATTACHMENT_STORE_OP_DONT_CARE;
   }
   return attachmentDescription;
 }

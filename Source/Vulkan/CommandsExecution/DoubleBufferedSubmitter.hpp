@@ -3,16 +3,22 @@
 
 namespace RHI::vulkan
 {
-struct DoubleBufferedSubmitter final
-{
-  explicit DoubleBufferedSubmitter(Context & ctx, QueueType type, VkPipelineStageFlags waitStages);
 
-  details::CommandBuffer & GetWritingBuffer() & noexcept { return m_writingBuffer; }
-  IAwaitable * Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores);
+struct BufferedSubmitter final
+{
+  explicit BufferedSubmitter(Context & ctx, QueueType type, uint32_t buffersCount,
+                             VkPipelineStageFlags waitStages);
+
+  details::CommandBuffer & GetWritingBuffer() & noexcept
+  {
+    return m_submitters[m_writingSubmitterIdx];
+  }
+  AsyncTask * Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores);
   void WaitForSubmitCompleted();
 
 private:
-  details::Submitter m_writingBuffer;
-  details::Submitter m_executingBuffer;
+  std::vector<details::Submitter> m_submitters;
+  uint32_t m_writingSubmitterIdx = 0;
+  uint32_t m_executingSubmitterIdx = -1;
 };
 } // namespace RHI::vulkan

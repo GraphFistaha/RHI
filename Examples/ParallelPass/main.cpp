@@ -4,6 +4,7 @@
 #include <cstring>
 #include <deque>
 #include <future>
+#include <span>
 
 #include <RHI.hpp>
 #include <TestUtils.hpp>
@@ -26,25 +27,41 @@ struct Renderer
   explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer);
   ~Renderer();
   // draw scene in parallel
-  void AsyncDrawScene();
-
-  void UpdateGeometry();
+  void DrawScene();
+  void UpdateGeometry(std::span<float> newVertices);
 
 private:
-  RHI::IFramebuffer * m_fbo;
+  RHI::IContext * m_context = nullptr;
+  RHI::IFramebuffer * m_fbo = nullptr;
   /// subpass which can be executed in parallel
-  RHI::ISubpass * m_subpass;
+  RHI::ISubpass * m_subpass = nullptr;
 
   /// some data for frame
-  RHI::IBufferGPU * m_vertexBuffer;
-  RHI::IBufferGPU * m_indexBuffer;
-
-  /// current draw task
-  std::future<bool> m_drawTask;
-
-private:
-  bool DrawSceneImpl();
+  RHI::IBufferGPU * m_vertexBuffer = nullptr;
+  RHI::IBufferGPU * m_indexBuffer = nullptr;
 };
+
+std::atomic_bool m_running = true;
+void thread_main(Renderer * renderer)
+{
+  float t = 0.0;
+  while (m_running)
+  {
+    auto c = std::cosf(t);
+    // clang-format off
+    std::array<float, 15> newVertices{
+      // pos + colors(rgb)
+      0.5f,  0.5f,  c*c, 0.0f, 0.0f, /*first vertex*/
+      -0.5f, c*c,  0.0f, 1.0f, 0.0f, /*second vertex*/
+      c, -0.5f, 0.0f, 0.0f, 1.0f  /*third vertex*/
+    };
+    // clang-format on
+
+    renderer->UpdateGeometry(newVertices);
+    renderer->DrawScene();
+    t += 0.00001;
+  }
+}
 
 int main()
 {
@@ -61,28 +78,30 @@ int main()
   framebuffer->AddAttachment(0, colorAttachment);
 
   Renderer triangleRenderer(*ctx, *framebuffer);
-  triangleRenderer.AsyncDrawScene();
 
   window.onResize = [&triangleRenderer, &framebuffer](int width, int height)
   {
     framebuffer->Resize(width, height);
-    triangleRenderer.AsyncDrawScene();
   };
+  std::thread newThread(thread_main, &triangleRenderer);
 
   colorAttachment->SetClearValue(0.1f, 1.0f, 0.4f, 1.0f);
   window.MainLoop(
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
-      triangleRenderer.UpdateGeometry();
       ctx->TransferPass();
       ctx->RenderPass(framebuffer);
     });
+
+  m_running = false;
+  newThread.join();
 
   return 0;
 }
 
 Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
-  : m_fbo(&framebuffer)
+  : m_context(&ctx)
+  , m_fbo(&framebuffer)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   m_subpass = framebuffer.CreateSubpass();
@@ -111,30 +130,11 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
 
 Renderer::~Renderer()
 {
-  //TODO: destroy buffers
+  m_context->DeleteBuffer(m_vertexBuffer);
+  m_context->DeleteBuffer(m_indexBuffer);
 }
 
-void Renderer::AsyncDrawScene()
-{
-  if (m_drawTask.valid())
-  {
-    // wait for previous task
-    auto result = m_drawTask.wait_for(std::chrono::milliseconds(10));
-    if (result == std::future_status::timeout)
-      return;
-  }
-  auto && future = std::async(&Renderer::DrawSceneImpl, this);
-  m_drawTask = std::move(future);
-}
-
-void Renderer::UpdateGeometry()
-{
-  m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
-  m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
-  AsyncDrawScene();
-}
-
-bool Renderer::DrawSceneImpl()
+void Renderer::DrawScene()
 {
   if (m_subpass->ShouldBeInvalidated())
   {
@@ -150,5 +150,10 @@ bool Renderer::DrawSceneImpl()
       m_subpass->EndPass();
     }
   }
-  return true;
+}
+
+void Renderer::UpdateGeometry(std::span<float> newVertices)
+{
+  assert(newVertices.size() == 15);
+  m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
 }

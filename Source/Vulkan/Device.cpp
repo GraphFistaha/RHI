@@ -50,7 +50,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
                     .request_validation_layers(false)
 #else
                     .request_validation_layers()
-                    .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT)
+                    //.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT)
                     .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT)
                     .add_validation_feature_enable(
                       VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)

@@ -4,7 +4,7 @@
 #include <list>
 #include <shared_mutex>
 
-#include <CommandsExecution/Submitter.hpp>
+#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RenderPass/Subpass.hpp>
 #include <RHI.hpp>
@@ -36,7 +36,7 @@ public: // IFramebuffer Interface
 
   AsyncTask * Draw(RenderTarget & renderTarget,
                    std::vector<VkSemaphore> && imageAvailiableSemaphore);
-  void SetAttachments(const std::vector<VkAttachmentDescription> & attachments) noexcept;
+  void SetAttachments(uint32_t buffersCount, const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
@@ -61,7 +61,8 @@ private:
   /// Flag to notify that subpasses can begin pass
   std::atomic_bool m_isReadyForRendering = false;
 
-  details::Submitter m_submitter;
+  uint32_t m_buffersCount = 0;
+  std::unique_ptr<BufferedSubmitter> m_submitter;
   std::list<Subpass> m_subpasses;
   uint32_t m_createSubpassCallsCounter = 0;
 };

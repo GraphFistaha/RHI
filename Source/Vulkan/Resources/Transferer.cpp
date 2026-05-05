@@ -554,9 +554,11 @@ namespace RHI::vulkan
 
 Transferer::Transferer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_transferSubmitter(ctx, QueueType::Transfer, VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_graphicsSubmitter(ctx, QueueType::Graphics, VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_computeSubmitter(ctx, QueueType::Compute, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_transferSubmitter(ctx, QueueType::Transfer, 2 /*doubleBuffer*/,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_graphicsSubmitter(ctx, QueueType::Graphics, 2 /*doubleBuffer*/,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_computeSubmitter(ctx, QueueType::Compute, 2 /*doubleBuffer*/, VK_PIPELINE_STAGE_TRANSFER_BIT)
   , m_pendingTasks(new Transferer::PendingTasksContainer(ctx))
 {
 }
