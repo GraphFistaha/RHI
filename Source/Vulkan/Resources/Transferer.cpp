@@ -579,13 +579,16 @@ Transferer::~Transferer() = default;
 IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
 {
   std::lock_guard lk{m_submittingMutex};
-  std::vector<IAwaitable *> tasks{m_transferSubmitter.Submit(true, {}),
-                                  m_graphicsSubmitter.Submit(true, {}),
-                                  m_computeSubmitter.Submit(true, {})};
-  m_awaitable.SetTasks(std::move(tasks));
+  std::vector<IAwaitable *> tasks{m_transferSubmitter.Submit(false, {}),
+                                  m_graphicsSubmitter.Submit(false, {}),
+                                  m_computeSubmitter.Submit(false, {})};
+  m_awaitable.AddTasks(tasks);
   m_pendingTasks->ProcessSubmittedTasks();
   if (flush)
+  {
+    m_awaitable.Wait();
     m_pendingTasks->ProcessSubmittedTasks();
+  }
   return &m_awaitable;
 }
 

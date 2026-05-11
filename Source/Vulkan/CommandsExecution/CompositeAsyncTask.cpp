@@ -20,7 +20,7 @@ CompositeAsyncTask & CompositeAsyncTask::operator=(CompositeAsyncTask && rhs) no
   return *this;
 }
 
-void CompositeAsyncTask::SetTasks(std::vector<IAwaitable *> && tasks)
+void CompositeAsyncTask::AddTasks(std::span<IAwaitable *> tasks)
 {
   std::lock_guard lk{m_mutex};
   m_tasks.insert(m_tasks.end(), tasks.begin(), tasks.end());

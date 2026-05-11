@@ -11,7 +11,7 @@ struct CompositeAsyncTask : public RHI::IAwaitable
   CompositeAsyncTask() = default;
   CompositeAsyncTask(CompositeAsyncTask && rhs) noexcept;
   CompositeAsyncTask & operator=(CompositeAsyncTask && rhs) noexcept;
-  void SetTasks(std::vector<IAwaitable *> && tasks);
+  void AddTasks(std::span<IAwaitable *> tasks);
 
 public: // IAwaitable interface
   virtual bool Wait() noexcept override;

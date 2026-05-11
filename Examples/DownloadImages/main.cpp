@@ -19,6 +19,8 @@ int main()
   auto future = texture->DownloadImage(args);
   ctx->TransferPass(true /*flush*/); // call with true to future will complete
   auto result = future.get();
+  if (result.empty())
+    throw std::runtime_error("Failed to download");
   stbi_write_bmp("downloaded_image.bmp", args.copyRegion.extent[0], args.copyRegion.extent[1], 3,
                  result.data());
   return 0;
