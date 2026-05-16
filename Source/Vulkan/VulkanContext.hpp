@@ -1,13 +1,13 @@
 #pragma once
 #include <Device.hpp>
 #include <GarbageCollector.hpp>
-#include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryAllocator.hpp>
 #include <Private/ObjectsTable.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <Resources/BufferGPU.hpp>
-#include <Resources/Transferer.hpp>
+#include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
+#include <TransferPass/Transferer.hpp>
 
 namespace RHI::vulkan
 {

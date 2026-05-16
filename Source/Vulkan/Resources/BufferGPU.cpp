@@ -1,6 +1,5 @@
 #include "BufferGPU.hpp"
 
-#include <Resources/Transferer.hpp>
 #include <VulkanContext.hpp>
 
 namespace
@@ -37,6 +36,7 @@ BufferGPU::BufferGPU(Context & ctx, size_t size, BufferGPUUsage usage, bool allo
 BufferGPU::BufferGPU(Context & ctx, size_t size, VkBufferUsageFlags usage, bool allowHostAccess)
   : OwnedBy<Context>(ctx)
   , m_memBlock(ctx.GetBuffersAllocator().AllocBuffer(size, usage, allowHostAccess))
+  , m_synchronizer(ctx, m_memBlock.GetBuffer())
 {
 }
 
@@ -48,6 +48,7 @@ BufferGPU::~BufferGPU()
 BufferGPU::BufferGPU(BufferGPU && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
   , m_memBlock(std::move(rhs.m_memBlock))
+  , m_synchronizer(std::move(rhs.m_synchronizer))
 {
 }
 
@@ -57,6 +58,7 @@ BufferGPU & BufferGPU::operator=(BufferGPU && rhs) noexcept
   {
     OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_memBlock, rhs.m_memBlock);
+    std::swap(m_synchronizer, rhs.m_synchronizer);
   }
   return *this;
 }
@@ -68,7 +70,7 @@ void BufferGPU::UploadSync(const void * data, size_t size, size_t offset)
 
 std::future<UploadResult> BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
 {
-  return GetContext().GetTransferer().UploadBuffer(GetHandle(),
+  return GetContext().GetTransferer().UploadBuffer(*this,
                                                    reinterpret_cast<const uint8_t *>(data), size,
                                                    offset);
 }
@@ -96,5 +98,15 @@ size_t BufferGPU::Size() const noexcept
 VkBuffer BufferGPU::GetHandle() const noexcept
 {
   return m_memBlock.GetBuffer();
+}
+
+size_t BufferGPU::GetSize() const noexcept
+{
+  return m_memBlock.Size();
+}
+
+details::Synchronizer & BufferGPU::GetSynchronizer() & noexcept
+{
+  return m_synchronizer;
 }
 } // namespace RHI::vulkan

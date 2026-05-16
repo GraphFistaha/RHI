@@ -1,7 +1,8 @@
 #pragma once
 
-#include <ImageUtils/ImageLayoutTransferer.hpp>
+#include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
+#include <Resources/Synchronizer.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -36,8 +37,6 @@ public: // IAttachment interface
 
 public: //IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
-                              VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
@@ -46,6 +45,7 @@ public: //IInternalTexture interface
   virtual uint32_t GetLayersCount() const noexcept override;
   virtual VkImageType GetImageType() const noexcept override;
   virtual VkImageViewType GetImageViewType() const noexcept override;
+  virtual details::Synchronizer & GetSynchronizer() & noexcept override;
 
 public: // IInternalAttachment interface
   virtual void Invalidate() override;
@@ -54,16 +54,17 @@ public: // IInternalAttachment interface
   virtual uint32_t GetBuffering() const noexcept override;
   virtual RHI::SamplesCount GetSamplesCount() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
-  virtual void TransferLayout(VkImageLayout layout) noexcept override;
+  virtual void OnBeginRenderPass(VkImageLayout initialLayout) noexcept override;
+  virtual void OnEndRenderPass(VkImageLayout finalLayout) noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept override;
 
 protected:
   std::mutex m_renderingMutex;      ///< mutex, because you can't enter in rendering mode twice
   TextureDescription m_description; ///< description of image, all main params for image
 
-  std::vector<memory::MemoryBlock> m_images;    ///< memory for image instances
-  std::vector<ImageLayoutTransferer> m_layouts; ///< each image must control its layout
+  std::vector<memory::MemoryBlock> m_images; ///< memory for image instances
   std::vector<VkImageView> m_views;
+  std::vector<details::Synchronizer> m_synchronizers;
   uint32_t m_activeImage = 0;
 
   uint32_t m_instancesCount = 0;

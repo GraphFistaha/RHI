@@ -1,6 +1,8 @@
 #pragma once
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
+#include <Resources/BufferInterface.hpp>
+#include <Resources/Synchronizer.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan
@@ -12,6 +14,7 @@ namespace RHI::vulkan
 {
 
 struct BufferGPU : public IBufferGPU,
+                   public IInternalBuffer,
                    public OwnedBy<Context>
 {
   using IBufferGPU::ScopedPointer;
@@ -24,7 +27,7 @@ struct BufferGPU : public IBufferGPU,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   RESTRICTED_COPY(BufferGPU);
 
-public:
+public: //IBufferGPU interface
   virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
   virtual std::future<UploadResult> UploadAsync(const void * data, size_t size,
                                                 size_t offset = 0) override;
@@ -33,10 +36,13 @@ public:
   virtual bool IsMapped() const noexcept override;
   virtual size_t Size() const noexcept override;
 
-public:
-  VkBuffer GetHandle() const noexcept;
+public: //IInternalBuffer interface
+  virtual VkBuffer GetHandle() const noexcept override;
+  virtual size_t GetSize() const noexcept override;
+  virtual details::Synchronizer & GetSynchronizer() & noexcept override;
 
 private:
   memory::MemoryBlock m_memBlock;
+  details::Synchronizer m_synchronizer;
 };
 } // namespace RHI::vulkan

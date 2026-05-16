@@ -64,7 +64,11 @@ void SamplerUniform::TransitLayoutForUsedImages(details::CommandBuffer & command
                                                 VkImageLayout layout)
 {
   if (m_boundTexture)
-    m_boundTexture->TransferLayout(commandBuffer, layout);
+  {
+    m_boundTexture->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                                         VK_ACCESS_2_SHADER_READ_BIT, commandBuffer,
+                                                         layout);
+  }
 }
 
 void SamplerUniform::Invalidate()

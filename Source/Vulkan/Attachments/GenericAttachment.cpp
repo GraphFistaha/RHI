@@ -110,7 +110,7 @@ GenericAttachment::GenericAttachment(Context & ctx, const TextureDescription & a
 {
   m_images.reserve(m_instancesCount);
   m_views.reserve(m_instancesCount);
-  m_layouts.reserve(m_instancesCount);
+  m_synchronizers.reserve(m_instancesCount);
 }
 
 GenericAttachment::~GenericAttachment()
@@ -168,14 +168,9 @@ VkImageView GenericAttachment::GetImageView() const noexcept
   return m_views[m_activeImage];
 }
 
-void GenericAttachment::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
-{
-  m_layouts[m_activeImage].TransferLayout(commandBuffer, layout);
-}
-
 VkImageLayout GenericAttachment::GetLayout() const noexcept
 {
-  return m_layouts[m_activeImage].GetLayout();
+  return m_synchronizers[m_activeImage].GetLayout();
 }
 
 VkImage GenericAttachment::GetHandle() const noexcept
@@ -214,6 +209,11 @@ VkImageViewType GenericAttachment::GetImageViewType() const noexcept
   return VK_IMAGE_VIEW_TYPE_2D;
 }
 
+details::Synchronizer & GenericAttachment::GetSynchronizer() & noexcept
+{
+  return m_synchronizers[m_activeImage];
+}
+
 //-------------------- IAttachment interface --------------------
 
 void GenericAttachment::Invalidate()
@@ -237,7 +237,7 @@ void GenericAttachment::Invalidate()
     while (m_images.size() > m_instancesCount)
     {
       m_images.pop_back();
-      m_layouts.pop_back();
+      m_synchronizers.pop_back();
       m_views.pop_back();
     }
 
@@ -248,7 +248,7 @@ void GenericAttachment::Invalidate()
         GetContext().GetBuffersAllocator().AllocImage(m_description,
                                                       CalcImageUsageByFormat(m_description.format),
                                                       desiredMSAA);
-      m_layouts.emplace_back(memoryBlock.GetImage());
+      m_synchronizers.emplace_back(GetContext(), memoryBlock.GetImage());
       m_views.emplace_back(utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
                                                   memoryBlock.GetImage(), GetInternalFormat(),
                                                   VK_IMAGE_VIEW_TYPE_2D,
@@ -291,9 +291,14 @@ VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
   return BuildAttachmentDescription(m_description, m_samplesCount);
 }
 
-void GenericAttachment::TransferLayout(VkImageLayout layout) noexcept
+void GenericAttachment::OnBeginRenderPass(VkImageLayout initialLayout) noexcept
 {
-  m_layouts[m_activeImage].TransferLayout(layout);
+    m_synchronizers[m_activeImage].SetLayout(initialLayout);
+}
+
+void GenericAttachment::OnEndRenderPass(VkImageLayout finalLayout) noexcept
+{
+    m_synchronizers[m_activeImage].SetLayout(finalLayout);
 }
 
 void GenericAttachment::Resize(const VkExtent2D & new_extent) noexcept

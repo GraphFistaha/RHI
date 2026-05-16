@@ -84,7 +84,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {
       if (att)
-        att->TransferLayout(it->initialLayout);
+        att->OnBeginRenderPass(it->initialLayout);
       ++it;
     });
 
@@ -114,7 +114,7 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {
       if (att)
-        att->TransferLayout(it->finalLayout);
+        att->OnEndRenderPass(it->finalLayout);
       ++it;
     });
 

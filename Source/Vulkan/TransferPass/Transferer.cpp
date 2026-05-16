@@ -21,11 +21,13 @@ struct Transferer::PendingTasksContainer final : public OwnedBy<Context>
 
 public:
   /// pushes task to upload buffer from host to GPU (asynchronous)
-  std::future<UploadResult> UploadBuffer(details::CommandBuffer & commands, VkBuffer dstBuffer,
-                                         const uint8_t * srcData, size_t size, size_t offset = 0);
+  std::future<UploadResult> UploadBuffer(details::CommandBuffer & commands,
+                                         IInternalBuffer & dstBuffer, const uint8_t * srcData,
+                                         size_t size, size_t offset = 0);
   /// pushes task to download buffer from GPU to host (asynchronous)
-  std::future<DownloadResult> DownloadBuffer(details::CommandBuffer & commands, VkBuffer srcBuffer,
-                                             size_t size, size_t offset = 0);
+  std::future<DownloadResult> DownloadBuffer(details::CommandBuffer & commands,
+                                             IInternalBuffer & srcBuffer, size_t size,
+                                             size_t offset = 0);
 
   /// pushes task to upload image from host to GPU (asynchronous)
   std::future<UploadResult> UploadImage(details::CommandBuffer & commands,
@@ -114,33 +116,38 @@ void Transferer::PendingTasksContainer::ProcessSubmittedTasks()
 }
 
 std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
-  details::CommandBuffer & commands, VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
-  size_t offset)
+  details::CommandBuffer & commands, IInternalBuffer & dstBuffer, const uint8_t * srcData,
+  size_t size, size_t offset)
 {
   std::promise<UploadResult> promise;
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
   stagingBuffer.UploadSync(srcData, size, offset);
 
+  dstBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                                                 VK_ACCESS_2_TRANSFER_WRITE_BIT, commands);
   VkBufferCopy copy{};
   copy.dstOffset = 0;
   copy.srcOffset = 0;
   copy.size = size - offset;
-  commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer, 1, &copy);
+  commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer.GetHandle(), 1, &copy);
   auto && data =
     m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
   return data.second.get_future();
 }
 
 std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
-  details::CommandBuffer & commands, VkBuffer srcBuffer, size_t size, size_t offset)
+  details::CommandBuffer & commands, IInternalBuffer & srcBuffer, size_t size, size_t offset)
 {
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
+
+  srcBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                                                 VK_ACCESS_2_TRANSFER_READ_BIT, commands);
   VkBufferCopy copy{};
   copy.dstOffset = 0;
   copy.srcOffset = offset;
   copy.size = size;
-  commands.PushCommand(vkCmdCopyBuffer, srcBuffer, stagingBuffer.GetHandle(), 1, &copy);
+  commands.PushCommand(vkCmdCopyBuffer, srcBuffer.GetHandle(), stagingBuffer.GetHandle(), 1, &copy);
   auto createDownloadResult = [](BufferGPU & stagingBuffer) -> DownloadResult
   {
     DownloadResult result(stagingBuffer.Size(), 0);
@@ -203,12 +210,13 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
   }
 
   VkImageLayout oldLayout = dstImage.GetLayout();
-  dstImage.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  dstImage.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
+                                                VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
+                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   commands.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(), dstImage.GetHandle(),
                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
   auto && data =
     m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
-  dstImage.TransferLayout(commands, oldLayout);
   return data.second.get_future();
 }
 
@@ -259,14 +267,14 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
     return result;
   };
 
-  VkImageLayout oldLayout = srcImage.GetLayout();
-  srcImage.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  srcImage.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
+                                                VK_ACCESS_2_TRANSFER_READ_BIT, commands,
+                                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
   commands.PushCommand(vkCmdCopyImageToBuffer, srcImage.GetHandle(), srcImage.GetLayout(),
                        stagingBuffer.GetHandle(), 1, &region);
   auto && data = m_writingBatch.download_tasks.emplace_back(std::move(stagingBuffer),
                                                             std::move(promise),
                                                             std::move(createDownloadResult));
-  srcImage.TransferLayout(commands, oldLayout);
   return std::get<1>(data).get_future();
 }
 
@@ -352,23 +360,21 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
                 Algorithm description:
                 Given an texture with N layers and M mip levels to generate.
                 you should generate all mip levels for each layer
-                note: the texture must be in the same layout as it was before the algorithm
 
-                1) remember layout of the texture to restore it after the execution
-                2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-                3) for i = 1 to M:
-                     3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
+                1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+                2) for i = 1 to M:
+                     2.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
                             This step blocks mip level for reading
-                     3.2) blit image (all N layers) from i - 1 to i mip level with linear filteration.
+                     2.2) blit image (all N layers) from i - 1 to i mip level with linear filteration.
                             Note: i'th level has only half of i-1'th level's extent
-                     3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                     2.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
                             this step waits for reading is completed and blocks for writing
-                     3.4) div extent in 2
-                4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
+                     2.4) div extent in 2
               */
 
-  VkImageLayout oldLayout = dst.GetLayout();
-  dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  dst.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                                           VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
   {
     VkImageBlit blit{};
@@ -400,8 +406,6 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
     oldMipExtent = mipExtent;
     mipExtent = extentDiv2(mipExtent);
   }
-
-  dst.TransferLayout(commands, oldLayout);
 
   std::promise<MipmapsGenerationResult> promise;
   auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
@@ -471,23 +475,21 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
                   Given an texture with N layers and M mip levels to generate.
                   you should generate all mip levels for each layer
                   Also given Regions array to create mip levels from
-                  note: the texture must be in the same layout as it was before the algorithm
 
-                  1) remember layout of the texture to restore it after the execution
-                  2) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-                  3) for i = 1 to M:
-                       3.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
+                  1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
+                  2) for i = 1 to M:
+                       2.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
                               This step blocks mip level for reading
-                       3.2) for j = 1 to R:
-                           3.2.1) blit subimage from i - 1 to i mip level with linear filteration.
+                       2.2) for j = 1 to R:
+                           2.2.1) blit subimage from i - 1 to i mip level with linear filteration.
                                   Note: i'th level has only half of i-1'th level's extent
-                       3.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
+                       2.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
                               this step waits for reading is completed and blocks for writing
-                  4) restore old layout. After the loop, the texture is in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout
-                */
+*/
 
-  VkImageLayout oldLayout = dst.GetLayout();
-  dst.TransferLayout(commands, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  dst.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                                           VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   std::vector<VkImageBlit> blits;
   blits.reserve(regions.size());
   for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
@@ -540,8 +542,6 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
     }
   }
 
-  dst.TransferLayout(commands, oldLayout);
-
   std::promise<MipmapsGenerationResult> promise;
   auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
   return data.second.get_future();
@@ -579,9 +579,10 @@ Transferer::~Transferer() = default;
 IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
 {
   std::lock_guard lk{m_submittingMutex};
-  std::vector<IAwaitable *> tasks{m_transferSubmitter.Submit(false, {}),
-                                  m_graphicsSubmitter.Submit(false, {}),
-                                  m_computeSubmitter.Submit(false, {})};
+  auto transferTask = m_transferSubmitter.Submit(false, {});
+  auto computeTask = m_computeSubmitter.Submit(false, {transferTask->GetSemaphore()});
+  auto graphicTask = m_graphicsSubmitter.Submit(false, {transferTask->GetSemaphore()});
+  std::array<IAwaitable *, 3> tasks{transferTask, computeTask, graphicTask};
   m_awaitable.AddTasks(tasks);
   m_pendingTasks->ProcessSubmittedTasks();
   if (flush)
@@ -592,15 +593,16 @@ IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
   return &m_awaitable;
 }
 
-std::future<UploadResult> Transferer::UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData,
-                                                   size_t size, size_t offset)
+std::future<UploadResult> Transferer::UploadBuffer(IInternalBuffer & dstBuffer,
+                                                   const uint8_t * srcData, size_t size,
+                                                   size_t offset)
 {
   std::lock_guard lk{m_submittingMutex};
   return m_pendingTasks->UploadBuffer(m_transferSubmitter.GetWritingBuffer(), dstBuffer, srcData,
                                       size, offset);
 }
 
-std::future<DownloadResult> Transferer::DownloadBuffer(VkBuffer srcBuffer, size_t size,
+std::future<DownloadResult> Transferer::DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
                                                        size_t offset)
 {
   std::lock_guard lk{m_submittingMutex};

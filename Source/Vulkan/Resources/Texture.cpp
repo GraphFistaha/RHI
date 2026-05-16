@@ -14,7 +14,7 @@ Texture::Texture(Context & ctx, const TextureDescription & args)
   , m_description(args)
   , m_memBlock(GetContext().GetBuffersAllocator().AllocImage(args, g_TextureUsageFlags,
                                                              VK_SAMPLE_COUNT_1_BIT))
-  , m_layout(m_memBlock.GetImage())
+  , m_synchronizer(ctx, m_memBlock.GetImage())
 {
   m_view = utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
                                   m_memBlock.GetImage(), GetInternalFormat(), GetImageViewType(),
@@ -69,14 +69,9 @@ VkImageView Texture::GetImageView() const noexcept
   return m_view;
 }
 
-void Texture::TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout)
-{
-  m_layout.TransferLayout(commandBuffer, layout);
-}
-
 VkImageLayout Texture::GetLayout() const noexcept
 {
-  return m_layout.GetLayout();
+  return m_synchronizer.GetLayout();
 }
 
 VkImage Texture::GetHandle() const noexcept
@@ -114,6 +109,11 @@ VkImageType Texture::GetImageType() const noexcept
 VkImageViewType Texture::GetImageViewType() const noexcept
 {
   return utils::CastInterfaceEnum2Vulkan<VkImageViewType>(m_description.type);
+}
+
+details::Synchronizer & Texture::GetSynchronizer() & noexcept
+{
+  return m_synchronizer;
 }
 
 } // namespace RHI::vulkan

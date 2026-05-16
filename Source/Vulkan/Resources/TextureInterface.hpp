@@ -6,7 +6,8 @@
 namespace RHI::vulkan::details
 {
 struct CommandBuffer;
-}
+struct Synchronizer;
+} // namespace RHI::vulkan::details
 
 namespace RHI::vulkan
 {
@@ -15,7 +16,6 @@ struct IInternalTexture
 {
   virtual ~IInternalTexture() = default;
   virtual VkImageView GetImageView() const noexcept = 0;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer, VkImageLayout layout) = 0;
   virtual VkImageLayout GetLayout() const noexcept = 0;
   virtual VkImage GetHandle() const noexcept = 0;
   virtual VkFormat GetInternalFormat() const noexcept = 0;
@@ -24,6 +24,7 @@ struct IInternalTexture
   virtual uint32_t GetLayersCount() const noexcept = 0;
   virtual VkImageType GetImageType() const noexcept = 0;
   virtual VkImageViewType GetImageViewType() const noexcept = 0;
+  virtual details::Synchronizer & GetSynchronizer() & noexcept = 0;
 };
 
 } // namespace RHI::vulkan

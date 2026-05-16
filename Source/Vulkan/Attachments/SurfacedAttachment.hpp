@@ -4,7 +4,7 @@
 
 #include <Attachments/GenericAttachment.hpp>
 #include <CommandsExecution/AsyncTask.hpp>
-#include <ImageUtils/ImageLayoutTransferer.hpp>
+#include <Resources/Synchronizer.hpp>
 #include <Surface.hpp>
 
 namespace vkb
@@ -34,8 +34,6 @@ public: // ITexture interface
 
 public: //IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
-                              VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
@@ -55,8 +53,10 @@ public: // IInternalAttachment interface
   virtual uint32_t GetBuffering() const noexcept override;
   virtual RHI::SamplesCount GetSamplesCount() const noexcept override;
   virtual VkAttachmentDescription BuildDescription() const noexcept override;
-  virtual void TransferLayout(VkImageLayout layout) noexcept override;
+  virtual void OnBeginRenderPass(VkImageLayout initialLayout) noexcept override;
+  virtual void OnEndRenderPass(VkImageLayout finalLayout) noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept;
+  virtual details::Synchronizer & GetSynchronizer() & noexcept override;
 
 protected:
   void DestroySwapchain() noexcept;
@@ -74,7 +74,7 @@ private:
   std::vector<VkImage> m_images;                          ///< swapchain images
   std::vector<VkImageView> m_imageViews;                  /// attachment image view
   std::vector<VkSemaphore> m_imageAvailabilitySemaphores; /// owns
-  std::vector<ImageLayoutTransferer> m_layouts;
+  std::vector<details::Synchronizer> m_synchronizers;
   uint32_t m_activeSemaphore = 0;               ///<
   uint32_t m_activeImage = g_InvalidImageIndex; ///< image index in rendering
 

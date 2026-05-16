@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ImageUtils/TextureInterface.hpp>
+#include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -18,7 +18,8 @@ struct IInternalAttachment : public IInternalTexture
   virtual RHI::SamplesCount GetSamplesCount() const noexcept = 0;
   // Rename to AddAttachmentDescriptionTo
   virtual VkAttachmentDescription BuildDescription() const noexcept = 0;
-  virtual void TransferLayout(VkImageLayout layout) noexcept = 0;
+  virtual void OnBeginRenderPass(VkImageLayout initialLayout) noexcept = 0;
+  virtual void OnEndRenderPass(VkImageLayout finalLayout) noexcept = 0;
   virtual void Resize(const VkExtent2D & new_extent) noexcept = 0;
   VkClearValue GetClearValue() const noexcept { return m_clearValue; }
 

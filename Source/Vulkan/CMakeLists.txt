@@ -62,13 +62,9 @@ PRIVATE
 	"Utils/EventBuilder.hpp"
 	"Utils/EventBuilder.cpp"
 	
-	
-	"ImageUtils/ImageLayoutTransferer.cpp"
-	"ImageUtils/ImageLayoutTransferer.hpp"
 	"ImageUtils/InternalImageTraits.hpp"
 	"ImageUtils/ImageFormatsConversation.cpp"
 	"ImageUtils/ImageFormatsConversation.hpp"
-	"ImageUtils/TextureInterface.hpp"
 	"ImageUtils/ImageUtils.hpp"
 	"ImageUtils/ImageUtils.cpp"
 
@@ -78,12 +74,17 @@ PRIVATE
 	"Attachments/SurfacedAttachment.cpp"
 	"Attachments/SurfacedAttachment.hpp"
 	
+	"Resources/TextureInterface.hpp"
 	"Resources/Texture.cpp"
 	"Resources/Texture.hpp"
 	"Resources/BufferGPU.cpp"
 	"Resources/BufferGPU.hpp"
-	"Resources/Transferer.hpp"
-	"Resources/Transferer.cpp"
+	"Resources/BufferInterface.hpp"
+	"Resources/Synchronizer.cpp"
+	"Resources/Synchronizer.hpp"
+
+	"TransferPass/Transferer.hpp"
+	"TransferPass/Transferer.cpp"
 	
 	
 	"CommandsExecution/CommandBuffer.cpp" 

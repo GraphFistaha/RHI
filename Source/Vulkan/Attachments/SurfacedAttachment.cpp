@@ -76,15 +76,9 @@ VkImageView SurfacedAttachment::GetImageView() const noexcept
   return m_imageViews[m_activeImage];
 }
 
-void SurfacedAttachment::TransferLayout(details::CommandBuffer & commandBuffer,
-                                        VkImageLayout layout)
-{
-  m_layouts[m_activeImage].TransferLayout(commandBuffer, layout);
-}
-
 VkImageLayout SurfacedAttachment::GetLayout() const noexcept
 {
-  return m_layouts[m_activeImage].GetLayout();
+  return m_synchronizers[m_activeImage].GetLayout();
 }
 
 VkImage SurfacedAttachment::GetHandle() const noexcept
@@ -168,9 +162,9 @@ void SurfacedAttachment::Invalidate()
       m_imageAvailabilitySemaphores.push_back(
         utils::SemaphoreBuilder().Make(GetContext().GetGpuConnection().GetDevice()));
 
-    m_layouts.reserve(m_images.size());
+    m_synchronizers.reserve(m_images.size());
     for (auto image : m_images)
-      m_layouts.emplace_back(image);
+      m_synchronizers.emplace_back(GetContext(), image);
 
     // reset invalid flags
     m_invalidSwapchain = false;
@@ -258,15 +252,25 @@ VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept
   return description;
 }
 
-void SurfacedAttachment::TransferLayout(VkImageLayout newLayout) noexcept
+void SurfacedAttachment::OnBeginRenderPass(VkImageLayout initialLayout) noexcept
 {
-  m_layouts[m_activeImage].TransferLayout(newLayout);
+  m_synchronizers[m_activeImage].SetLayout(initialLayout);
+}
+
+void SurfacedAttachment::OnEndRenderPass(VkImageLayout finalLayout) noexcept
+{
+  m_synchronizers[m_activeImage].SetLayout(finalLayout);
 }
 
 void SurfacedAttachment::Resize(const VkExtent2D & new_extent) noexcept
 {
   // do nothing because resizing handled in AcquireForRend
   m_invalidSwapchain = true;
+}
+
+details::Synchronizer & SurfacedAttachment::GetSynchronizer() & noexcept
+{
+  return m_synchronizers[m_activeImage];
 }
 
 // ---------------------------- Private -----------------
@@ -283,7 +287,7 @@ void SurfacedAttachment::DestroySwapchain() noexcept
   m_images.clear();
   m_imageViews.clear();
   m_imageAvailabilitySemaphores.clear();
-  m_layouts.clear();
+  m_synchronizers.clear();
 }
 
 } // namespace RHI::vulkan

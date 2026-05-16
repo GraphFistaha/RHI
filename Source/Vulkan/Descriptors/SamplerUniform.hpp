@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Descriptors/BaseUniform.hpp>
-#include <ImageUtils/TextureInterface.hpp>
+#include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <Utils/SamplerBuilder.hpp>
 #include <vulkan/vulkan.hpp>

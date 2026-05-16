@@ -5,9 +5,10 @@
 #include <CommandsExecution/CompositeAsyncTask.hpp>
 #include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Device.hpp>
-#include <ImageUtils/TextureInterface.hpp>
 #include <Private/OwnedBy.hpp>
 #include <Resources/BufferGPU.hpp>
+#include <Resources/BufferInterface.hpp>
+#include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -26,9 +27,10 @@ struct Transferer final : public OwnedBy<Context>
 
   IAwaitable * DoTransfer(bool flush = false);
 
-  std::future<UploadResult> UploadBuffer(VkBuffer dstBuffer, const uint8_t * srcData, size_t size,
-                                         size_t offset = 0);
-  std::future<DownloadResult> DownloadBuffer(VkBuffer srcBuffer, size_t size, size_t offset = 0);
+  std::future<UploadResult> UploadBuffer(IInternalBuffer & dstBuffer, const uint8_t * srcData,
+                                         size_t size, size_t offset = 0);
+  std::future<DownloadResult> DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
+                                             size_t offset = 0);
 
   std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const UploadImageArgs & args);
   std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage,

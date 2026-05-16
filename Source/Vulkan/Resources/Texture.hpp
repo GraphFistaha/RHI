@@ -1,8 +1,8 @@
 #pragma once
-#include <ImageUtils/ImageLayoutTransferer.hpp>
-#include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
+#include <Resources/TextureInterface.hpp>
+#include <Resources/Synchronizer.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan
@@ -36,8 +36,6 @@ public: // ITexture interface
 
 public: // IInternalTexture interface
   virtual VkImageView GetImageView() const noexcept override;
-  virtual void TransferLayout(details::CommandBuffer & commandBuffer,
-                              VkImageLayout layout) override;
   virtual VkImageLayout GetLayout() const noexcept override;
   virtual VkImage GetHandle() const noexcept override;
   virtual VkFormat GetInternalFormat() const noexcept override;
@@ -46,11 +44,12 @@ public: // IInternalTexture interface
   virtual uint32_t GetLayersCount() const noexcept override;
   virtual VkImageType GetImageType() const noexcept override;
   virtual VkImageViewType GetImageViewType() const noexcept override;
+  virtual details::Synchronizer & GetSynchronizer() & noexcept override;
 
 private:
   TextureDescription m_description;
   memory::MemoryBlock m_memBlock;
-  ImageLayoutTransferer m_layout;
   VkImageView m_view = VK_NULL_HANDLE;
+  details::Synchronizer m_synchronizer;
 };
 } // namespace RHI::vulkan

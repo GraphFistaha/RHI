@@ -11,9 +11,9 @@
 #include <RenderPass/SubpassConfiguration.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <Resources/Texture.hpp>
-#include <Resources/Transferer.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
+#include <TransferPass/Transferer.hpp>
 #include <Utils/CastHelper.hpp>
 
 // --------------------- Static functions ------------------------------

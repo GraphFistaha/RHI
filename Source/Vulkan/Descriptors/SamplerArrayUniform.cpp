@@ -69,7 +69,11 @@ void SamplerArrayUniform::TransitLayoutForUsedImages(details::CommandBuffer & co
   for (auto * texture : m_boundTextures)
   {
     if (texture)
-      texture->TransferLayout(commandBuffer, layout);
+    {
+      texture->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                                    VK_ACCESS_2_SHADER_READ_BIT, commandBuffer,
+                                                    layout);
+    }
   }
 }
 
