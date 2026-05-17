@@ -107,6 +107,10 @@ void Subpass::BindVertexBuffer(std::uint32_t binding, const IBufferGPU & buffer,
 {
   VkDeviceSize vkOffset = offset;
   auto && vkBuffer = utils::CastInterfaceClass2Internal<BufferGPU>(buffer);
+  const_cast<BufferGPU &>(vkBuffer)
+    .GetSynchronizer()
+    .RequireSynchronize(VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
+                        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT, m_writeBuffer);
   VkBuffer buf = vkBuffer.GetHandle();
   m_writeBuffer.PushCommand(vkCmdBindVertexBuffers, 0, 1, &buf, &vkOffset);
 }
@@ -114,6 +118,10 @@ void Subpass::BindVertexBuffer(std::uint32_t binding, const IBufferGPU & buffer,
 void Subpass::BindIndexBuffer(const IBufferGPU & buffer, IndexType type, std::uint32_t offset)
 {
   auto && vkBuffer = utils::CastInterfaceClass2Internal<BufferGPU>(buffer);
+  const_cast<BufferGPU &>(vkBuffer)
+    .GetSynchronizer()
+    .RequireSynchronize(VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT, VK_ACCESS_2_INDEX_READ_BIT,
+                        m_writeBuffer);
   m_writeBuffer.PushCommand(vkCmdBindIndexBuffer, vkBuffer.GetHandle(), VkDeviceSize{offset},
                             utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
 }

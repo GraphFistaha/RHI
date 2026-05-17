@@ -36,8 +36,7 @@ private:
     VkAccessFlagBits2 requiredAccess;
     VkImageLayout requiredLayout;
   };
-  VkImage m_image = VK_NULL_HANDLE; ///< synchronizable image
-  VkImageLayout m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  VkImage m_image = VK_NULL_HANDLE;   ///< synchronizable image
   VkBuffer m_buffer = VK_NULL_HANDLE; ///< synchronizable buffer
 
   BarrierInfo m_prevBarrier;

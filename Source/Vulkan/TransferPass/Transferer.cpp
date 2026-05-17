@@ -123,7 +123,7 @@ std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
   stagingBuffer.UploadSync(srcData, size, offset);
 
-  dstBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+  dstBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
                                                  VK_ACCESS_2_TRANSFER_WRITE_BIT, commands);
   VkBufferCopy copy{};
   copy.dstOffset = 0;
@@ -141,7 +141,7 @@ std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
   std::promise<DownloadResult> promise;
   BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
 
-  srcBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+  srcBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
                                                  VK_ACCESS_2_TRANSFER_READ_BIT, commands);
   VkBufferCopy copy{};
   copy.dstOffset = 0;
@@ -580,8 +580,8 @@ IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
 {
   std::lock_guard lk{m_submittingMutex};
   auto transferTask = m_transferSubmitter.Submit(false, {});
-  auto computeTask = m_computeSubmitter.Submit(false, {transferTask->GetSemaphore()});
-  auto graphicTask = m_graphicsSubmitter.Submit(false, {transferTask->GetSemaphore()});
+  auto computeTask = m_computeSubmitter.Submit(false, {});
+  auto graphicTask = m_graphicsSubmitter.Submit(false, {});
   std::array<IAwaitable *, 3> tasks{transferTask, computeTask, graphicTask};
   m_awaitable.AddTasks(tasks);
   m_pendingTasks->ProcessSubmittedTasks();
@@ -598,7 +598,7 @@ std::future<UploadResult> Transferer::UploadBuffer(IInternalBuffer & dstBuffer,
                                                    size_t offset)
 {
   std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->UploadBuffer(m_transferSubmitter.GetWritingBuffer(), dstBuffer, srcData,
+  return m_pendingTasks->UploadBuffer(m_graphicsSubmitter.GetWritingBuffer(), dstBuffer, srcData,
                                       size, offset);
 }
 
@@ -606,7 +606,7 @@ std::future<DownloadResult> Transferer::DownloadBuffer(IInternalBuffer & srcBuff
                                                        size_t offset)
 {
   std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->DownloadBuffer(m_transferSubmitter.GetWritingBuffer(), srcBuffer, size,
+  return m_pendingTasks->DownloadBuffer(m_graphicsSubmitter.GetWritingBuffer(), srcBuffer, size,
                                         offset);
 }
 
@@ -614,7 +614,7 @@ std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
                                                   const UploadImageArgs & args)
 {
   std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->UploadImage(m_transferSubmitter.GetWritingBuffer(), dstImage, args);
+  return m_pendingTasks->UploadImage(m_graphicsSubmitter.GetWritingBuffer(), dstImage, args);
 }
 
 std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,

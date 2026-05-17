@@ -89,6 +89,7 @@ int main()
   window.MainLoop(
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
+      ctx->ClearResources();
       ctx->TransferPass();
       ctx->RenderPass(framebuffer);
     });
@@ -119,7 +120,7 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
   // create vertex buffer
   m_vertexBuffer =
     ctx.CreateBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, false);
-  m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
+  //m_vertexBuffer->UploadAsync(Vertices, VerticesCount * 5 * sizeof(float));
 
 
   // create index buffer
@@ -154,6 +155,9 @@ void Renderer::DrawScene()
 
 void Renderer::UpdateGeometry(std::span<float> newVertices)
 {
+  static int i = 0;
   assert(newVertices.size() == 15);
-  m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
+  if (i % 100 == 0)
+    m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
+  ++i;
 }
