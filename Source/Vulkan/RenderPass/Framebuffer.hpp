@@ -40,8 +40,9 @@ public: // RHI-only API
   void Invalidate();
   /// begins rendering
   RenderTarget * BeginFrame();
+  void Draw(details::CommandBuffer & commands);
   /// finish rendering
-  IAwaitable * EndFrame();
+  void EndFrame(VkSemaphore renderPassSemaphore);
 
   using AttachmentProcessFunc = std::function<void(IInternalAttachment *)>;
   void ForEachAttachment(AttachmentProcessFunc && func);
@@ -56,7 +57,6 @@ protected:
   std::vector<IInternalAttachment *> m_attachments; //sort by count of buffers
   bool m_attachmentsChanged = false;
   std::vector<VkAttachmentDescription> m_attachmentDescriptions;
-  std::vector<VkSemaphore> m_imagesAvailabilitySemaphores;
 
   uint32_t m_framesCount = 0;
 

@@ -131,7 +131,7 @@ std::future<DownloadResult> GenericAttachment::DownloadImage(HostImageFormat for
   DownloadImageArgs args{};
   args.format = format;
   args.copyRegion = region;
-  return GetContext().GetTransferer().DownloadImage(*this, args);
+  return GetContext().GetTransferer(QueueType::Graphics).DownloadImage(*this, args);
 }
 
 size_t GenericAttachment::Size() const
@@ -143,7 +143,7 @@ size_t GenericAttachment::Size() const
 void GenericAttachment::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
+    GetContext().GetTransferer(QueueType::Graphics).BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 void GenericAttachment::SetClearValue(float r, float g, float b, float a)
@@ -293,12 +293,12 @@ VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
 
 void GenericAttachment::OnBeginRenderPass(VkImageLayout initialLayout) noexcept
 {
-    m_synchronizers[m_activeImage].SetLayout(initialLayout);
+  m_synchronizers[m_activeImage].SetLayout(initialLayout);
 }
 
 void GenericAttachment::OnEndRenderPass(VkImageLayout finalLayout) noexcept
 {
-    m_synchronizers[m_activeImage].SetLayout(finalLayout);
+  m_synchronizers[m_activeImage].SetLayout(finalLayout);
 }
 
 void GenericAttachment::Resize(const VkExtent2D & new_extent) noexcept

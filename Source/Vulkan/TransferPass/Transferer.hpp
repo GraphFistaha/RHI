@@ -1,12 +1,10 @@
 #pragma once
 #include <functional>
-#include <queue>
+#include <vector>
 
-#include <CommandsExecution/CompositeAsyncTask.hpp>
-#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
+#include <CommandsExecution/CommandBuffer.hpp>
 #include <Device.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/BufferGPU.hpp>
 #include <Resources/BufferInterface.hpp>
 #include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
@@ -15,17 +13,18 @@
 namespace RHI::vulkan
 {
 struct Context;
-}
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 struct Transferer final : public OwnedBy<Context>
 {
-  explicit Transferer(Context & ctx);
-  Transferer(Transferer && rhs) noexcept;
+  explicit Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount);
   virtual ~Transferer() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
-  IAwaitable * DoTransfer(bool flush = false);
+public:
+  void FlushCommands(details::CommandBuffer & commands);
 
   std::future<UploadResult> UploadBuffer(IInternalBuffer & dstBuffer, const uint8_t * srcData,
                                          size_t size, size_t offset = 0);
@@ -42,14 +41,16 @@ struct Transferer final : public OwnedBy<Context>
     IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions);
 
 private:
-  std::mutex m_submittingMutex;
-  BufferedSubmitter m_transferSubmitter;
-  BufferedSubmitter m_graphicsSubmitter;
-  BufferedSubmitter m_computeSubmitter;
+  const uint32_t m_queueFamily;
+  std::mutex m_writeLock;
+  details::CommandBuffer m_writeBuffer;
+  details::CommandBuffer m_execBuffer;
 
   struct PendingTasksContainer;
   std::unique_ptr<PendingTasksContainer> m_pendingTasks;
-  CompositeAsyncTask m_awaitable;
+
+private:
+  details::CommandBuffer & GetWritingBuffer() & noexcept;
 };
 
 } // namespace RHI::vulkan

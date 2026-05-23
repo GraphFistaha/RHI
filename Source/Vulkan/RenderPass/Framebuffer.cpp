@@ -154,24 +154,26 @@ RenderTarget * Framebuffer::BeginFrame()
     return nullptr;
   }
 
-  m_imagesAvailabilitySemaphores = std::move(semaphores);
   m_activeTarget = (m_activeTarget + 1) % m_targets.size();
   //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
-  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages), std::move(clearValues));
+  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages), std::move(clearValues),
+                                           std::move(semaphores));
   m_targets[m_activeTarget].Invalidate(); // rebuilds VkFramebuffer if need it
   return &m_targets[m_activeTarget];
 }
 
-IAwaitable * Framebuffer::EndFrame()
+void Framebuffer::Draw(details::CommandBuffer & commands)
 {
-  AsyncTask * task =
-    m_renderPass.Draw(m_targets[m_activeTarget], std::move(m_imagesAvailabilitySemaphores));
+  m_renderPass.Draw(commands, m_targets[m_activeTarget]);
+}
+
+void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
+{
   for (auto && attachment : m_attachments)
   {
     if (attachment)
-      attachment->FinalRendering(task->GetSemaphore());
+      attachment->FinalRendering(renderPassSemaphore);
   }
-  return task;
 }
 
 ISubpass * Framebuffer::CreateSubpass()

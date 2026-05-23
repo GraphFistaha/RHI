@@ -197,12 +197,6 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
-enum class GpuPass : uint8_t
-{
-  TransferPass,
-  RenderPass,
-  ComputePass
-};
 
 //----------------- Images ---------------------
 
@@ -375,8 +369,8 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual void ClearResources() = 0;
-  virtual void TransferPass(bool flush = false) = 0;
-  virtual void RenderPass(IFramebuffer * framebuffer) = 0;
+  virtual IAwaitable * TransferPass() = 0;
+  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer) = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;

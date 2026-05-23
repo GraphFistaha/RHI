@@ -49,22 +49,18 @@ void RenderPass::DeleteSubpass(ISubpass * subpass)
     m_invalidRenderPass = true;
 }
 
-AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
-                             std::vector<VkSemaphore> && waitSemaphores)
+void RenderPass::Draw(details::CommandBuffer & commands, RenderTarget & renderTarget)
 {
-  assert(m_submitter);
   assert(m_renderPass);
   assert(renderTarget.GetAttachmentsCount() == m_cachedAttachments.size());
   VkFramebuffer buf = renderTarget.GetHandle();
   VkExtent3D extent = renderTarget.GetVkExtent();
   auto && clearValues = renderTarget.GetClearValues();
 
-  m_submitter->WaitForSubmitCompleted();
-
   // here transfer layouts  for subpasses
   for (auto && subpass : m_subpasses)
   {
-    subpass.TransitLayoutForUsedImages(m_submitter->GetWritingBuffer());
+    subpass.TransitLayoutForUsedImages(commands);
   }
 
 
@@ -77,8 +73,8 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
 
-  m_submitter->GetWritingBuffer().PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
-                                              VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+  commands.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
+                       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
   GetFramebuffer().ForEachAttachment(
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
@@ -98,17 +94,16 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
       if (subpass.IsEnabled() && !subpass.GetCommandBufferForExecution().IsEmpty())
       {
         VkCommandBuffer buffer = subpass.GetCommandBufferForExecution().GetHandle();
-        m_submitter->GetWritingBuffer().PushCommand(vkCmdExecuteCommands, 1, &buffer);
+        commands.PushCommand(vkCmdExecuteCommands, 1, &buffer);
       }
       if (i + 1 != m_subpasses.size())
-        m_submitter->GetWritingBuffer().PushCommand(vkCmdNextSubpass,
-                                                    VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        commands.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       ++i;
     }
   }
 
 
-  m_submitter->GetWritingBuffer().PushCommand(vkCmdEndRenderPass);
+  commands.PushCommand(vkCmdEndRenderPass);
 
   GetFramebuffer().ForEachAttachment(
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
@@ -117,9 +112,6 @@ AsyncTask * RenderPass::Draw(RenderTarget & renderTarget,
         att->OnEndRenderPass(it->finalLayout);
       ++it;
     });
-
-  auto res = m_submitter->Submit(false /*waitPrevSubmitOnGPU*/, std::move(waitSemaphores));
-  return res;
 }
 
 void RenderPass::SetAttachments(uint32_t buffersCount,
@@ -133,7 +125,6 @@ void RenderPass::SetAttachments(uint32_t buffersCount,
   if (buffersCount != m_buffersCount)
   {
     m_buffersCount = buffersCount;
-    m_submitter.reset();
   }
 }
 
@@ -149,13 +140,6 @@ void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
 
 void RenderPass::Invalidate()
 {
-  if (!m_submitter)
-  {
-    m_submitter =
-      std::make_unique<BufferedSubmitter>(GetContext(), QueueType::Graphics, m_buffersCount,
-                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  }
-
   bool clearCommands = false;
   if (m_invalidRenderPass || !m_renderPass)
   {
@@ -197,11 +181,6 @@ void RenderPass::UpdateRenderPassValidFlag() noexcept
 {
   m_isReadyForRendering = m_renderPass; // m_renderPass != VK_NULL_HANDLE
   std::atomic_notify_all(&m_isReadyForRendering);
-}
-
-void RenderPass::WaitForRenderingIsDone() noexcept
-{
-  m_submitter->WaitForSubmitCompleted();
 }
 
 } // namespace RHI::vulkan

@@ -37,7 +37,7 @@ std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat fo
   DownloadImageArgs args{};
   args.format = format;
   args.copyRegion = region;
-  return GetContext().GetTransferer().DownloadImage(*this, args);
+  return GetContext().GetTransferer(QueueType::Graphics).DownloadImage(*this, args);
 }
 
 TextureDescription SurfacedAttachment::GetDescription() const noexcept

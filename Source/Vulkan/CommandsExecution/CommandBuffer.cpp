@@ -140,10 +140,15 @@ void CommandBuffer::Reset()
   m_commandsCount = 0;
 }
 
-void CommandBuffer::AddCommands(const std::vector<VkCommandBuffer> & buffers)
+void CommandBuffer::AddCommands(std::span<const VkCommandBuffer> buffers)
 {
   assert(m_level == VK_COMMAND_BUFFER_LEVEL_PRIMARY);
   vkCmdExecuteCommands(m_buffer, static_cast<uint32_t>(buffers.size()), buffers.data());
+}
+
+void CommandBuffer::AddCommands(VkCommandBuffer buffer)
+{
+  AddCommands(std::span<const VkCommandBuffer>(&buffer, 1));
 }
 
 uint32_t CommandBuffer::GetBoundQueueFamily() const noexcept

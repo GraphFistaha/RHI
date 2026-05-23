@@ -17,7 +17,7 @@ int main()
   args.format = RHI::HostImageFormat::RGB8;
   args.copyRegion = {{0, 0, 0}, texture->GetDescription().extent};
   auto future = texture->DownloadImage(args);
-  ctx->TransferPass(true /*flush*/); // call with true to future will complete
+  ctx->TransferPass(); // call with true to future will complete
   auto result = future.get();
   if (result.empty())
     throw std::runtime_error("Failed to download");

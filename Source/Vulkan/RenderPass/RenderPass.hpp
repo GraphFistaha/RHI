@@ -34,9 +34,9 @@ public: // IFramebuffer Interface
   ISubpass * CreateSubpass();
   void DeleteSubpass(ISubpass * subpass);
 
-  AsyncTask * Draw(RenderTarget & renderTarget,
-                   std::vector<VkSemaphore> && imageAvailiableSemaphore);
-  void SetAttachments(uint32_t buffersCount, const std::vector<VkAttachmentDescription> & attachments) noexcept;
+  void Draw(details::CommandBuffer & commands, RenderTarget & renderTarget);
+  void SetAttachments(uint32_t buffersCount,
+                      const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
   void ForEachSubpass(std::function<void(Subpass &)> && func);
 
@@ -48,7 +48,6 @@ public:
   VkRenderPass GetHandle() const noexcept { return m_renderPass; }
   void WaitForRenderPassIsValid() const noexcept;
   void UpdateRenderPassValidFlag() noexcept;
-  void WaitForRenderingIsDone() noexcept;
 
 private:
   std::vector<VkAttachmentDescription> m_cachedAttachments;
@@ -62,7 +61,6 @@ private:
   std::atomic_bool m_isReadyForRendering = false;
 
   uint32_t m_buffersCount = 0;
-  std::unique_ptr<BufferedSubmitter> m_submitter;
   std::list<Subpass> m_subpasses;
   uint32_t m_createSubpassCallsCounter = 0;
 };

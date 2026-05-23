@@ -37,15 +37,15 @@ public: // IContext interface
 
   // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
-  virtual void TransferPass(bool flush = false) override;
-  virtual void RenderPass(IFramebuffer * framebuffer) override;
+  virtual IAwaitable * TransferPass() override;
+  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   const Device & GetGpuConnection() const & noexcept;
-  Transferer & GetTransferer() & noexcept;
+  Transferer & GetTransferer(QueueType queue) & ;
   memory::MemoryAllocator & GetBuffersAllocator() & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
@@ -69,7 +69,12 @@ private:
   Device m_device;
   memory::MemoryAllocator m_allocator;
   details::VkObjectsGarbageCollector m_gc;
-  Transferer m_transferer;
+  BufferedSubmitter m_graphicSubmitter;
+  BufferedSubmitter m_transferSubmitter;
+  BufferedSubmitter m_computeSubmitter;
+  Transferer m_graphicTransferer;
+  Transferer m_transferTransferer;
+  Transferer m_computeTransferer;
 
   RHI::utils::ObjectsTable<IFramebuffer> m_framebuffers;
   RHI::utils::ObjectsTable<IBufferGPU> m_buffers;

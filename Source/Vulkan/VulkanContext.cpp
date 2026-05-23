@@ -26,7 +26,12 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   , m_device(*this, gpuTraits)
   , m_allocator(*this)
   , m_gc(*this)
-  , m_transferer(*this)
+  , m_graphicSubmitter(*this, QueueType::Graphics, 2, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+  , m_transferSubmitter(*this, QueueType::Transfer, 2, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_computeSubmitter(*this, QueueType::Compute, 2, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT)
+  , m_graphicTransferer(*this, m_device.GetQueue(QueueType::Graphics).first, 3)
+  , m_transferTransferer(*this, m_device.GetQueue(QueueType::Transfer).first, 3)
+  , m_computeTransferer(*this, m_device.GetQueue(QueueType::Compute).first, 3)
 {
   // alloc null texture
   RHI::TextureDescription args{};
@@ -101,27 +106,32 @@ void Context::ClearResources()
   m_gc.ClearObjects();
 }
 
-void Context::TransferPass(bool flush /* = false*/)
+IAwaitable * Context::TransferPass()
 {
-  std::vector<RHI::IAwaitable *> awaits;
-  awaits.push_back(m_transferer.DoTransfer(flush));
-
-  if (flush)
-  {
-    for (auto && await : awaits)
-      await->Wait();
-  }
+  AsyncTask * result = nullptr;
+  m_transferSubmitter.WaitForSubmitCompleted();
+  m_transferTransferer.FlushCommands(m_transferSubmitter.GetWritingBuffer());
+  result = m_transferSubmitter.Submit(false, {});
+  return result;
 }
 
-void Context::RenderPass(IFramebuffer * framebuffer)
+IAwaitable * Context::RenderPass(IFramebuffer * framebuffer)
 {
-  if (!framebuffer)
-    return;
   auto * fbo = dynamic_cast<Framebuffer *>(framebuffer);
+  if (!fbo)
+    return nullptr;
+  AsyncTask * result = nullptr;
+  m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   if (RenderTarget * renderTarget = fbo->BeginFrame())
   {
-    fbo->EndFrame();
+    m_graphicTransferer.FlushCommands(m_graphicSubmitter.GetWritingBuffer());
+    fbo->Draw(m_graphicSubmitter.GetWritingBuffer());
+    result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/,
+                                       renderTarget->GetImageAvailableForRenderSemaphores());
+    fbo->EndFrame(result->GetSemaphore());
   }
+
+  return result;
 }
 
 void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept
@@ -145,9 +155,19 @@ const Device & Context::GetGpuConnection() const & noexcept
   return m_device;
 }
 
-Transferer & Context::GetTransferer() & noexcept
+Transferer & Context::GetTransferer(QueueType queue) &
 {
-  return m_transferer;
+  switch (queue)
+  {
+    case QueueType::Graphics:
+      return m_graphicTransferer;
+    case QueueType::Transfer:
+      return m_transferTransferer;
+    case QueueType::Compute:
+      return m_computeTransferer;
+    default:
+      throw std::runtime_error("Incorrect queue type");
+  }
 }
 
 memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept

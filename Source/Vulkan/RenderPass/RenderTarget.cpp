@@ -84,8 +84,14 @@ const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcep
   return m_clearValues;
 }
 
+std::span<const VkSemaphore> RenderTarget::GetImageAvailableForRenderSemaphores() const noexcept
+{
+  return m_imageAvailabilitySemaphores;
+}
+
 void RenderTarget::SetAttachments(std::vector<VkImageView> && views,
-                                  std::vector<VkClearValue> && clearValues) noexcept
+                                  std::vector<VkClearValue> && clearValues,
+                                  std::vector<VkSemaphore> && imageSemaphores) noexcept
 {
   if (views != m_attachedImages)
   {
@@ -93,6 +99,7 @@ void RenderTarget::SetAttachments(std::vector<VkImageView> && views,
     m_invalidFramebuffer = true;
   }
   m_clearValues = std::move(clearValues);
+  m_imageAvailabilitySemaphores = std::move(imageSemaphores);
 }
 
 size_t RenderTarget::GetAttachmentsCount() const noexcept

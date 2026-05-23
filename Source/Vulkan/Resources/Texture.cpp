@@ -29,23 +29,23 @@ Texture::~Texture()
 
 std::future<UploadResult> Texture::UploadImage(const UploadImageArgs & args)
 {
-  return GetContext().GetTransferer().UploadImage(*this, args);
+  return GetContext().GetTransferer(QueueType::Graphics).UploadImage(*this, args);
 }
 
 std::future<DownloadResult> Texture::DownloadImage(const DownloadImageArgs & args)
 {
-  return GetContext().GetTransferer().DownloadImage(*this, args);
+  return GetContext().GetTransferer(QueueType::Graphics).DownloadImage(*this, args);
 }
 
 std::future<MipmapsGenerationResult> Texture::GenerateMipmaps()
 {
-  return GetContext().GetTransferer().GenerateMipmaps(*this);
+  return GetContext().GetTransferer(QueueType::Graphics).GenerateMipmaps(*this);
 }
 
 std::future<MipmapsGenerationResult> Texture::GenerateMipmapsByRegions(
   const std::vector<RHI::TextureRegion> & regions)
 {
-  return GetContext().GetTransferer().GenerateMipmapsByRegions(*this, regions);
+  return GetContext().GetTransferer(QueueType::Graphics).GenerateMipmapsByRegions(*this, regions);
 }
 
 TextureDescription Texture::GetDescription() const noexcept
@@ -61,7 +61,7 @@ size_t Texture::Size() const
 void Texture::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer().BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
+    GetContext().GetTransferer(QueueType::Graphics).BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 VkImageView Texture::GetImageView() const noexcept

@@ -1,8 +1,10 @@
 #include "Transferer.hpp"
 
+#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <ImageUtils/ImageFormatsConversation.hpp>
 #include <ImageUtils/ImageUtils.hpp>
 #include <ImageUtils/InternalImageTraits.hpp>
+#include <Resources/BufferGPU.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -552,96 +554,81 @@ std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::Generate
 namespace RHI::vulkan
 {
 
-Transferer::Transferer(Context & ctx)
+Transferer::Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount)
   : OwnedBy<Context>(ctx)
-  , m_transferSubmitter(ctx, QueueType::Transfer, 2 /*doubleBuffer*/,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_graphicsSubmitter(ctx, QueueType::Graphics, 2 /*doubleBuffer*/,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT)
-  , m_computeSubmitter(ctx, QueueType::Compute, 2 /*doubleBuffer*/, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_queueFamily(queueFamily)
+  , m_writeBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  , m_execBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_pendingTasks(new Transferer::PendingTasksContainer(ctx))
 {
-}
-
-
-Transferer::Transferer(Transferer && rhs) noexcept
-  : OwnedBy<Context>(rhs.GetOwner())
-  , m_transferSubmitter(std::move(rhs.m_transferSubmitter))
-  , m_graphicsSubmitter(std::move(rhs.m_graphicsSubmitter))
-  , m_computeSubmitter(std::move(rhs.m_computeSubmitter))
-  , m_pendingTasks(std::move(rhs.m_pendingTasks))
-  , m_awaitable(std::move(rhs.m_awaitable))
-{
+  GetWritingBuffer().BeginWriting();
 }
 
 Transferer::~Transferer() = default;
 
-IAwaitable * Transferer::DoTransfer(bool flush /* = false*/)
+void Transferer::FlushCommands(details::CommandBuffer & commands)
 {
-  std::lock_guard lk{m_submittingMutex};
-  auto transferTask = m_transferSubmitter.Submit(false, {});
-  auto computeTask = m_computeSubmitter.Submit(false, {});
-  auto graphicTask = m_graphicsSubmitter.Submit(false, {});
-  std::array<IAwaitable *, 3> tasks{transferTask, computeTask, graphicTask};
-  m_awaitable.AddTasks(tasks);
-  m_pendingTasks->ProcessSubmittedTasks();
-  if (flush)
-  {
-    m_awaitable.Wait();
-    m_pendingTasks->ProcessSubmittedTasks();
-  }
-  return &m_awaitable;
+  std::lock_guard lk{m_writeLock};
+  GetWritingBuffer().EndWriting();
+  commands.AddCommands(GetWritingBuffer().GetHandle());
+  std::swap(m_writeBuffer, m_execBuffer);
+  m_writeBuffer =
+    details::CommandBuffer(GetContext(), m_queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+  GetWritingBuffer().BeginWriting();
 }
 
 std::future<UploadResult> Transferer::UploadBuffer(IInternalBuffer & dstBuffer,
                                                    const uint8_t * srcData, size_t size,
                                                    size_t offset)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->UploadBuffer(m_graphicsSubmitter.GetWritingBuffer(), dstBuffer, srcData,
-                                      size, offset);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->UploadBuffer(GetWritingBuffer(), dstBuffer, srcData, size, offset);
 }
 
 std::future<DownloadResult> Transferer::DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
                                                        size_t offset)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->DownloadBuffer(m_graphicsSubmitter.GetWritingBuffer(), srcBuffer, size,
-                                        offset);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->DownloadBuffer(GetWritingBuffer(), srcBuffer, size, offset);
 }
 
 std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
                                                   const UploadImageArgs & args)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->UploadImage(m_graphicsSubmitter.GetWritingBuffer(), dstImage, args);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->UploadImage(GetWritingBuffer(), dstImage, args);
 }
 
 std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
                                                       const DownloadImageArgs & args)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->DownloadImage(m_graphicsSubmitter.GetWritingBuffer(), srcImage, args);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->DownloadImage(GetWritingBuffer(), srcImage, args);
 }
 
 std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                                      const TextureRegion & region)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->BlitImageToImage(m_graphicsSubmitter.GetWritingBuffer(), dst, src, region);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->BlitImageToImage(GetWritingBuffer(), dst, src, region);
 }
 
 std::future<MipmapsGenerationResult> Transferer::GenerateMipmaps(IInternalTexture & texture)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->GenerateMipmaps(m_graphicsSubmitter.GetWritingBuffer(), texture);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->GenerateMipmaps(GetWritingBuffer(), texture);
 }
 
 std::future<MipmapsGenerationResult> Transferer::GenerateMipmapsByRegions(
   IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions)
 {
-  std::lock_guard lk{m_submittingMutex};
-  return m_pendingTasks->GenerateMipmapsByRegions(m_graphicsSubmitter.GetWritingBuffer(), texture,
-                                                  regions);
+  std::lock_guard lk{m_writeLock};
+  return m_pendingTasks->GenerateMipmapsByRegions(GetWritingBuffer(), texture, regions);
+}
+
+
+details::CommandBuffer & Transferer::GetWritingBuffer() & noexcept
+{
+  return m_writeBuffer;
 }
 } // namespace RHI::vulkan

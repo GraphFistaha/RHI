@@ -16,8 +16,8 @@ struct Submitter : public CommandBuffer
   Submitter(Submitter && rhs) noexcept;
   Submitter & operator=(Submitter && rhs) noexcept;
 
-  AsyncTask * Submit(bool waitPrevSubmitOnGPU, std::vector<VkSemaphore> && waitSemaphores);
-  void WaitForSubmitCompleted();
+  virtual AsyncTask * Submit(bool waitPrevSubmitOnGPU, std::span<const VkSemaphore> waitSemaphores);
+  virtual void WaitForSubmitCompleted();
 
 protected:
   VkPipelineStageFlags m_waitStages;
