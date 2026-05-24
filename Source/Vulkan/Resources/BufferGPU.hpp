@@ -29,7 +29,7 @@ struct BufferGPU : public IBufferGPU,
 
 public: //IBufferGPU interface
   virtual void UploadSync(const void * data, size_t size, size_t offset = 0) override;
-  virtual std::future<UploadResult> UploadAsync(const void * data, size_t size,
+  virtual std::shared_ptr<IAwaitable> UploadAsync(const void * data, size_t size,
                                                 size_t offset = 0) override;
   virtual ScopedPointer Map() override;
   virtual void Flush() const noexcept override;

@@ -10,7 +10,7 @@ struct Context;
 
 namespace RHI::vulkan
 {
-
+//TODO: rename SubmitTask
 struct AsyncTask : public RHI::IAwaitable,
                    public OwnedBy<Context>
 {
@@ -23,6 +23,7 @@ struct AsyncTask : public RHI::IAwaitable,
 
 public: // IAwaitable interface
   virtual bool Wait() noexcept override;
+  virtual bool IsReady() const noexcept override;
 
 public:
   void StartTask() noexcept;

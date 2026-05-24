@@ -1,8 +1,8 @@
 #pragma once
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/TextureInterface.hpp>
 #include <Resources/Synchronizer.hpp>
+#include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan
@@ -23,11 +23,11 @@ struct Texture : public ITexture,
   RESTRICTED_COPY(Texture);
 
 public: // ITexture interface
-  virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) override;
-  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) override;
-  virtual std::future<MipmapsGenerationResult> GenerateMipmaps() override;
-  virtual std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
-    const std::vector<RHI::TextureRegion> & regions) override;
+  virtual std::shared_ptr<IAwaitable> UploadImage(const UploadImageArgs & args) override;
+  virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) override;
+  virtual std::shared_ptr<IAwaitable> GenerateMipmaps() override;
+  virtual std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(
+    std::span<const RHI::TextureRegion> regions) override;
 
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;

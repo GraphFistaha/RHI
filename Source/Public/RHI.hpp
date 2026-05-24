@@ -2,13 +2,11 @@
 #include "RHI_def.h"
 
 #include <array>
-#include <cassert>
 #include <cstdint>
-#include <filesystem>
 #include <functional>
-#include <future>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -217,6 +215,8 @@ struct IAwaitable
   virtual ~IAwaitable() = default;
   /// @brief Wait for process completed
   virtual bool Wait() noexcept = 0;
+  /// @brief Checks if task is done
+  virtual bool IsReady() const noexcept = 0;
 };
 
 using SpirV = std::vector<uint32_t>;
@@ -304,12 +304,6 @@ struct IFramebuffer
   virtual ISubpass * CreateSubpass() = 0;
 };
 
-// ------------------- Data ------------------
-using UploadResult = size_t;
-using DownloadResult = std::vector<uint8_t>;
-using MipmapsGenerationResult = size_t; ///< count of mips generated
-using BlitResult = size_t;
-
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
 struct IBufferGPU
@@ -320,8 +314,8 @@ struct IBufferGPU
   virtual ~IBufferGPU() = default;
   /// @brief uploads data
   virtual void UploadSync(const void * data, size_t size, size_t offset = 0) = 0;
-  virtual std::future<UploadResult> UploadAsync(const void * data, size_t size,
-                                                size_t offset = 0) = 0;
+  virtual std::shared_ptr<IAwaitable> UploadAsync(const void * data, size_t size,
+                                                  size_t offset = 0) = 0;
   /// @brief Map buffer into CPU memory.  It will be unmapped in end of scope
   virtual ScopedPointer Map() = 0;
   /// @brief Sends changed buffer after Map to GPU
@@ -336,13 +330,13 @@ struct IBufferGPU
 struct ITexture
 {
   virtual ~ITexture() = default;
-  virtual std::future<UploadResult> UploadImage(const UploadImageArgs & args) = 0;
-  virtual std::future<DownloadResult> DownloadImage(const DownloadImageArgs & args) = 0;
+  virtual std::shared_ptr<IAwaitable> UploadImage(const UploadImageArgs & args) = 0;
+  virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) = 0;
   /// @brief generate mipmaps as declared in TextureDescription
   /// @return future with count of generated mip levels
-  virtual std::future<MipmapsGenerationResult> GenerateMipmaps() = 0;
-  virtual std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
-    const std::vector<RHI::TextureRegion> & regions) = 0;
+  virtual std::shared_ptr<IAwaitable> GenerateMipmaps() = 0;
+  virtual std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(
+    std::span<const RHI::TextureRegion> regions) = 0;
 
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
@@ -354,8 +348,7 @@ struct ITexture
 struct IAttachment
 {
   virtual ~IAttachment() = default;
-  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const TextureRegion & region) = 0;
+  virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) = 0;
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
   virtual void BlitTo(ITexture * texture) = 0;
@@ -369,8 +362,9 @@ struct IContext
   virtual ~IContext() = default;
 
   virtual void ClearResources() = 0;
-  virtual IAwaitable * TransferPass() = 0;
-  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer) = 0;
+  virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) = 0;
+  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
+                                  std::span<const IAwaitable *> commandsToWait = {}) = 0;
 
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;

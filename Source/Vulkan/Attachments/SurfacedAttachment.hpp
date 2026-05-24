@@ -25,8 +25,7 @@ struct SurfacedAttachment : public IAttachment,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // ITexture interface
-  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const TextureRegion & region) override;
+  virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) override;
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;
   virtual void SetClearValue(float r, float g, float b, float a) override;

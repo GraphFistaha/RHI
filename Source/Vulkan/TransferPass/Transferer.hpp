@@ -1,14 +1,16 @@
 #pragma once
 #include <functional>
+#include <list>
+#include <mutex>
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
-#include <Device.hpp>
 #include <Private/OwnedBy.hpp>
 #include <Resources/BufferInterface.hpp>
 #include <Resources/TextureInterface.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <TransferPass/TransferTask.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
@@ -20,37 +22,38 @@ namespace RHI::vulkan
 struct Transferer final : public OwnedBy<Context>
 {
   explicit Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount);
-  virtual ~Transferer() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
-  void FlushCommands(details::CommandBuffer & commands);
+  void RecordCommands(details::CommandBuffer & commands);
+  void OnSubmit(AsyncTask & submitTask);
+  void ProcessExecutingCommands();
 
-  std::future<UploadResult> UploadBuffer(IInternalBuffer & dstBuffer, const uint8_t * srcData,
-                                         size_t size, size_t offset = 0);
-  std::future<DownloadResult> DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
+public:
+  std::shared_ptr<IAwaitable> UploadBuffer(IInternalBuffer & dstBuffer, const uint8_t * srcData,
+                                           size_t size, size_t offset = 0);
+  std::shared_ptr<IAwaitable> DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
                                              size_t offset = 0);
 
-  std::future<UploadResult> UploadImage(IInternalTexture & dstImage, const UploadImageArgs & args);
-  std::future<DownloadResult> DownloadImage(IInternalTexture & srcImage,
+  std::shared_ptr<IAwaitable> UploadImage(IInternalTexture & dstImage,
+                                          const UploadImageArgs & args);
+  std::shared_ptr<IAwaitable> DownloadImage(IInternalTexture & srcImage,
                                             const DownloadImageArgs & args);
-  std::future<BlitResult> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
-                                           const TextureRegion & region);
-  std::future<MipmapsGenerationResult> GenerateMipmaps(IInternalTexture & texture);
-  std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
-    IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions);
+  std::shared_ptr<IAwaitable> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
+                                               const TextureRegion & region);
+  std::shared_ptr<IAwaitable> GenerateMipmaps(IInternalTexture & texture);
+  std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(IInternalTexture & texture,
+                                                       std::span<const RHI::TextureRegion> regions);
 
 private:
-  const uint32_t m_queueFamily;
+  using TasksBatch = std::vector<TrasferTaskPtr>;
   std::mutex m_writeLock;
-  details::CommandBuffer m_writeBuffer;
-  details::CommandBuffer m_execBuffer;
-
-  struct PendingTasksContainer;
-  std::unique_ptr<PendingTasksContainer> m_pendingTasks;
+  std::mutex m_execLock;
+  TasksBatch m_writingTasks;
+  std::list<TasksBatch> m_executingTasks;
 
 private:
-  details::CommandBuffer & GetWritingBuffer() & noexcept;
+  void WriteNewTask(TrasferTaskPtr task);
 };
 
 } // namespace RHI::vulkan

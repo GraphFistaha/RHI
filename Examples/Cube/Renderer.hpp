@@ -1,4 +1,6 @@
 #pragma once
+#include <future>
+
 #include <glm/glm.hpp>
 #include <RHI.hpp>
 

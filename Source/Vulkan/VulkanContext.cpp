@@ -106,16 +106,22 @@ void Context::ClearResources()
   m_gc.ClearObjects();
 }
 
-IAwaitable * Context::TransferPass()
+IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
   AsyncTask * result = nullptr;
   m_transferSubmitter.WaitForSubmitCompleted();
-  m_transferTransferer.FlushCommands(m_transferSubmitter.GetWritingBuffer());
+  m_transferTransferer.RecordCommands(m_transferSubmitter.GetWritingBuffer());
   result = m_transferSubmitter.Submit(false, {});
+  m_transferTransferer.OnSubmit(*result);
+
+  m_graphicTransferer.ProcessExecutingCommands();
+  m_transferTransferer.ProcessExecutingCommands();
+  m_computeTransferer.ProcessExecutingCommands();
   return result;
 }
 
-IAwaitable * Context::RenderPass(IFramebuffer * framebuffer)
+IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
+                                 std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
   auto * fbo = dynamic_cast<Framebuffer *>(framebuffer);
   if (!fbo)
@@ -124,10 +130,11 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer)
   m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   if (RenderTarget * renderTarget = fbo->BeginFrame())
   {
-    m_graphicTransferer.FlushCommands(m_graphicSubmitter.GetWritingBuffer());
+    m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
     fbo->Draw(m_graphicSubmitter.GetWritingBuffer());
     result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/,
                                        renderTarget->GetImageAvailableForRenderSemaphores());
+    m_graphicTransferer.OnSubmit(*result);
     fbo->EndFrame(result->GetSemaphore());
   }
 

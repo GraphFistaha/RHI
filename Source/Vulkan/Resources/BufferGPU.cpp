@@ -68,7 +68,7 @@ void BufferGPU::UploadSync(const void * data, size_t size, size_t offset)
   m_memBlock.UploadSync(data, size, offset);
 }
 
-std::future<UploadResult> BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
+std::shared_ptr<IAwaitable> BufferGPU::UploadAsync(const void * data, size_t size, size_t offset)
 {
   return GetContext()
     .GetTransferer(QueueType::Graphics)

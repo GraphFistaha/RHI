@@ -87,6 +87,7 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTrait
   VkPhysicalDeviceVulkan12Features features12{};
   {
     features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.timelineSemaphore = VK_TRUE;
   }
   // init features for vulkan 1.3
   VkPhysicalDeviceVulkan13Features features13{};

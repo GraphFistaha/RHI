@@ -128,8 +128,8 @@ struct UploadImageArgs final
 
 struct DownloadImageArgs final
 {
-  HostImageFormat format; ///< desired format
-  TextureRegion copyRegion{};
+  HostTextureView dstTexture; ///< destination texture
+  TextureRegion copyRegion{};     ///< where from copy texels
 };
 
 } // namespace RHI

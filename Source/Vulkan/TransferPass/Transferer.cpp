@@ -1,634 +1,138 @@
 #include "Transferer.hpp"
 
-#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
-#include <ImageUtils/ImageFormatsConversation.hpp>
-#include <ImageUtils/ImageUtils.hpp>
-#include <ImageUtils/InternalImageTraits.hpp>
-#include <Resources/BufferGPU.hpp>
-#include <Utils/CastHelper.hpp>
+#include <TransferPass/TransferAlgorithm.hpp>
 #include <VulkanContext.hpp>
-
-namespace RHI::vulkan
-{
-
-static constexpr uint32_t g_stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                           VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-/// Submits transfer commands to one queue (transfer or graphic or compute)
-struct Transferer::PendingTasksContainer final : public OwnedBy<Context>
-{
-  PendingTasksContainer(Context & ctx);
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  void ProcessSubmittedTasks();
-
-public:
-  /// pushes task to upload buffer from host to GPU (asynchronous)
-  std::future<UploadResult> UploadBuffer(details::CommandBuffer & commands,
-                                         IInternalBuffer & dstBuffer, const uint8_t * srcData,
-                                         size_t size, size_t offset = 0);
-  /// pushes task to download buffer from GPU to host (asynchronous)
-  std::future<DownloadResult> DownloadBuffer(details::CommandBuffer & commands,
-                                             IInternalBuffer & srcBuffer, size_t size,
-                                             size_t offset = 0);
-
-  /// pushes task to upload image from host to GPU (asynchronous)
-  std::future<UploadResult> UploadImage(details::CommandBuffer & commands,
-                                        IInternalTexture & dstImage, const UploadImageArgs & args);
-  /// pushes task to download image from GPU to host (asynchronous)
-  std::future<DownloadResult> DownloadImage(details::CommandBuffer & commands,
-                                            IInternalTexture & srcImage,
-                                            const DownloadImageArgs & args);
-  /// pushes task to blit image to another image
-  std::future<BlitResult> BlitImageToImage(details::CommandBuffer & commands,
-                                           IInternalTexture & dst, IInternalTexture & src,
-                                           const TextureRegion & region);
-
-  std::future<MipmapsGenerationResult> GenerateMipmaps(details::CommandBuffer & commands,
-                                                       IInternalTexture & dst);
-
-  std::future<MipmapsGenerationResult> GenerateMipmapsByRegions(
-    details::CommandBuffer & commands, IInternalTexture & dst,
-    const std::vector<RHI::TextureRegion> & regions);
-
-private:
-  /// function to copy texels from downloaded staging buffer to host memory
-  using CreateDownloadResultFunc = std::function<DownloadResult(BufferGPU &)>;
-  /// queued data for uploading
-  using UploadTask = std::pair<BufferGPU /*stagingBuffer*/, std::promise<UploadResult>>;
-  /// queued data for downloading
-  using DownloadTask =
-    std::tuple<BufferGPU /*stagingBuffer*/, std::promise<DownloadResult>, CreateDownloadResultFunc>;
-  /// queued data for blitting
-  using BlitTask = std::promise<BlitResult>;
-  /// @brief queued data for mipmaps generation
-  using MipsGenerationTask = std::pair<IInternalTexture *, std::promise<MipmapsGenerationResult>>;
-
-  struct PendingTasksBatch final
-  {
-    std::vector<UploadTask> upload_tasks;     ///< promises to complete upload tasks
-    std::vector<DownloadTask> download_tasks; ///< promises to complete download tasks
-    std::vector<BlitTask> blit_tasks;         ///< promises to complete blit tasks
-    /// promises to complete mips generation tasks
-    std::vector<MipsGenerationTask> mips_generation_tasks;
-  };
-
-  PendingTasksBatch m_writingBatch;
-  PendingTasksBatch m_executingBatch;
-};
-
-
-Transferer::PendingTasksContainer::PendingTasksContainer(Context & ctx)
-  : OwnedBy<Context>(ctx)
-{
-}
-
-void Transferer::PendingTasksContainer::ProcessSubmittedTasks()
-{
-  // process upload data
-  for (auto && [stagingBuffer, promise] : m_executingBatch.upload_tasks)
-  {
-    UploadResult result = stagingBuffer.Size();
-    promise.set_value(result);
-  }
-  m_executingBatch.upload_tasks.clear();
-
-  // process download data
-  for (auto && [stagingBuffer, promise, createDownloadResult] : m_executingBatch.download_tasks)
-  {
-    DownloadResult result = createDownloadResult(stagingBuffer);
-    promise.set_value(std::move(result));
-  }
-  m_executingBatch.download_tasks.clear();
-
-  // process blitting commands
-  for (auto && promise : m_executingBatch.blit_tasks)
-  {
-    BlitResult result = 0;
-    promise.set_value(result);
-  }
-  m_executingBatch.blit_tasks.clear();
-
-  for (auto && [texture, promise] : m_executingBatch.mips_generation_tasks)
-  {
-    promise.set_value(texture->GetMipLevelsCount());
-  }
-  m_executingBatch.mips_generation_tasks.clear();
-
-  std::swap(m_executingBatch, m_writingBatch);
-}
-
-std::future<UploadResult> Transferer::PendingTasksContainer::UploadBuffer(
-  details::CommandBuffer & commands, IInternalBuffer & dstBuffer, const uint8_t * srcData,
-  size_t size, size_t offset)
-{
-  std::promise<UploadResult> promise;
-  BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
-  stagingBuffer.UploadSync(srcData, size, offset);
-
-  dstBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
-                                                 VK_ACCESS_2_TRANSFER_WRITE_BIT, commands);
-  VkBufferCopy copy{};
-  copy.dstOffset = 0;
-  copy.srcOffset = 0;
-  copy.size = size - offset;
-  commands.PushCommand(vkCmdCopyBuffer, stagingBuffer.GetHandle(), dstBuffer.GetHandle(), 1, &copy);
-  auto && data =
-    m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
-  return data.second.get_future();
-}
-
-std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadBuffer(
-  details::CommandBuffer & commands, IInternalBuffer & srcBuffer, size_t size, size_t offset)
-{
-  std::promise<DownloadResult> promise;
-  BufferGPU stagingBuffer(GetContext(), size - offset, g_stagingUsage, true);
-
-  srcBuffer.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
-                                                 VK_ACCESS_2_TRANSFER_READ_BIT, commands);
-  VkBufferCopy copy{};
-  copy.dstOffset = 0;
-  copy.srcOffset = offset;
-  copy.size = size;
-  commands.PushCommand(vkCmdCopyBuffer, srcBuffer.GetHandle(), stagingBuffer.GetHandle(), 1, &copy);
-  auto createDownloadResult = [](BufferGPU & stagingBuffer) -> DownloadResult
-  {
-    DownloadResult result(stagingBuffer.Size(), 0);
-    if (auto scopedPtr = stagingBuffer.Map())
-      std::memcpy(result.data(), scopedPtr.get(), stagingBuffer.Size());
-    return result;
-  };
-  auto && data = m_writingBatch.download_tasks.emplace_back(std::move(stagingBuffer),
-                                                            std::move(promise),
-                                                            std::move(createDownloadResult));
-  return std::get<1>(data).get_future();
-}
-
-std::future<UploadResult> Transferer::PendingTasksContainer::UploadImage(
-  details::CommandBuffer & commands, IInternalTexture & dstImage, const UploadImageArgs & args)
-{
-  std::promise<UploadResult> promise;
-  const size_t copyingRegionSize =
-    RHI::utils::GetSizeOfImage(args.copyRegion.extent, dstImage.GetInternalFormat());
-  BufferGPU stagingBuffer(GetContext(), copyingRegionSize, g_stagingUsage, true);
-
-  auto [srcExtent, layersCount] =
-    utils::UnpackExtentAndLayers(args.copyRegion.extent, args.srcTexture.type);
-
-  auto [srcOffset, srcLayerBase] =
-    utils::UnpackOffsetAndBaseLayer(args.copyRegion.offset, args.srcTexture.type);
-
-  auto [dstOffset, dstLayerBase] =
-    utils::UnpackOffsetAndBaseLayer(args.dstOffset, dstImage.GetImageType());
-
-  if (auto && mapped_ptr = stagingBuffer.Map())
-  {
-    MappedGpuTextureView gpuTexture{};
-    gpuTexture.pixelData = reinterpret_cast<uint8_t *>(mapped_ptr.get());
-    gpuTexture.extent = args.copyRegion.extent;
-    gpuTexture.format = dstImage.GetInternalFormat();
-    gpuTexture.baseLayerIndex = srcLayerBase;
-    gpuTexture.layersCount = layersCount;
-    auto dstExtent = dstImage.GetInternalExtent();
-    CopyImageFromHost(args.srcTexture, gpuTexture, args.copyRegion);
-    mapped_ptr.reset();
-    stagingBuffer.Flush();
-  }
-  else
-  {
-    throw std::runtime_error("Failed to fill staging buffer");
-  }
-
-  VkBufferImageCopy region{};
-  {
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageExtent = srcExtent;
-    region.imageOffset = dstOffset;
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = dstLayerBase;
-    region.imageSubresource.layerCount = layersCount;
-  }
-
-  VkImageLayout oldLayout = dstImage.GetLayout();
-  dstImage.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
-                                                VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
-                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  commands.PushCommand(vkCmdCopyBufferToImage, stagingBuffer.GetHandle(), dstImage.GetHandle(),
-                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-  auto && data =
-    m_writingBatch.upload_tasks.emplace_back(std::move(stagingBuffer), std::move(promise));
-  return data.second.get_future();
-}
-
-std::future<DownloadResult> Transferer::PendingTasksContainer::DownloadImage(
-  details::CommandBuffer & commands, IInternalTexture & srcImage, const DownloadImageArgs & args)
-{
-  std::promise<DownloadResult> promise;
-  BufferGPU stagingBuffer(GetContext(),
-                          RHI::utils::GetSizeOfImage(args.copyRegion.extent,
-                                                     srcImage.GetInternalFormat()),
-                          g_stagingUsage, true);
-
-  auto [srcOffset, layerBase] =
-    utils::UnpackOffsetAndBaseLayer(args.copyRegion.offset, srcImage.GetImageType());
-
-  auto [srcExtent, layersCount] =
-    utils::UnpackExtentAndLayers(args.copyRegion.extent, srcImage.GetImageType());
-
-  VkBufferImageCopy region{};
-  {
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageExtent = srcExtent;
-    region.imageOffset = srcOffset;
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = layerBase;
-    region.imageSubresource.layerCount = layersCount;
-  }
-
-  auto createDownloadResult =
-    [args, srcFormat = srcImage.GetInternalFormat()](BufferGPU & stagingBuffer) -> DownloadResult
-  {
-    DownloadResult result(RHI::utils::GetSizeOfImage(args.copyRegion.extent, args.format));
-    HostTextureView hostTexture{};
-    hostTexture.extent = args.copyRegion.extent;
-    hostTexture.format = args.format;
-    hostTexture.pixelData = result.data();
-    if (auto scopedPtr = stagingBuffer.Map())
-    {
-      MappedGpuTextureView view{};
-      view.pixelData = reinterpret_cast<uint8_t *>(scopedPtr.get());
-      view.extent = args.copyRegion.extent;
-      view.format = srcFormat;
-      CopyImageToHost(view, hostTexture, {{0, 0, 0}, args.copyRegion.extent});
-    }
-    return result;
-  };
-
-  srcImage.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_COPY_BIT,
-                                                VK_ACCESS_2_TRANSFER_READ_BIT, commands,
-                                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  commands.PushCommand(vkCmdCopyImageToBuffer, srcImage.GetHandle(), srcImage.GetLayout(),
-                       stagingBuffer.GetHandle(), 1, &region);
-  auto && data = m_writingBatch.download_tasks.emplace_back(std::move(stagingBuffer),
-                                                            std::move(promise),
-                                                            std::move(createDownloadResult));
-  return std::get<1>(data).get_future();
-}
-
-std::future<BlitResult> Transferer::PendingTasksContainer::BlitImageToImage(
-  details::CommandBuffer & commands, IInternalTexture & dst, IInternalTexture & src,
-  const TextureRegion & region)
-{
-  std::promise<BlitResult> promise;
-  VkImageCopy copy{};
-  {
-    //TODO: Fill copy
-    copy.extent = src.GetInternalExtent();
-    //copy.dstOffset =
-  }
-  commands.PushCommand(vkCmdCopyImage, src.GetHandle(), src.GetLayout(), dst.GetHandle(),
-                       dst.GetLayout(), 1, &copy);
-  auto && data = m_writingBatch.blit_tasks.emplace_back(std::move(promise));
-  return data.get_future();
-}
-
-std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmaps(
-  details::CommandBuffer & commands, IInternalTexture & dst)
-{
-  // derives extent in 2
-  auto extentDiv2 = [](const VkOffset3D & extent)
-  {
-    return VkOffset3D{std::max(1, extent.x / 2), std::max(1, extent.y / 2),
-                      std::max(1, extent.z / 2)};
-  };
-
-
-  const uint32_t transferQueue = commands.GetBoundQueueFamily();
-
-  // lambda to make a barrier for mip level
-  auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
-                                                                    VkImageLayout newLayout,
-                                                                    uint32_t level)
-  {
-    assert(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
-           oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    assert(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
-           newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VkImageMemoryBarrier barrier{};
-    {
-      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-      barrier.oldLayout = oldLayout;
-      barrier.newLayout = newLayout;
-      barrier.srcQueueFamilyIndex = transferQueue;
-      barrier.dstQueueFamilyIndex = transferQueue;
-      barrier.image = dst.GetHandle();
-      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      barrier.subresourceRange.baseMipLevel = level;
-      barrier.subresourceRange.levelCount = 1;
-      barrier.subresourceRange.baseArrayLayer = 0;
-      barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-      barrier.srcAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-                              ? VK_ACCESS_TRANSFER_WRITE_BIT
-                              : VK_ACCESS_TRANSFER_READ_BIT;
-      barrier.dstAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-                              ? VK_ACCESS_TRANSFER_READ_BIT
-                              : VK_ACCESS_TRANSFER_WRITE_BIT;
-    }
-    commands.PushCommand(vkCmdPipelineBarrier, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-  };
-
-  // if texture has no mip levels, then do nothing
-  if (dst.GetMipLevelsCount() <= 1)
-  {
-    std::promise<MipmapsGenerationResult> result;
-    result.set_value(0);
-    return result.get_future();
-  }
-
-  // help variables for algorithm
-  VkExtent3D extent = dst.GetInternalExtent();
-  VkOffset3D oldMipExtent = {static_cast<int32_t>(extent.width),
-                             static_cast<int32_t>(extent.height),
-                             static_cast<int32_t>(extent.depth)};
-  VkOffset3D mipExtent = extentDiv2(oldMipExtent);
-
-  /*
-                Algorithm description:
-                Given an texture with N layers and M mip levels to generate.
-                you should generate all mip levels for each layer
-
-                1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-                2) for i = 1 to M:
-                     2.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
-                            This step blocks mip level for reading
-                     2.2) blit image (all N layers) from i - 1 to i mip level with linear filteration.
-                            Note: i'th level has only half of i-1'th level's extent
-                     2.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
-                            this step waits for reading is completed and blocks for writing
-                     2.4) div extent in 2
-              */
-
-  dst.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                                           VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
-                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
-  {
-    VkImageBlit blit{};
-    {
-      blit.srcOffsets[0] = {0, 0, 0};
-      blit.srcOffsets[1] = oldMipExtent;
-      blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit.srcSubresource.mipLevel = level - 1;
-      blit.srcSubresource.baseArrayLayer = 0;
-      blit.srcSubresource.layerCount = dst.GetLayersCount();
-      blit.dstOffsets[0] = {0, 0, 0};
-      blit.dstOffsets[1] = mipExtent;
-      blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit.dstSubresource.mipLevel = level;
-      blit.dstSubresource.baseArrayLayer = 0;
-      blit.dstSubresource.layerCount = dst.GetLayersCount();
-    }
-
-    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
-
-    commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                         dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
-                         VK_FILTER_LINEAR);
-
-    transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, level - 1);
-
-    oldMipExtent = mipExtent;
-    mipExtent = extentDiv2(mipExtent);
-  }
-
-  std::promise<MipmapsGenerationResult> promise;
-  auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
-  return data.second.get_future();
-}
-
-std::future<MipmapsGenerationResult> Transferer::PendingTasksContainer::GenerateMipmapsByRegions(
-  details::CommandBuffer & commands, IInternalTexture & dst,
-  const std::vector<RHI::TextureRegion> & regions)
-{
-  auto calcMipOffset = [](const VkOffset3D & srcOffset, const VkExtent3D & srcExtent,
-                          uint32_t layer) -> std::array<VkOffset3D, 2>
-  {
-    VkOffset3D offset0{srcOffset.x >> layer, srcOffset.y >> layer, srcOffset.z >> layer};
-    VkOffset3D offset1 = {offset0.x + std::max(1, static_cast<int32_t>(srcExtent.width >> layer)),
-                          offset0.y + std::max(1, static_cast<int32_t>(srcExtent.height >> layer)),
-                          offset0.z + std::max(1, static_cast<int32_t>(srcExtent.depth >> layer))};
-    return {offset0, offset1};
-  };
-
-
-  const uint32_t transferQueue = commands.GetBoundQueueFamily();
-
-  // lambda to make a barrier for mip level
-  auto transferLayoutForMipLevel = [&commands, &dst, transferQueue](VkImageLayout oldLayout,
-                                                                    VkImageLayout newLayout,
-                                                                    uint32_t level)
-  {
-    assert(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
-           oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    assert(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ||
-           newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VkImageMemoryBarrier barrier{};
-    {
-      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-      barrier.oldLayout = oldLayout;
-      barrier.newLayout = newLayout;
-      barrier.srcQueueFamilyIndex = transferQueue;
-      barrier.dstQueueFamilyIndex = transferQueue;
-      barrier.image = dst.GetHandle();
-      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      barrier.subresourceRange.baseMipLevel = level;
-      barrier.subresourceRange.levelCount = 1;
-      barrier.subresourceRange.baseArrayLayer = 0;
-      barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-      barrier.srcAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-                              ? VK_ACCESS_TRANSFER_WRITE_BIT
-                              : VK_ACCESS_TRANSFER_READ_BIT;
-      barrier.dstAccessMask = newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-                              ? VK_ACCESS_TRANSFER_READ_BIT
-                              : VK_ACCESS_TRANSFER_WRITE_BIT;
-    }
-    commands.PushCommand(vkCmdPipelineBarrier, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-  };
-
-  // if texture has no mip levels, then do nothing
-  if (dst.GetMipLevelsCount() <= 1)
-  {
-    std::promise<MipmapsGenerationResult> result;
-    result.set_value(0);
-    return result.get_future();
-  }
-
-  /*
-                  Algorithm description:
-                  Given an texture with N layers and M mip levels to generate.
-                  you should generate all mip levels for each layer
-                  Also given Regions array to create mip levels from
-
-                  1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for all layers/mipLevels
-                  2) for i = 1 to M:
-                       2.1) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL for i - 1 mip level.
-                              This step blocks mip level for reading
-                       2.2) for j = 1 to R:
-                           2.2.1) blit subimage from i - 1 to i mip level with linear filteration.
-                                  Note: i'th level has only half of i-1'th level's extent
-                       2.3) transfer layout to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL for i - 1 mip level
-                              this step waits for reading is completed and blocks for writing
-*/
-
-  dst.GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                                           VK_ACCESS_2_TRANSFER_WRITE_BIT, commands,
-                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  std::vector<VkImageBlit> blits;
-  blits.reserve(regions.size());
-  for (uint32_t level = 1; level < dst.GetMipLevelsCount(); ++level)
-  {
-    blits.clear();
-
-    for (auto && region : regions)
-    {
-      auto [srcExtent, layersCount] =
-        utils::UnpackExtentAndLayers(region.extent, dst.GetImageType());
-      auto [srcOffset, baseLayer] =
-        utils::UnpackOffsetAndBaseLayer(region.offset, dst.GetImageType());
-      auto [oldMipOffset0, oldMipOffset1] = calcMipOffset(srcOffset, srcExtent, level - 1);
-      auto [mipOffset0, mipOffset1] = calcMipOffset(srcOffset, srcExtent, level);
-
-      // probably it's need to filter double copying
-      //if (oldMipOffset1.x - oldMipOffset0.x == 1 && oldMipOffset1.y - oldMipOffset0.y == 1 &&
-      //    oldMipOffset1.z - oldMipOffset0.z == 1)
-      //  continue;
-
-      VkImageBlit blit{};
-      {
-        blit.srcOffsets[0] = oldMipOffset0;
-        blit.srcOffsets[1] = oldMipOffset1;
-        blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        blit.srcSubresource.mipLevel = level - 1;
-        blit.srcSubresource.baseArrayLayer = baseLayer;
-        blit.srcSubresource.layerCount = layersCount;
-        blit.dstOffsets[0] = mipOffset0;
-        blit.dstOffsets[1] = mipOffset1;
-        blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        blit.dstSubresource.mipLevel = level;
-        blit.dstSubresource.baseArrayLayer = baseLayer;
-        blit.dstSubresource.layerCount = layersCount;
-      }
-      blits.push_back(blit);
-    }
-
-    if (!blits.empty())
-    {
-      transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, level - 1);
-
-      commands.PushCommand(vkCmdBlitImage, dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                           dst.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           static_cast<uint32_t>(blits.size()), blits.data(), VK_FILTER_LINEAR);
-
-      transferLayoutForMipLevel(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, level - 1);
-    }
-  }
-
-  std::promise<MipmapsGenerationResult> promise;
-  auto && data = m_writingBatch.mips_generation_tasks.emplace_back(&dst, std::move(promise));
-  return data.second.get_future();
-}
-
-} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
 Transferer::Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount)
   : OwnedBy<Context>(ctx)
-  , m_queueFamily(queueFamily)
-  , m_writeBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_execBuffer(ctx, queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_pendingTasks(new Transferer::PendingTasksContainer(ctx))
 {
-  GetWritingBuffer().BeginWriting();
 }
 
-Transferer::~Transferer() = default;
-
-void Transferer::FlushCommands(details::CommandBuffer & commands)
+void Transferer::RecordCommands(details::CommandBuffer & commands)
 {
   std::lock_guard lk{m_writeLock};
-  GetWritingBuffer().EndWriting();
-  commands.AddCommands(GetWritingBuffer().GetHandle());
-  std::swap(m_writeBuffer, m_execBuffer);
-  m_writeBuffer =
-    details::CommandBuffer(GetContext(), m_queueFamily, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-  GetWritingBuffer().BeginWriting();
+  if (m_writingTasks.empty())
+    return;
+  for (auto && taskPtr : m_writingTasks)
+    taskPtr->RecordCommands(commands);
+  std::lock_guard lk2{m_execLock};
+  m_executingTasks.push_front(std::move(m_writingTasks));
 }
 
-std::future<UploadResult> Transferer::UploadBuffer(IInternalBuffer & dstBuffer,
-                                                   const uint8_t * srcData, size_t size,
-                                                   size_t offset)
+void Transferer::OnSubmit(AsyncTask & submitTask)
 {
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->UploadBuffer(GetWritingBuffer(), dstBuffer, srcData, size, offset);
+  std::lock_guard lk{m_execLock};
+  auto && batch = m_executingTasks.front();
+  for (auto && task : batch)
+  {
+    task->OnSubmit(submitTask);
+  }
 }
 
-std::future<DownloadResult> Transferer::DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
+void Transferer::ProcessExecutingCommands()
+{
+  std::lock_guard lk{m_execLock};
+  for (auto it = m_executingTasks.begin(); it != m_executingTasks.end(); it++)
+  {
+    auto && batch = *it;
+    size_t count = batch.size();
+    for (size_t i = 0; i < count; ++i)
+    {
+      if (batch[i]->IsReady())
+      {
+        batch[i]->Complete();
+        std::swap(batch[i], batch[count - 1]);
+        i--;
+        count--;
+      }
+    }
+    batch.erase(batch.begin() + count, batch.end());
+    if (batch.empty())
+    {
+      it = m_executingTasks.erase(it);
+      it--;
+    }
+  }
+}
+
+std::shared_ptr<IAwaitable> Transferer::UploadBuffer(IInternalBuffer & dstBuffer,
+                                                     const uint8_t * srcData, size_t size,
+                                                     size_t offset)
+{
+  auto task = details::UploadBuffer(GetContext(), dstBuffer, srcData, size, offset);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
+}
+
+std::shared_ptr<IAwaitable> Transferer::DownloadBuffer(IInternalBuffer & srcBuffer, size_t size,
                                                        size_t offset)
 {
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->DownloadBuffer(GetWritingBuffer(), srcBuffer, size, offset);
+  auto task = details::DownloadBuffer(GetContext(), srcBuffer, nullptr, size, offset);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
 }
 
-std::future<UploadResult> Transferer::UploadImage(IInternalTexture & dstImage,
-                                                  const UploadImageArgs & args)
+std::shared_ptr<IAwaitable> Transferer::UploadImage(IInternalTexture & dstImage,
+                                                    const UploadImageArgs & args)
 {
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->UploadImage(GetWritingBuffer(), dstImage, args);
+  auto task = details::UploadImage(GetContext(), dstImage, args);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
 }
 
-std::future<DownloadResult> Transferer::DownloadImage(IInternalTexture & srcImage,
+std::shared_ptr<IAwaitable> Transferer::DownloadImage(IInternalTexture & srcImage,
                                                       const DownloadImageArgs & args)
 {
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->DownloadImage(GetWritingBuffer(), srcImage, args);
+  auto task = details::DownloadImage(GetContext(), srcImage, args);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
 }
 
-std::future<BlitResult> Transferer::BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
-                                                     const TextureRegion & region)
+std::shared_ptr<IAwaitable> Transferer::BlitImageToImage(IInternalTexture & dst,
+                                                         IInternalTexture & src,
+                                                         const TextureRegion & region)
+{
+  auto task = details::BlitImageToImage(GetContext(), dst, src, region);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
+}
+
+std::shared_ptr<IAwaitable> Transferer::GenerateMipmaps(IInternalTexture & texture)
+{
+  auto task = details::GenerateMipmaps(GetContext(), texture);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
+}
+
+std::shared_ptr<IAwaitable> Transferer::GenerateMipmapsByRegions(
+  IInternalTexture & texture, std::span<const RHI::TextureRegion> regions)
+{
+  auto task = details::GenerateMipmapsByRegions(GetContext(), texture, regions);
+  if (!task)
+    return nullptr;
+  WriteNewTask(task);
+  return task;
+}
+
+void Transferer::WriteNewTask(TrasferTaskPtr task)
 {
   std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->BlitImageToImage(GetWritingBuffer(), dst, src, region);
+  m_writingTasks.push_back(std::move(task));
 }
 
-std::future<MipmapsGenerationResult> Transferer::GenerateMipmaps(IInternalTexture & texture)
-{
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->GenerateMipmaps(GetWritingBuffer(), texture);
-}
-
-std::future<MipmapsGenerationResult> Transferer::GenerateMipmapsByRegions(
-  IInternalTexture & texture, const std::vector<RHI::TextureRegion> & regions)
-{
-  std::lock_guard lk{m_writeLock};
-  return m_pendingTasks->GenerateMipmapsByRegions(GetWritingBuffer(), texture, regions);
-}
-
-
-details::CommandBuffer & Transferer::GetWritingBuffer() & noexcept
-{
-  return m_writeBuffer;
-}
 } // namespace RHI::vulkan

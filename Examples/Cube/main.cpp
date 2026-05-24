@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <thread>
 
 #include <Camera.hpp>
 #include <glm/ext.hpp>

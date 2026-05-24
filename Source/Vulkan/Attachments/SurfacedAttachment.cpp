@@ -31,12 +31,8 @@ SurfacedAttachment::~SurfacedAttachment()
   DestroySwapchain();
 }
 
-std::future<DownloadResult> SurfacedAttachment::DownloadImage(HostImageFormat format,
-                                                              const TextureRegion & region)
+std::shared_ptr<IAwaitable> SurfacedAttachment::DownloadImage(const DownloadImageArgs & args)
 {
-  DownloadImageArgs args{};
-  args.format = format;
-  args.copyRegion = region;
   return GetContext().GetTransferer(QueueType::Graphics).DownloadImage(*this, args);
 }
 

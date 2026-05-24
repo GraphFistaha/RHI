@@ -81,7 +81,7 @@ int main()
       tBuf->UploadSync(&t_val, sizeof(float));
 
       std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
-      transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
+      auto task = transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
 
       x += 0.001f;
       ctx->ClearResources();

@@ -49,6 +49,13 @@ bool AsyncTask::Wait() noexcept
   return res == VK_SUCCESS;
 }
 
+
+bool AsyncTask::IsReady() const noexcept
+{
+  return vkGetFenceStatus(GetContext().GetGpuConnection().GetDevice(), m_fence) == VK_SUCCESS;
+}
+
+
 void AsyncTask::StartTask() noexcept
 {
   Wait();

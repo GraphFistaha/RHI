@@ -37,15 +37,16 @@ public: // IContext interface
 
   // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
-  virtual IAwaitable * TransferPass() override;
-  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer) override;
+  virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) override;
+  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
+                                  std::span<const IAwaitable *> commandsToWait = {}) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   const Device & GetGpuConnection() const & noexcept;
-  Transferer & GetTransferer(QueueType queue) & ;
+  Transferer & GetTransferer(QueueType queue) &;
   memory::MemoryAllocator & GetBuffersAllocator() & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 

@@ -2,6 +2,7 @@
 #include "test_utils_def.h"
 
 #include <cstdio>
+#include <filesystem>
 #include <string>
 
 #include <RHI.hpp>

@@ -1,12 +1,12 @@
 #pragma once
+#include <mutex>
 
+#include <Attachments/Attachment.hpp>
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
 #include <Resources/Synchronizer.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "Attachment.hpp"
 
 namespace RHI::vulkan
 {
@@ -26,8 +26,7 @@ struct GenericAttachment : public IAttachment,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IAttachment interface
-  virtual std::future<DownloadResult> DownloadImage(HostImageFormat format,
-                                                    const TextureRegion & region) override;
+  virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) override;
   virtual TextureDescription GetDescription() const noexcept override;
   /// @brief Get size of image in bytes
   virtual size_t Size() const override;

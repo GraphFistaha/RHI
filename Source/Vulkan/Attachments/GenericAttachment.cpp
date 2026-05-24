@@ -125,12 +125,8 @@ GenericAttachment::~GenericAttachment()
 //--------------------- IAttachment interface ----------------
 
 
-std::future<DownloadResult> GenericAttachment::DownloadImage(HostImageFormat format,
-                                                             const TextureRegion & region)
+std::shared_ptr<IAwaitable> GenericAttachment::DownloadImage(const DownloadImageArgs & args)
 {
-  DownloadImageArgs args{};
-  args.format = format;
-  args.copyRegion = region;
   return GetContext().GetTransferer(QueueType::Graphics).DownloadImage(*this, args);
 }
 
@@ -143,7 +139,9 @@ size_t GenericAttachment::Size() const
 void GenericAttachment::BlitTo(ITexture * texture)
 {
   if (auto * ptr = dynamic_cast<IInternalTexture *>(texture))
-    GetContext().GetTransferer(QueueType::Graphics).BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
+    GetContext()
+      .GetTransferer(QueueType::Graphics)
+      .BlitImageToImage(*ptr, *this, RHI::TextureRegion{});
 }
 
 void GenericAttachment::SetClearValue(float r, float g, float b, float a)

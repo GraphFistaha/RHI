@@ -85,6 +85,13 @@ PRIVATE
 
 	"TransferPass/Transferer.hpp"
 	"TransferPass/Transferer.cpp"
+	"TransferPass/TransferTask.hpp"
+	"TransferPass/TransferTask.cpp"
+	"TransferPass/TransferAlgorithm.hpp"
+	"TransferPass/Blit.cpp"
+	"TransferPass/Buffer.cpp"
+	"TransferPass/Image.cpp"
+	"TransferPass/Mipmaps.cpp"
 	
 	
 	"CommandsExecution/CommandBuffer.cpp" 
@@ -95,8 +102,6 @@ PRIVATE
 	"CommandsExecution/AsyncTask.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.cpp"
-	"CommandsExecution/CompositeAsyncTask.cpp"
-	"CommandsExecution/CompositeAsyncTask.hpp"
 )
 
 #---------------- Link third-party libraries ---------------
