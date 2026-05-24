@@ -43,7 +43,7 @@ Submitter & Submitter::operator=(Submitter && rhs) noexcept
   return *this;
 }
 
-AsyncTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::span<const VkSemaphore> waitSemaphores)
+SubmitTask * Submitter::Submit(bool waitPrevSubmitOnGPU, std::span<const VkSemaphore> waitSemaphores)
 {
   const VkSemaphore signalSem = m_newBarrier.GetSemaphore();
   const VkCommandBuffer buffer = GetHandle();

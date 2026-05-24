@@ -22,7 +22,7 @@ void Transferer::RecordCommands(details::CommandBuffer & commands)
   m_executingTasks.push_front(std::move(m_writingTasks));
 }
 
-void Transferer::OnSubmit(AsyncTask & submitTask)
+void Transferer::OnSubmit(SubmitTask & submitTask)
 {
   std::lock_guard lk{m_execLock};
   auto && batch = m_executingTasks.front();

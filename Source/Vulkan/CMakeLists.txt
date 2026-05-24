@@ -98,8 +98,8 @@ PRIVATE
 	"CommandsExecution/CommandBuffer.hpp" 
 	"CommandsExecution/Submitter.cpp"
 	"CommandsExecution/Submitter.hpp"
-	"CommandsExecution/AsyncTask.cpp"
-	"CommandsExecution/AsyncTask.hpp"
+	"CommandsExecution/SubmitTask.cpp"
+	"CommandsExecution/SubmitTask.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.cpp"
 )

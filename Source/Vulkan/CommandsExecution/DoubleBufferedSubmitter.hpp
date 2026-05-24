@@ -10,7 +10,7 @@ struct BufferedSubmitter final : public details::Submitter
                              VkPipelineStageFlags waitStages);
 
   details::Submitter & GetWritingBuffer() & noexcept { return m_submitters[m_writingSubmitterIdx]; }
-  virtual AsyncTask * Submit(bool waitPrevSubmitOnGPU,
+  virtual SubmitTask * Submit(bool waitPrevSubmitOnGPU,
                              std::span<const VkSemaphore> waitSemaphores) override;
 
 private:

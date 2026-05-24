@@ -12,7 +12,7 @@ BufferedSubmitter::BufferedSubmitter(Context & ctx, QueueType type, uint32_t buf
   GetWritingBuffer().BeginWriting();
 }
 
-AsyncTask * BufferedSubmitter::Submit(bool waitPrevSubmitOnGPU,
+SubmitTask * BufferedSubmitter::Submit(bool waitPrevSubmitOnGPU,
                                       std::span<const VkSemaphore> waitSemaphores)
 {
   if (m_submitters[m_writingSubmitterIdx].IsEmpty())
@@ -21,7 +21,7 @@ AsyncTask * BufferedSubmitter::Submit(bool waitPrevSubmitOnGPU,
   }
   m_submitters[m_writingSubmitterIdx].EndWriting();
   std::swap(m_submitters[m_writingSubmitterIdx], static_cast<details::Submitter &>(*this));
-  AsyncTask * result = details::Submitter::Submit(waitPrevSubmitOnGPU, waitSemaphores);
+  SubmitTask * result = details::Submitter::Submit(waitPrevSubmitOnGPU, waitSemaphores);
   m_writingSubmitterIdx = (m_writingSubmitterIdx + 1) % m_submitters.size();
   m_submitters[m_writingSubmitterIdx].WaitForSubmitCompleted();
   m_submitters[m_writingSubmitterIdx].Reset();

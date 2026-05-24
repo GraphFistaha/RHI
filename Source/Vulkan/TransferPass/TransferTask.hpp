@@ -1,8 +1,8 @@
 #pragma once
 #include <functional>
 
-#include <CommandsExecution/AsyncTask.hpp>
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <CommandsExecution/SubmitTask.hpp>
 #include <Private/OwnedBy.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <RHI.hpp>
@@ -33,11 +33,11 @@ public: // IAwaitable interface
 
 public: // internal interface
   void RecordCommands(details::CommandBuffer & commands);
-  void OnSubmit(AsyncTask & submitTask);
+  void OnSubmit(SubmitTask & submitTask);
   void Complete();
 
 private:
-  AsyncTask * m_submitTask = nullptr;
+  SubmitTask * m_submitTask = nullptr;
 
   RecordCommand m_command;
   OnCompleteFunc m_onComplete;

@@ -1,4 +1,4 @@
-#include "AsyncTask.hpp"
+#include "SubmitTask.hpp"
 
 #include <Utils/FenceBuilder.hpp>
 #include <Utils/SemaphoreBuilder.hpp>
@@ -7,27 +7,27 @@
 namespace RHI::vulkan
 {
 
-AsyncTask::AsyncTask(Context & ctx)
+SubmitTask::SubmitTask(Context & ctx)
   : OwnedBy<Context>(ctx)
 {
   m_semaphore = utils::SemaphoreBuilder().Make(ctx.GetGpuConnection().GetDevice());
   m_fence = utils::FenceBuilder().SetLocked().Make(ctx.GetGpuConnection().GetDevice());
 }
 
-AsyncTask::~AsyncTask()
+SubmitTask::~SubmitTask()
 {
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_semaphore, nullptr);
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_fence, nullptr);
 }
 
-AsyncTask::AsyncTask(AsyncTask && rhs) noexcept
+SubmitTask::SubmitTask(SubmitTask && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
 {
   std::swap(m_fence, rhs.m_fence);
   std::swap(m_semaphore, rhs.m_semaphore);
 }
 
-AsyncTask & AsyncTask::operator=(AsyncTask && rhs) noexcept
+SubmitTask & SubmitTask::operator=(SubmitTask && rhs) noexcept
 {
   if (this != &rhs)
   {
@@ -38,7 +38,7 @@ AsyncTask & AsyncTask::operator=(AsyncTask && rhs) noexcept
   return *this;
 }
 
-bool AsyncTask::Wait() noexcept
+bool SubmitTask::Wait() noexcept
 {
   int res = VK_SUCCESS;
   if (m_fence)
@@ -50,13 +50,13 @@ bool AsyncTask::Wait() noexcept
 }
 
 
-bool AsyncTask::IsReady() const noexcept
+bool SubmitTask::IsReady() const noexcept
 {
   return vkGetFenceStatus(GetContext().GetGpuConnection().GetDevice(), m_fence) == VK_SUCCESS;
 }
 
 
-void AsyncTask::StartTask() noexcept
+void SubmitTask::StartTask() noexcept
 {
   Wait();
   vkResetFences(GetContext().GetGpuConnection().GetDevice(), 1, &m_fence);

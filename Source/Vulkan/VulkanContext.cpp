@@ -108,7 +108,7 @@ void Context::ClearResources()
 
 IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
-  AsyncTask * result = nullptr;
+  SubmitTask * result = nullptr;
   m_transferSubmitter.WaitForSubmitCompleted();
   m_transferTransferer.RecordCommands(m_transferSubmitter.GetWritingBuffer());
   result = m_transferSubmitter.Submit(false, {});
@@ -126,7 +126,7 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
   auto * fbo = dynamic_cast<Framebuffer *>(framebuffer);
   if (!fbo)
     return nullptr;
-  AsyncTask * result = nullptr;
+  SubmitTask * result = nullptr;
   m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   if (RenderTarget * renderTarget = fbo->BeginFrame())
   {

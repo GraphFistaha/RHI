@@ -26,7 +26,7 @@ struct Transferer final : public OwnedBy<Context>
 
 public:
   void RecordCommands(details::CommandBuffer & commands);
-  void OnSubmit(AsyncTask & submitTask);
+  void OnSubmit(SubmitTask & submitTask);
   void ProcessExecutingCommands();
 
 public:

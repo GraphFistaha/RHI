@@ -35,7 +35,7 @@ void TransferTask::RecordCommands(details::CommandBuffer & commands)
     m_command(commands);
 }
 
-void TransferTask::OnSubmit(AsyncTask & submitTask)
+void TransferTask::OnSubmit(SubmitTask & submitTask)
 {
   m_submitTask = &submitTask;
 }
