@@ -11,8 +11,7 @@ struct Context;
 
 namespace RHI::vulkan
 {
-struct SubmitTask : public RHI::IAwaitable,
-                    public IInternalAwaitable,
+struct SubmitTask : public IInternalAwaitable,
                     public OwnedBy<Context>
 {
   explicit SubmitTask(Context & ctx);

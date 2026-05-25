@@ -82,11 +82,13 @@ int main()
 
       std::pair<float, float> transform_val{std::cos(x), std::sin(x)};
       auto task = transformBuf->UploadAsync(&transform_val, 2 * sizeof(float));
+      std::array<const RHI::IAwaitable *, 1> prerenderTasks;
+      prerenderTasks[0] = task.get();
 
       x += 0.001f;
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer);
+      ctx->RenderPass(framebuffer, prerenderTasks);
 
       if (subpass->ShouldBeInvalidated())
       {

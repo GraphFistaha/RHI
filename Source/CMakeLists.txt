@@ -23,6 +23,7 @@ PRIVATE
 	"Private/Types.hpp"
 	"Private/OwnedBy.hpp"
 	"Private/ObjectsTable.hpp"
+	"Private/FastDynamicCast.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})
@@ -50,6 +51,7 @@ PRIVATE
 	RHI_BUILD
 	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
 	$<$<BOOL:${RHI_USE_LOG_OUTPUT}>:RHI_USE_LOG_OUTPUT>
+	$<$<CONFIG:Release>:RHI_FAST_DYNAMIC_CAST>
 )
 
 install(TARGETS ${this_target}

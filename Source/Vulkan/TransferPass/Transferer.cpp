@@ -25,6 +25,8 @@ void Transferer::RecordCommands(details::CommandBuffer & commands)
 void Transferer::OnSubmit(SubmitTask & submitTask)
 {
   std::lock_guard lk{m_execLock};
+  if (m_executingTasks.empty())
+    return;
   auto && batch = m_executingTasks.front();
   for (auto && task : batch)
   {

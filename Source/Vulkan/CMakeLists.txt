@@ -93,7 +93,7 @@ PRIVATE
 	"TransferPass/Image.cpp"
 	"TransferPass/Mipmaps.cpp"
 	
-	
+	"CommandsExecution/InternalAwaitable.hpp"
 	"CommandsExecution/CommandBuffer.cpp" 
 	"CommandsExecution/CommandBuffer.hpp" 
 	"CommandsExecution/Submitter.cpp"

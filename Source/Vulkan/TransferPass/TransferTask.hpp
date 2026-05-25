@@ -16,7 +16,7 @@ struct Context;
 namespace RHI::vulkan
 {
 
-struct TransferTask : public RHI::IAwaitable,
+struct TransferTask : public IInternalAwaitable,
                       public OwnedBy<Context>
 {
   using RecordCommand = std::function<void(details::CommandBuffer &)>;
@@ -30,6 +30,10 @@ struct TransferTask : public RHI::IAwaitable,
 public: // IAwaitable interface
   virtual bool Wait() noexcept override;
   virtual bool IsReady() const noexcept override;
+
+public:
+  virtual VkSemaphore GetSemaphore() const noexcept override;
+  virtual VkFence GetFence() const noexcept override;
 
 public: // internal interface
   void RecordCommands(details::CommandBuffer & commands);

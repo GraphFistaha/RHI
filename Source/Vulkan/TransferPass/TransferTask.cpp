@@ -29,6 +29,16 @@ bool TransferTask::IsReady() const noexcept
   return m_submitTask ? m_submitTask->IsReady() : false;
 }
 
+VkSemaphore TransferTask::GetSemaphore() const noexcept
+{
+  return m_submitTask ? m_submitTask->GetSemaphore() : VK_NULL_HANDLE;
+}
+
+VkFence TransferTask::GetFence() const noexcept
+{
+  return m_submitTask ? m_submitTask->GetFence() : VK_NULL_HANDLE;
+}
+
 void TransferTask::RecordCommands(details::CommandBuffer & commands)
 {
   if (m_command)

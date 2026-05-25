@@ -5,6 +5,7 @@
 #include <Attachments/GenericAttachment.hpp>
 #include <Attachments/SurfacedAttachment.hpp>
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <RenderPass/RenderTarget.hpp>
@@ -109,31 +110,55 @@ void Context::ClearResources()
 IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
   SubmitTask * result = nullptr;
-  m_transferSubmitter.WaitForSubmitCompleted();
+  std::vector<VkSemaphore> waitSemaphores;
+  waitSemaphores.reserve(commandsToWait.size());
+  for (auto taskPtr : commandsToWait)
+  {
+    if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+      if (auto sem = ptr->GetSemaphore())
+        waitSemaphores.push_back(sem);
+  }
+  m_transferSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   m_transferTransferer.RecordCommands(m_transferSubmitter.GetWritingBuffer());
-  result = m_transferSubmitter.Submit(false, {});
+  result = m_transferSubmitter.Submit(false, waitSemaphores);
   m_transferTransferer.OnSubmit(*result);
 
-  m_graphicTransferer.ProcessExecutingCommands();
-  m_transferTransferer.ProcessExecutingCommands();
-  m_computeTransferer.ProcessExecutingCommands();
+  //m_graphicTransferer.ProcessExecutingCommands();
+  //m_transferTransferer.ProcessExecutingCommands();
+  //m_computeTransferer.ProcessExecutingCommands();
   return result;
 }
 
 IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
                                  std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
-  auto * fbo = dynamic_cast<Framebuffer *>(framebuffer);
+  auto * fbo = FastDynamicCast<Framebuffer>(framebuffer);
   if (!fbo)
     return nullptr;
   SubmitTask * result = nullptr;
   m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
+  std::vector<VkSemaphore> waitSemaphores;
+  waitSemaphores.reserve(fbo->GetImagesCount() + commandsToWait.size());
   if (RenderTarget * renderTarget = fbo->BeginFrame())
   {
+    auto && imageSemaphores = renderTarget->GetImageAvailableForRenderSemaphores();
+    waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
+    for (auto taskPtr : commandsToWait)
+    {
+      if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+      {
+        /*
+        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that sgould be submitted below
+        In that case, access is synchronized by barriers
+        */
+        if (auto sem = ptr->GetSemaphore())
+          waitSemaphores.push_back(sem);
+      }
+    }
+
     m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
     fbo->Draw(m_graphicSubmitter.GetWritingBuffer());
-    result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/,
-                                       renderTarget->GetImageAvailableForRenderSemaphores());
+    result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
     m_graphicTransferer.OnSubmit(*result);
     fbo->EndFrame(result->GetSemaphore());
   }
