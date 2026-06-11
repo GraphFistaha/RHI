@@ -57,7 +57,7 @@ vkb::Instance CreateInstance(const char * appName, uint32_t apiVersion, void * d
 #endif
                     .set_debug_callback(VulkanDebugCallback)
                     .set_debug_callback_user_data_pointer(debugUserData)
-                    .set_minimum_instance_version(apiVersion)
+                    .set_minimum_instance_version(apiVersion) // comment if you run with RenderDoc, because it can use vulkan higher 1.0
                     .build();
   if (!inst_ret || !inst_ret.has_value())
   {
@@ -135,10 +135,9 @@ struct DeviceInternal final
   explicit DeviceInternal(const RHI::GpuTraits & gpuTraits, RHI::vulkan::Context & ctx);
   ~DeviceInternal();
 
-  VkInstance GetInstance() const noexcept { return instance; }
-  VkDevice GetDevice() const noexcept { return device; }
-  VkPhysicalDevice GetPhysicalDevice() const noexcept { return physicalDevice; }
-  const VkPhysicalDeviceProperties & GetGpuProperties() const & noexcept;
+  const vkb::Instance & GetInstance() const & noexcept { return instance; }
+  const vkb::Device & GetDevice() const & noexcept { return device; }
+  const vkb::PhysicalDevice & GetPhysicalDevice() const & noexcept { return physicalDevice; }
   bool GetQueue(vkb::QueueType type, uint32_t & resultFamily, VkQueue & resultQueue) const noexcept;
 
 private:
@@ -151,12 +150,16 @@ private:
 DeviceInternal::DeviceInternal(const RHI::GpuTraits & gpuTraits, RHI::vulkan::Context & ctx)
 {
   instance = CreateInstance("appName", VulkanAPIVersion, &ctx);
-  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance ({}) has been created successfully",
-          static_cast<void *>(instance.instance));
+  auto major = VK_API_VERSION_MAJOR(instance.api_version);
+  auto minor = VK_API_VERSION_MINOR(instance.api_version);
+  ctx.Log(RHI::LogMessageStatus::LOG_DEBUG, "VkInstance {}.{} ({}) has been created successfully",
+          major, minor, static_cast<void *>(instance.instance));
+
   physicalDevice = SelectPhysicalDevice(instance, gpuTraits, VulkanAPIVersionPair);
   ctx.Log(RHI::LogMessageStatus::LOG_DEBUG,
           "VkPhysicalDevice ({}) has been selected successfully - {}",
           static_cast<void *>(physicalDevice.physical_device), physicalDevice.name);
+
   vkb::DeviceBuilder device_builder{physicalDevice};
   auto dev_ret = device_builder.build();
   if (!dev_ret)
@@ -177,11 +180,6 @@ DeviceInternal::~DeviceInternal()
 {
   vkb::destroy_device(device);
   vkb::destroy_instance(instance);
-}
-
-const VkPhysicalDeviceProperties & DeviceInternal::GetGpuProperties() const & noexcept
-{
-  return physicalDevice.properties;
 }
 
 bool DeviceInternal::GetQueue(vkb::QueueType type, uint32_t & resultFamily,
@@ -221,6 +219,9 @@ Device::Device(Context & ctx, const GpuTraits & gpuTraits)
   if (!privData->GetQueue(vkb::QueueType::present, m_queues[QueueType::Present].first,
                           m_queues[QueueType::Present].second))
     m_queues[QueueType::Present] = m_queues[QueueType::Graphics];
+
+  auto extensions = privData->GetPhysicalDevice().get_available_extensions();
+  m_availableExtensions.insert(extensions.begin(), extensions.end());
 }
 
 Device::~Device()
@@ -233,26 +234,26 @@ Device::~Device()
 VkDevice Device::GetDevice() const noexcept
 {
   auto * privData = reinterpret_cast<const DeviceInternal *>(m_privateData.data());
-  return privData ? privData->GetDevice() : VK_NULL_HANDLE;
+  return privData ? privData->GetDevice().device : VK_NULL_HANDLE;
 }
 
 VkInstance Device::GetInstance() const noexcept
 {
   auto * privData = reinterpret_cast<const DeviceInternal *>(m_privateData.data());
-  return privData ? privData->GetInstance() : VK_NULL_HANDLE;
+  return privData ? privData->GetInstance().instance : VK_NULL_HANDLE;
 }
 
 VkPhysicalDevice Device::GetGPU() const noexcept
 {
   auto * privData = reinterpret_cast<const DeviceInternal *>(m_privateData.data());
-  return privData ? privData->GetPhysicalDevice() : VK_NULL_HANDLE;
+  return privData ? privData->GetPhysicalDevice().physical_device : VK_NULL_HANDLE;
 }
 
 const VkPhysicalDeviceProperties & Device::GetGpuProperties() const & noexcept
 {
   static VkPhysicalDeviceProperties s_nullProperties{};
   auto * privData = reinterpret_cast<const DeviceInternal *>(m_privateData.data());
-  return privData ? privData->GetGpuProperties() : s_nullProperties;
+  return privData ? privData->GetPhysicalDevice().properties : s_nullProperties;
 }
 
 std::pair<uint32_t, VkQueue> Device::GetQueue(QueueType type) const
@@ -262,7 +263,13 @@ std::pair<uint32_t, VkQueue> Device::GetQueue(QueueType type) const
 
 uint32_t Device::GetVulkanVersion() const noexcept
 {
-  return GetGpuProperties().apiVersion;
+  auto * privData = reinterpret_cast<const DeviceInternal *>(m_privateData.data());
+  return privData ? privData->GetInstance().api_version : 0;
+}
+
+bool Device::CheckExtension(std::string_view extension) const noexcept
+{
+   return m_availableExtensions.contains(std::string(extension));
 }
 
 } // namespace RHI::vulkan

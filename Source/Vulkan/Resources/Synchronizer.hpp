@@ -1,6 +1,9 @@
 #pragma once
+#include <mutex>
+
 #include <Private/OwnedBy.hpp>
 #include <vulkan/vulkan.hpp>
+
 
 namespace RHI::vulkan::details
 {
@@ -17,6 +20,8 @@ struct Synchronizer final : public OwnedBy<Context>
 {
   explicit Synchronizer(Context & ctx, VkImage image);
   explicit Synchronizer(Context & ctx, VkBuffer buffer);
+  Synchronizer(Synchronizer&& rhs) noexcept;
+  Synchronizer& operator=(Synchronizer&& rhs) noexcept;
   ~Synchronizer();
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
@@ -39,6 +44,7 @@ private:
   VkImage m_image = VK_NULL_HANDLE;   ///< synchronizable image
   VkBuffer m_buffer = VK_NULL_HANDLE; ///< synchronizable buffer
 
+  mutable std::mutex m_syncMutex;
   BarrierInfo m_prevBarrier;
 };
 } // namespace RHI::vulkan::details

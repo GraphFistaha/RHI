@@ -115,15 +115,21 @@ IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait 
   for (auto taskPtr : commandsToWait)
   {
     if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+    {
+      /*
+        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
+        In that case, access is synchronized by barriers
+      */
       if (auto sem = ptr->GetSemaphore())
         waitSemaphores.push_back(sem);
+    }
   }
   m_transferSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   m_transferTransferer.RecordCommands(m_transferSubmitter.GetWritingBuffer());
   result = m_transferSubmitter.Submit(false, waitSemaphores);
   m_transferTransferer.OnSubmit(*result);
 
-  //m_graphicTransferer.ProcessExecutingCommands();
+  //dm_graphicTransferer.ProcessExecutingCommands();
   //m_transferTransferer.ProcessExecutingCommands();
   //m_computeTransferer.ProcessExecutingCommands();
   return result;
@@ -148,7 +154,7 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
       if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
       {
         /*
-        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that sgould be submitted below
+        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
         In that case, access is synchronized by barriers
         */
         if (auto sem = ptr->GetSemaphore())

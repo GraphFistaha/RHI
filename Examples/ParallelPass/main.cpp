@@ -50,7 +50,7 @@ void thread_main(Renderer * renderer)
   {
     auto c = std::cosf(t);
     // clang-format off
-    std::array<float, 15> newVertices{
+    std::array<float, 15> newVertices{  
       // pos + colors(rgb)
       0.5f,  0.5f,  c*c, 0.0f, 0.0f, /*first vertex*/
       -0.5f, c*c,  0.0f, 1.0f, 0.0f, /*second vertex*/
@@ -91,7 +91,7 @@ int main()
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
       ctx->ClearResources();
-      ctx->TransferPass();
+      ctx->TransferPass(); 
       ctx->RenderPass(framebuffer);
     });
 
@@ -156,7 +156,7 @@ void Renderer::DrawScene()
 
 void Renderer::UpdateGeometry(std::span<float> newVertices)
 {
-  static int i = 0;
+  static uint32_t i = 0;
   assert(newVertices.size() == 15);
   if (i % 100 == 0)
     m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
