@@ -1,6 +1,7 @@
 #include "SamplerUniform.hpp"
 
 #include <Descriptors/DescriptorBufferLayout.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -60,8 +61,7 @@ std::vector<VkDescriptorImageInfo> SamplerUniform::CreateDescriptorInfo() const
   return {imageInfo};
 }
 
-void SamplerUniform::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer,
-                                                VkImageLayout layout)
+void SamplerUniform::Synchronize(details::CommandBuffer & commandBuffer, VkImageLayout layout)
 {
   if (m_boundTexture)
   {
@@ -91,8 +91,8 @@ void SamplerUniform::SetInvalid()
 
 void SamplerUniform::AssignImage(ITexture * image)
 {
-  m_boundTexture = image ? dynamic_cast<IInternalTexture *>(image)
-                         : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
+  m_boundTexture = image ? FastDynamicCast<IInternalTexture>(image)
+                         : FastDynamicCast<IInternalTexture>(GetContext().GetNullTexture());
   GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
 }
 

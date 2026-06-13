@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Descriptors/BaseUniform.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Resources/BufferInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -23,7 +23,7 @@ public:
 
 
 public: // IBufferUniformDescriptor interface
-  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) override;
+  virtual void AssignBuffer(IBufferGPU * buffer, size_t offset = 0) override;
   virtual bool IsBufferAssigned() const noexcept override;
 
 public: // IUniformDescriptor interface
@@ -31,18 +31,21 @@ public: // IUniformDescriptor interface
   virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
   virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
 
+public: // BaseUniform
+  virtual void Synchronize(details::CommandBuffer & commands,
+                           VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED) override;
+
 public: // IInvalidable interface
   void Invalidate();
   void SetInvalid();
 
 public: // public internal API
   size_t GetOffset() const noexcept { return m_offset; }
-  VkBuffer GetBuffer() const noexcept { return m_buffer; }
+  VkBuffer GetBuffer() const noexcept;
   using BaseUniform::GetDescriptorType;
 
 private:
-  VkBuffer m_buffer = VK_NULL_HANDLE;
-  size_t m_size = 0;
+  IInternalBuffer * m_buffer = nullptr;
   size_t m_offset = 0;
 };
 

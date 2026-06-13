@@ -5,7 +5,6 @@
 namespace RHI
 {
 template<typename Derived, typename Base>
-  requires(std::is_base_of_v<Base, Derived>)
 Derived * FastDynamicCast(Base * base) noexcept
 {
 #ifndef RHI_FAST_DYNAMIC_CAST
@@ -16,7 +15,6 @@ Derived * FastDynamicCast(Base * base) noexcept
 }
 
 template<typename Derived, typename Base>
-  requires(std::is_base_of_v<Base, Derived>)
 const Derived * FastDynamicCast(const Base * base) noexcept
 {
 #ifndef RHI_FAST_DYNAMIC_CAST
@@ -27,7 +25,6 @@ const Derived * FastDynamicCast(const Base * base) noexcept
 }
 
 template<typename Derived, typename Base>
-  requires(std::is_base_of_v<Base, Derived>)
 std::shared_ptr<Derived> FastDynamicCast(std::shared_ptr<Base> base) noexcept
 {
 #ifndef RHI_FAST_DYNAMIC_CAST

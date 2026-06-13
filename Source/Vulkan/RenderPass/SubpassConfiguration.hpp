@@ -51,6 +51,8 @@ public: // ISubpassConfiguration interface
   virtual void EnableDepthTest(bool enabled) noexcept override;
   virtual void SetDepthFunc(CompareOperation op) noexcept override;
 
+  virtual void SetRenderProcess(PipelineProcessPtr process) override;
+
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;
@@ -60,8 +62,8 @@ public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
-  void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineBindPoint bindPoint);
-  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
+  void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
+  void SynchroniseResources(details::CommandBuffer & commands);
 
 private:
   uint32_t m_subpassIndex;

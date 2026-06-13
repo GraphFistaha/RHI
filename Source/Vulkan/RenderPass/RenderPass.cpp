@@ -19,7 +19,7 @@ RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   // иначе VkRenderPass не создастся и в целом все сломается.
   auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, family);
   // disable subpass to not build pipeline
-  initialSubpass.SetEnabled(false);
+  //initialSubpass.SetEnabled(false);
 }
 
 RenderPass::~RenderPass()
@@ -27,11 +27,11 @@ RenderPass::~RenderPass()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
-ISubpass * RenderPass::CreateSubpass()
+Subpass * RenderPass::CreateSubpass()
 {
   if (m_createSubpassCallsCounter++ == 0)
   {
-    m_subpasses.front().SetEnabled(true);
+    //m_subpasses.front().SetEnabled(true);
     return &m_subpasses.front();
   }
 
@@ -42,7 +42,7 @@ ISubpass * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-void RenderPass::DeleteSubpass(ISubpass * subpass)
+void RenderPass::DeleteSubpass(Subpass * subpass)
 {
   size_t c = std::erase_if(m_subpasses, [subpass](const Subpass & sp) { return &sp == subpass; });
   if (c > 0)
@@ -60,7 +60,7 @@ void RenderPass::Draw(details::CommandBuffer & commands, RenderTarget & renderTa
   // here transfer layouts  for subpasses
   for (auto && subpass : m_subpasses)
   {
-    subpass.TransitLayoutForUsedImages(commands);
+    subpass.SynchroniseResources(commands);
   }
 
 
@@ -89,13 +89,7 @@ void RenderPass::Draw(details::CommandBuffer & commands, RenderTarget & renderTa
     size_t i = 0;
     for (auto && subpass : m_subpasses)
     {
-      if (subpass.ShouldSwapCommandBuffers())
-        subpass.SwapCommandBuffers();
-      if (subpass.IsEnabled() && !subpass.GetCommandBufferForExecution().IsEmpty())
-      {
-        VkCommandBuffer buffer = subpass.GetCommandBufferForExecution().GetHandle();
-        commands.PushCommand(vkCmdExecuteCommands, 1, &buffer);
-      }
+      subpass.RecordCommands(commands);
       if (i + 1 != m_subpasses.size())
         commands.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       ++i;

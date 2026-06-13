@@ -42,7 +42,7 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
     m_updateTasks.emplace_back(&descriptor);
   }
 
-  void BindToCommandBuffer(const VkCommandBuffer & buffer, VkPipelineLayout pipelineLayout,
+  void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineLayout pipelineLayout,
                            VkPipelineBindPoint bindPoint);
 
 private:

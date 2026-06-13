@@ -176,9 +176,11 @@ void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
   }
 }
 
-ISubpass * Framebuffer::CreateSubpass()
+ISubpassConfiguration * Framebuffer::CreatePipeline()
 {
-  return m_renderPass.CreateSubpass();
+  if (auto subpass = m_renderPass.CreateSubpass())
+    return &subpass->GetConfiguration();
+  return nullptr;
 }
 
 void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
@@ -211,7 +213,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   for (auto * attachment : m_attachments)
     if (attachment)
       attachment->Resize(VkExtent2D(width, height));
-  m_renderPass.ForEachSubpass([](Subpass & sp) { sp.SetDirtyCacheCommands(); });
+  m_renderPass.ForEachSubpass([](Subpass & sp) { sp.SetDirtyCommands(); });
   m_attachmentsChanged = true;
 }
 

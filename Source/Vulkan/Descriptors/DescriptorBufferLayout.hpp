@@ -42,7 +42,7 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
   void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                         ISamplerArrayUniformDescriptor * outArray[]);
 
-  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
+  void SynchroniseResources(details::CommandBuffer & commands);
 
 public:
   void SetInvalid();

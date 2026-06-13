@@ -65,7 +65,7 @@ struct ISamplerArrayUniformDescriptor : public IUniformDescriptor,
 
 struct IBufferUniformDescriptor : public IUniformDescriptor
 {
-  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) = 0;
+  virtual void AssignBuffer(IBufferGPU * buffer, size_t offset = 0) = 0;
   virtual bool IsBufferAssigned() const noexcept = 0;
 };
 

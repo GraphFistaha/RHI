@@ -1,0 +1,75 @@
+#pragma once
+#include <atomic>
+#include <functional>
+#include <tuple>
+#include <variant>
+#include <vector>
+
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <Private/OwnedBy.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
+#include <RHI.hpp>
+#include <vulkan/vulkan.h>
+
+namespace RHI::vulkan
+{
+struct Context;
+}
+
+namespace RHI::vulkan
+{
+
+struct PipelineProcess final : public RHI::IPipelineProcess,
+                               public OwnedBy<Context>
+{
+  explicit PipelineProcess(Context & ctx);
+  virtual ~PipelineProcess() override;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+
+public: // Commands
+  /// @brief draw vertices command (analog glDrawArrays)
+  virtual void DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
+                            std::uint32_t firstVertex = 0,
+                            std::uint32_t firstInstance = 0) override;
+
+  /// @brief draw vertices with indieces (analog glDrawElements)
+  virtual void DrawIndexedVertices(std::uint32_t indexCount, std::uint32_t instanceCount,
+                                   std::uint32_t firstIndex = 0, int32_t vertexOffset = 0,
+                                   std::uint32_t firstInstance = 0) override;
+
+  /// @brief Set viewport command
+  virtual void SetViewport(float width, float height) override;
+
+  /// @brief Set scissor command
+  virtual void SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_t height) override;
+
+  /// @brief binds buffer as input attribute data
+  virtual void BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffer,
+                                std::uint32_t offset = 0) override;
+
+  /// @brief binds buffer as index buffer
+  virtual void BindIndexBuffer(IBufferGPU * buffer, IndexType type,
+                               std::uint32_t offset = 0) override;
+
+  virtual void PushConstant(const void * data, size_t size) override;
+
+public:
+  void RecordCommands(details::CommandBuffer & commands, const SubpassConfiguration & pipeline);
+  /// @brief push barriers to command buffers to use resources in pipeline
+  void SynchroniseResources(details::CommandBuffer & commands);
+  /// @brief reset synchronization 
+  void ResetSynchronisation();
+  /// @brief make process not editable
+  void CommitProcess();
+
+private:
+  using DrawCommand = std::function<void(details::CommandBuffer &, const SubpassConfiguration &)>;
+  using BoundResourcePtr = std::variant<IInternalTexture *, IInternalBuffer *>;
+  using BoundResourceSyncInfo = std::tuple<BoundResourcePtr, VkPipelineStageFlags2, VkAccessFlags2, VkImageLayout>;
+  /// @brief when pipeline has just created it's editable, but when you bind it to pipeline - it's not
+  std::atomic_bool m_editable = true;
+  std::vector<DrawCommand> m_commands;
+  std::vector<BoundResourceSyncInfo> m_resourceSyncInfos;
+};
+
+} // namespace RHI::vulkan

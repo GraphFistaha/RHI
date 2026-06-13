@@ -6,6 +6,7 @@
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
+
 namespace RHI::vulkan
 {
 struct Context;
@@ -14,6 +15,7 @@ struct DescriptorBufferLayout;
 
 namespace RHI::vulkan::details
 {
+struct CommandBuffer;
 
 struct BaseUniform : public OwnedBy<Context>,
                      public OwnedBy<DescriptorBufferLayout>
@@ -27,7 +29,7 @@ struct BaseUniform : public OwnedBy<Context>,
     , m_index(index)
   {
   }
-  virtual ~BaseUniform() = default;
+  virtual ~BaseUniform() override = default;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(DescriptorBufferLayout, GetLayout);
 
@@ -57,6 +59,9 @@ struct BaseUniform : public OwnedBy<Context>,
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
   uint32_t GetBinding() const noexcept { return m_index.binding; }
   uint32_t GetSet() const noexcept { return m_index.set; }
+
+  virtual void Synchronize(details::CommandBuffer & commands,
+                           VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED) = 0;
 
 protected:
   VkDescriptorType m_type;

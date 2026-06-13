@@ -28,14 +28,13 @@ struct Renderer
   explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer);
   ~Renderer();
   // draw scene in parallel
-  void DrawScene();
   void UpdateGeometry(std::span<float> newVertices);
 
 private:
   RHI::IContext * m_context = nullptr;
   RHI::IFramebuffer * m_fbo = nullptr;
   /// subpass which can be executed in parallel
-  RHI::ISubpass * m_subpass = nullptr;
+  RHI::ISubpassConfiguration * m_pipeline = nullptr;
 
   /// some data for frame
   RHI::IBufferGPU * m_vertexBuffer = nullptr;
@@ -59,7 +58,7 @@ void thread_main(Renderer * renderer)
     // clang-format on
 
     renderer->UpdateGeometry(newVertices);
-    renderer->DrawScene();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     t += 0.00001;
   }
 }
@@ -91,7 +90,7 @@ int main()
     [framebuffer, &ctx, &triangleRenderer](float delta)
     {
       ctx->ClearResources();
-      ctx->TransferPass(); 
+      ctx->TransferPass();
       ctx->RenderPass(framebuffer);
     });
 
@@ -106,17 +105,15 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
   , m_fbo(&framebuffer)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  m_subpass = framebuffer.CreateSubpass();
-  auto && trianglePipeline = m_subpass->GetConfiguration();
-  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  m_pipeline = framebuffer.CreatePipeline();
+  m_pipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // set shaders
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle.frag")));
+  m_pipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
+  m_pipeline->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle.frag")));
   // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline.AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline.AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline.AddInputAttribute(0, 1, 2 * sizeof(float), 3,
-                                     RHI::InputAttributeElementType::FLOAT);
+  m_pipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
+  m_pipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
+  m_pipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3, RHI::InputAttributeElementType::FLOAT);
 
   // create vertex buffer
   m_vertexBuffer =
@@ -128,6 +125,17 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
   m_indexBuffer =
     ctx.CreateBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
+
+  auto process = ctx.CreateProcess();
+  {
+    auto extent = m_fbo->GetExtent();
+    process->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
+    process->SetScissor(0, 0, static_cast<uint32_t>(extent[0]), static_cast<uint32_t>(extent[1]));
+    process->BindVertexBuffer(0, m_vertexBuffer, 0);
+    process->BindIndexBuffer(m_indexBuffer, RHI::IndexType::UINT32);
+    process->DrawIndexedVertices(IndicesCount, 1);
+  }
+  m_pipeline->SetRenderProcess(process);
 }
 
 Renderer::~Renderer()
@@ -136,29 +144,7 @@ Renderer::~Renderer()
   m_context->DeleteBuffer(m_indexBuffer);
 }
 
-void Renderer::DrawScene()
-{
-  if (m_subpass->ShouldBeInvalidated())
-  {
-    auto extent = m_fbo->GetExtent();
-    if (m_subpass->BeginPass())
-    {
-      m_subpass->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
-      m_subpass->SetScissor(0, 0, static_cast<uint32_t>(extent[0]),
-                            static_cast<uint32_t>(extent[1]));
-      m_subpass->BindVertexBuffer(0, *m_vertexBuffer, 0);
-      m_subpass->BindIndexBuffer(*m_indexBuffer, RHI::IndexType::UINT32);
-      m_subpass->DrawIndexedVertices(IndicesCount, 1);
-      m_subpass->EndPass();
-    }
-  }
-}
-
 void Renderer::UpdateGeometry(std::span<float> newVertices)
 {
-  static uint32_t i = 0;
-  assert(newVertices.size() == 15);
-  if (i % 100 == 0)
-    m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
-  ++i;
+  m_vertexBuffer->UploadAsync(newVertices.data(), VerticesCount * 5 * sizeof(float));
 }

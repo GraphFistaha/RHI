@@ -221,6 +221,29 @@ struct IAwaitable
 
 using SpirV = std::vector<uint32_t>;
 
+struct IPipelineProcess
+{
+  virtual ~IPipelineProcess() = default;
+  /// @brief draw vertices command (analog glDrawArrays)
+  virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
+                            uint32_t firstInstance = 0) = 0;
+  /// @brief draw vertices with indieces (analog glDrawElements)
+  virtual void DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
+                                   uint32_t firstIndex = 0, int32_t vertexOffset = 0,
+                                   uint32_t firstInstance = 0) = 0;
+  /// @brief Set viewport command
+  virtual void SetViewport(float width, float height) = 0;
+  /// @brief Set scissor command
+  virtual void SetScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
+  /// @brief binds buffer as input attribute data
+  virtual void BindVertexBuffer(uint32_t binding, IBufferGPU * buffer, uint32_t offset = 0) = 0;
+  /// @brief binds buffer as index buffer
+  virtual void BindIndexBuffer(IBufferGPU * buffer, IndexType type, uint32_t offset = 0) = 0;
+  virtual void PushConstant(const void * data, size_t size) = 0;
+};
+using PipelineProcessPtr = std::shared_ptr<IPipelineProcess>;
+
+
 /// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
@@ -259,37 +282,8 @@ struct ISubpassConfiguration : public IInvalidable
   virtual void SetDepthFunc(CompareOperation op) noexcept = 0;
   /// @brief Get subpass index
   virtual uint32_t GetSubpassIndex() const = 0;
-};
-
-struct ISubpass
-{
-  virtual ~ISubpass() = default;
-  /// @brief begins subpass (writing a commands for subpass)
-  /// @return true if can render this subpass
-  virtual bool BeginPass() = 0;
-  virtual void EndPass() = 0;
-  virtual ISubpassConfiguration & GetConfiguration() & noexcept = 0;
-  virtual void SetEnabled(bool enabled) noexcept = 0;
-  virtual bool IsEnabled() const noexcept = 0;
-  virtual bool ShouldBeInvalidated() const noexcept = 0;
-
-  /// @brief draw vertices command (analog glDrawArrays)
-  virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
-                            uint32_t firstInstance = 0) = 0;
-  /// @brief draw vertices with indieces (analog glDrawElements)
-  virtual void DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
-                                   uint32_t firstIndex = 0, int32_t vertexOffset = 0,
-                                   uint32_t firstInstance = 0) = 0;
-  /// @brief Set viewport command
-  virtual void SetViewport(float width, float height) = 0;
-  /// @brief Set scissor command
-  virtual void SetScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
-  /// @brief binds buffer as input attribute data
-  virtual void BindVertexBuffer(uint32_t binding, const IBufferGPU & buffer,
-                                uint32_t offset = 0) = 0;
-  /// @brief binds buffer as index buffer
-  virtual void BindIndexBuffer(const IBufferGPU & buffer, IndexType type, uint32_t offset = 0) = 0;
-  virtual void PushConstant(const void * data, size_t size) = 0;
+  /// @brief set rendering process - a function with scene commands
+  virtual void SetRenderProcess(PipelineProcessPtr process) = 0;
 };
 
 /// @brief RenderPass is object that can render frames.
@@ -301,7 +295,7 @@ struct IFramebuffer
   virtual RHI::TexelIndex GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
-  virtual ISubpass * CreateSubpass() = 0;
+  virtual ISubpassConfiguration * CreatePipeline() = 0;
 };
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
@@ -366,6 +360,7 @@ struct IContext
   virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
                                   std::span<const IAwaitable *> commandsToWait = {}) = 0;
 
+  virtual PipelineProcessPtr CreateProcess() = 0;
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;
   virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;

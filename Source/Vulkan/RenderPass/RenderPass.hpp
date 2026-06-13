@@ -31,8 +31,8 @@ struct RenderPass : public IInvalidable,
   MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
 public: // IFramebuffer Interface
-  ISubpass * CreateSubpass();
-  void DeleteSubpass(ISubpass * subpass);
+  Subpass * CreateSubpass();
+  void DeleteSubpass(Subpass * subpass);
 
   void Draw(details::CommandBuffer & commands, RenderTarget & renderTarget);
   void SetAttachments(uint32_t buffersCount,

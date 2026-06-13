@@ -23,6 +23,7 @@ struct Context final : public IContext
 public: // IContext interface
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) override;
+  virtual PipelineProcessPtr CreateProcess() override;
   virtual IFramebuffer * CreateFramebuffer() override;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) override;
   virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage,

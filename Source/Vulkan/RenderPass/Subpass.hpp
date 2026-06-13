@@ -5,10 +5,11 @@
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Descriptors/DescriptorsBuffer.hpp>
 #include <Private/OwnedBy.hpp>
+#include <CommandsExecution/PipelineProcess.hpp>
 #include <RenderPass/SubpassConfiguration.hpp>
 #include <RenderPass/SubpassLayout.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
@@ -18,8 +19,7 @@ struct RenderPass;
 
 namespace RHI::vulkan
 {
-struct Subpass : public ISubpass,
-                 public OwnedBy<Context>,
+struct Subpass : public OwnedBy<Context>,
                  public OwnedBy<RenderPass>
 {
   using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderAttachmentSlot>;
@@ -29,72 +29,37 @@ struct Subpass : public ISubpass,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
-public: // ISubpass Interface
-  virtual bool BeginPass() override;
-  virtual void EndPass() override;
-  virtual ISubpassConfiguration & GetConfiguration() & noexcept override;
-  virtual void SetEnabled(bool enabled) noexcept override;
-  virtual bool IsEnabled() const noexcept override;
-  virtual bool ShouldBeInvalidated() const noexcept override;
-
-public: // Commands
-  /// @brief draw vertices command (analog glDrawArrays)
-  void DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
-                    std::uint32_t firstVertex = 0, std::uint32_t firstInstance = 0) override;
-
-  /// @brief draw vertices with indieces (analog glDrawElements)
-  void DrawIndexedVertices(std::uint32_t indexCount, std::uint32_t instanceCount,
-                           std::uint32_t firstIndex = 0, int32_t vertexOffset = 0,
-                           std::uint32_t firstInstance = 0) override;
-
-  /// @brief Set viewport command
-  void SetViewport(float width, float height) override;
-
-  /// @brief Set scissor command
-  void SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_t height) override;
-
-  /// @brief binds buffer as input attribute data
-  void BindVertexBuffer(std::uint32_t binding, const IBufferGPU & buffer,
-                        std::uint32_t offset = 0) override;
-
-  /// @brief binds buffer as index buffer
-  void BindIndexBuffer(const IBufferGPU & buffer, IndexType type,
-                       std::uint32_t offset = 0) override;
-
-  void PushConstant(const void * data, size_t size) override;
-
 public:
-  const details::CommandBuffer & GetCommandBufferForExecution() const & noexcept;
-  details::CommandBuffer & GetCommandBufferForWriting() & noexcept;
+  ISubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
+
+  void RecordCommands(details::CommandBuffer & commands);
+  void SetRenderProcess(PipelineProcessPtr process);
+  void SetDirtyCommands() noexcept;
 
   void SetInvalid();
   void Invalidate();
 
-  bool ShouldSwapCommandBuffers() const noexcept;
-  void SwapCommandBuffers() noexcept;
-  void SetDirtyCacheCommands() noexcept;
-  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer);
+  void SynchroniseResources(details::CommandBuffer & commandBuffer);
 
   template<typename DescriptorT>
   void OnDescriptorChanged(const DescriptorT & descriptor) noexcept
   {
     m_execDescriptorBuffer.UpdateDescriptor(descriptor);
     m_writeDescriptorBuffer.UpdateDescriptor(descriptor);
-    SetDirtyCacheCommands();
+    SetDirtyCommands();
   }
 
 private:
   SubpassConfiguration m_pipeline;
+  std::shared_ptr<PipelineProcess> m_process;
   std::atomic_bool m_enabled = true;
   VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
+  std::atomic_bool m_dirtyCommands;
 
   details::CommandBuffer m_execBuffer;
   details::CommandBuffer m_writeBuffer;
-  mutable std::mutex m_write_lock;
-  std::atomic_bool m_dirtyCommands = true; ///< flag to refill m_writingBuffer
-  std::atomic_bool m_shouldSwapBuffer = false;
   DescriptorBuffer m_execDescriptorBuffer;
   DescriptorBuffer m_writeDescriptorBuffer;
 

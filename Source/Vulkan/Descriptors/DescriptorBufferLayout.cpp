@@ -62,15 +62,16 @@ DescriptorBufferLayout::~DescriptorBufferLayout()
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
 }
 
-void DescriptorBufferLayout::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
+void DescriptorBufferLayout::SynchroniseResources(details::CommandBuffer & commandBuffer)
 {
+  for (auto && uniform : m_bufferUniformDescriptors)
+    uniform.Synchronize(commandBuffer);
+
   for (auto && sampler : m_samplerDescriptors)
-  {
-    sampler.TransitLayoutForUsedImages(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  }
+    sampler.Synchronize(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   for (auto && sampler : m_samplerArrayDescriptors)
-    sampler.TransitLayoutForUsedImages(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    sampler.Synchronize(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void DescriptorBufferLayout::SetInvalid()

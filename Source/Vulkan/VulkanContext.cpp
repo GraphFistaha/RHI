@@ -4,18 +4,14 @@
 
 #include <Attachments/GenericAttachment.hpp>
 #include <Attachments/SurfacedAttachment.hpp>
-#include <CommandsExecution/CommandBuffer.hpp>
+#include <CommandsExecution/PipelineProcess.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <RenderPass/RenderPass.hpp>
-#include <RenderPass/RenderTarget.hpp>
-#include <RenderPass/SubpassConfiguration.hpp>
 #include <Resources/BufferGPU.hpp>
 #include <Resources/Texture.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>
-#include <Utils/CastHelper.hpp>
 
 // --------------------- Static functions ------------------------------
 
@@ -51,6 +47,11 @@ IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTra
 {
   Surface surface(m_device, surfaceTraits);
   return m_attachments.Emplace<SurfacedAttachment>(*this, std::move(surface), buffering);
+}
+
+PipelineProcessPtr Context::CreateProcess()
+{
+  return std::make_shared<PipelineProcess>(*this);
 }
 
 IFramebuffer * Context::CreateFramebuffer()

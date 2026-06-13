@@ -29,7 +29,9 @@ public: // ISamplerUniformDescriptor interface
 
 public:
   std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;
-  void TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer, VkImageLayout layout);
+
+public: // BaseUniform
+  virtual void Synchronize(details::CommandBuffer & commands, VkImageLayout layout) override;
 
 public: // IUniformDescriptor interface
   virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }

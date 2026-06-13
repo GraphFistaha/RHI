@@ -63,7 +63,7 @@ std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() c
   return infos;
 }
 
-void SamplerArrayUniform::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer,
+void SamplerArrayUniform::Synchronize(details::CommandBuffer & commandBuffer,
                                                      VkImageLayout layout)
 {
   for (auto * texture : m_boundTextures)

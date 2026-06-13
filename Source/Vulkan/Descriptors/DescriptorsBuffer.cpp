@@ -124,7 +124,7 @@ void DescriptorBuffer::Invalidate()
 }
 
 
-void DescriptorBuffer::BindToCommandBuffer(const VkCommandBuffer & buffer,
+void DescriptorBuffer::BindToCommandBuffer(details::CommandBuffer & commands,
                                            VkPipelineLayout pipelineLayout,
                                            VkPipelineBindPoint bindPoint)
 {
@@ -147,8 +147,8 @@ void DescriptorBuffer::BindToCommandBuffer(const VkCommandBuffer & buffer,
     }
     m_updateTasks.clear();
   }
-  vkCmdBindDescriptorSets(buffer, bindPoint, pipelineLayout, 0,
-                          static_cast<uint32_t>(m_sets.size()), m_sets.data(), 0, nullptr);
+  commands.PushCommand(vkCmdBindDescriptorSets, bindPoint, pipelineLayout, 0,
+                       static_cast<uint32_t>(m_sets.size()), m_sets.data(), 0, nullptr);
 }
 
 } // namespace RHI::vulkan

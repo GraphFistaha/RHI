@@ -102,6 +102,8 @@ PRIVATE
 	"CommandsExecution/SubmitTask.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.cpp"
+	"CommandsExecution/PipelineProcess.hpp"
+	"CommandsExecution/PipelineProcess.cpp"
 )
 
 #---------------- Link third-party libraries ---------------

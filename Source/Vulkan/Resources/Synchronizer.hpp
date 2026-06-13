@@ -20,12 +20,14 @@ struct Synchronizer final : public OwnedBy<Context>
 {
   explicit Synchronizer(Context & ctx, VkImage image);
   explicit Synchronizer(Context & ctx, VkBuffer buffer);
-  Synchronizer(Synchronizer&& rhs) noexcept;
-  Synchronizer& operator=(Synchronizer&& rhs) noexcept;
+  Synchronizer(Synchronizer && rhs) noexcept;
+  Synchronizer & operator=(Synchronizer && rhs) noexcept;
   ~Synchronizer();
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
+  void ResetSynchronization();
+
   void RequireSynchronize(VkPipelineStageFlags2 currentStage, VkAccessFlagBits2 requiredAccess,
                           details::CommandBuffer & commands,
                           VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED);

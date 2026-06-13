@@ -128,6 +128,11 @@ void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline.notify_one();
 }
 
+void SubpassConfiguration::SetRenderProcess(PipelineProcessPtr process)
+{
+  GetSubpass().SetRenderProcess(std::move(process));
+}
+
 void SubpassConfiguration::Invalidate()
 {
   m_descriptorsLayout.Invalidate();
@@ -162,7 +167,7 @@ void SubpassConfiguration::Invalidate()
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
     m_invalidPipeline.notify_one();
-    GetSubpass().SetDirtyCacheCommands();
+    GetSubpass().SetDirtyCommands();
   }
 }
 
@@ -190,16 +195,16 @@ const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() cons
   return m_descriptorsLayout;
 }
 
-void SubpassConfiguration::BindToCommandBuffer(const VkCommandBuffer & buffer,
+void SubpassConfiguration::BindToCommandBuffer(details::CommandBuffer & commands,
                                                VkPipelineBindPoint bindPoint)
 {
   assert(!!m_pipeline);
-  vkCmdBindPipeline(buffer, bindPoint, m_pipeline);
+  commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
 }
 
-void SubpassConfiguration::TransitLayoutForUsedImages(details::CommandBuffer & commandBuffer)
+void SubpassConfiguration::SynchroniseResources(details::CommandBuffer & commands)
 {
-  m_descriptorsLayout.TransitLayoutForUsedImages(commandBuffer);
+  m_descriptorsLayout.SynchroniseResources(commands);
 }
 
 } // namespace RHI::vulkan
