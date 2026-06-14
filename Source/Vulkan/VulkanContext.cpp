@@ -7,8 +7,8 @@
 #include <CommandsExecution/PipelineProcess.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <Resources/BufferGPU.hpp>
-#include <Resources/Texture.hpp>
+#include <Memory/BufferGPU.hpp>
+#include <Memory/Texture.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>

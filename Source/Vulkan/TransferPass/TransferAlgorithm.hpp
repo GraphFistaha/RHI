@@ -1,6 +1,6 @@
 #pragma once
-#include <Resources/BufferInterface.hpp>
-#include <Resources/TextureInterface.hpp>
+#include <Memory/BufferInterface.hpp>
+#include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <TransferPass/TransferTask.hpp>
 #include <vulkan/vulkan.h>

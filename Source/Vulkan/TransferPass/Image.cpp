@@ -1,7 +1,7 @@
 #include <ImageUtils/ImageFormatsConversation.hpp>
 #include <ImageUtils/ImageUtils.hpp>
 #include <ImageUtils/InternalImageTraits.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <TransferPass/TransferAlgorithm.hpp>
 #include <VulkanContext.hpp>
 

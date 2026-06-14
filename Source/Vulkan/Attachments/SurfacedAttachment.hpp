@@ -4,7 +4,7 @@
 
 #include <Attachments/GenericAttachment.hpp>
 #include <CommandsExecution/SubmitTask.hpp>
-#include <Resources/Synchronizer.hpp>
+#include <Memory/Synchronizer.hpp>
 #include <Surface.hpp>
 
 namespace vkb

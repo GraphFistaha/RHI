@@ -6,7 +6,7 @@
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
 #include <vulkan/vulkan.hpp>

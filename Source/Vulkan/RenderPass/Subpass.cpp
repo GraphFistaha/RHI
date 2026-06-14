@@ -2,7 +2,7 @@
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 

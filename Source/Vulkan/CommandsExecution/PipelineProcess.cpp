@@ -3,7 +3,7 @@
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <Private/Overload.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <utils/CastHelper.hpp>
 
 namespace RHI::vulkan

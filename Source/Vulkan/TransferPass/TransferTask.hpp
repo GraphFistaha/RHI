@@ -4,7 +4,7 @@
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <CommandsExecution/SubmitTask.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

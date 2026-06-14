@@ -1,4 +1,4 @@
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <TransferPass/TransferAlgorithm.hpp>
 #include <VulkanContext.hpp>
 

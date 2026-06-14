@@ -4,7 +4,7 @@
 #include <Attachments/Attachment.hpp>
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/Synchronizer.hpp>
+#include <Memory/Synchronizer.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

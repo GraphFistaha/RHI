@@ -4,7 +4,7 @@
 #include <array>
 #include <numeric>
 
-#include <Resources/BufferGPU.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 

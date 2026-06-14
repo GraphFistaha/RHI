@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Resources/TextureInterface.hpp>
+#include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

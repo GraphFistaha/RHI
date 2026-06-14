@@ -1,8 +1,8 @@
 #pragma once
 #include <Memory/MemoryBlock.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Resources/Synchronizer.hpp>
-#include <Resources/TextureInterface.hpp>
+#include <Memory/Synchronizer.hpp>
+#include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 
 namespace RHI::vulkan

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Descriptors/BaseUniform.hpp>
-#include <Resources/BufferInterface.hpp>
+#include <Memory/BufferInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
