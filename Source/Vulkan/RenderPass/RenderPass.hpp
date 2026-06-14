@@ -34,7 +34,7 @@ public: // IFramebuffer Interface
   Subpass * CreateSubpass();
   void DeleteSubpass(Subpass * subpass);
 
-  void Draw(details::CommandBuffer & commands, RenderTarget & renderTarget);
+  void RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget);
   void SetAttachments(uint32_t buffersCount,
                       const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;

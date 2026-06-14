@@ -19,6 +19,7 @@ struct Context;
 namespace RHI::vulkan
 {
 
+/// @brief class to accumulate commands to call them every frame
 struct PipelineProcess final : public RHI::IPipelineProcess,
                                public OwnedBy<Context>
 {

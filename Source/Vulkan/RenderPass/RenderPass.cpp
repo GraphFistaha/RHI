@@ -49,7 +49,7 @@ void RenderPass::DeleteSubpass(Subpass * subpass)
     m_invalidRenderPass = true;
 }
 
-void RenderPass::Draw(details::CommandBuffer & commands, RenderTarget & renderTarget)
+void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget)
 {
   assert(m_renderPass);
   assert(renderTarget.GetAttachmentsCount() == m_cachedAttachments.size());
@@ -63,15 +63,16 @@ void RenderPass::Draw(details::CommandBuffer & commands, RenderTarget & renderTa
     subpass.SynchroniseResources(commands);
   }
 
-
   VkRenderPassBeginInfo renderPassInfo{};
-  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  renderPassInfo.renderPass = m_renderPass;
-  renderPassInfo.framebuffer = buf;
-  renderPassInfo.renderArea.offset = {0, 0};
-  renderPassInfo.renderArea.extent = {extent.width, extent.height};
-  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-  renderPassInfo.pClearValues = clearValues.data();
+  {
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer = buf;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = {extent.width, extent.height};
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+  }
 
   commands.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);

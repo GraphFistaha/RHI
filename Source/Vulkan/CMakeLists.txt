@@ -36,6 +36,8 @@ PRIVATE
 	"RenderPass/RenderTarget.hpp"
 	"RenderPass/SubpassConfiguration.cpp"
 	"RenderPass/SubpassConfiguration.hpp"
+	"RenderPass/PipelineProcess.hpp"
+	"RenderPass/PipelineProcess.cpp"
 
 	"Descriptors/DescriptorBufferLayout.cpp"
 	"Descriptors/DescriptorBufferLayout.hpp"
@@ -101,8 +103,6 @@ PRIVATE
 	"CommandsExecution/SubmitTask.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.cpp"
-	"CommandsExecution/PipelineProcess.hpp"
-	"CommandsExecution/PipelineProcess.cpp"
 )
 
 #---------------- Link third-party libraries ---------------

@@ -162,9 +162,9 @@ RenderTarget * Framebuffer::BeginFrame()
   return &m_targets[m_activeTarget];
 }
 
-void Framebuffer::Draw(details::CommandBuffer & commands)
+void Framebuffer::RecordCommands(details::CommandBuffer & commands)
 {
-  m_renderPass.Draw(commands, m_targets[m_activeTarget]);
+  m_renderPass.RecordCommands(commands, m_targets[m_activeTarget]);
 }
 
 void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)

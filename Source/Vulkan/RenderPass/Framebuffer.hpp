@@ -40,7 +40,7 @@ public: // RHI-only API
   void Invalidate();
   /// begins rendering
   RenderTarget * BeginFrame();
-  void Draw(details::CommandBuffer & commands);
+  void RecordCommands(details::CommandBuffer & commands);
   /// finish rendering
   void EndFrame(VkSemaphore renderPassSemaphore);
 

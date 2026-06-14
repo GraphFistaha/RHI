@@ -4,11 +4,11 @@
 
 #include <Attachments/GenericAttachment.hpp>
 #include <Attachments/SurfacedAttachment.hpp>
-#include <CommandsExecution/PipelineProcess.hpp>
 #include <Memory/BufferGPU.hpp>
 #include <Memory/Texture.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/PipelineProcess.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>
@@ -164,7 +164,8 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
     }
 
     m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
-    fbo->Draw(m_graphicSubmitter.GetWritingBuffer());
+    fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+
     result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
     m_graphicTransferer.OnSubmit(*result);
     fbo->EndFrame(result->GetSemaphore());
