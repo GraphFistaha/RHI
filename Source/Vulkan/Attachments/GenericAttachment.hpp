@@ -3,8 +3,8 @@
 
 #include <Attachments/Attachment.hpp>
 #include <Memory/MemoryBlock.hpp>
-#include <Private/OwnedBy.hpp>
 #include <Memory/Synchronizer.hpp>
+#include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 

@@ -1,5 +1,6 @@
 #include "SubpassConfiguration.hpp"
 
+#include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>

@@ -1,11 +1,9 @@
 #pragma once
+#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Device.hpp>
 #include <GarbageCollector.hpp>
 #include <Memory/MemoryAllocator.hpp>
 #include <Private/ObjectsTable.hpp>
-#include <RenderPass/Framebuffer.hpp>
-#include <Memory/BufferGPU.hpp>
-#include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <TransferPass/Transferer.hpp>
 

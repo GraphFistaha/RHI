@@ -1,6 +1,8 @@
 #include "SamplerArrayUniform.hpp"
 
 #include <Descriptors/DescriptorBufferLayout.hpp>
+#include <Memory/Synchronizer.hpp>
+#include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -63,8 +65,7 @@ std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() c
   return infos;
 }
 
-void SamplerArrayUniform::Synchronize(details::CommandBuffer & commandBuffer,
-                                                     VkImageLayout layout)
+void SamplerArrayUniform::Synchronize(details::CommandBuffer & commandBuffer, VkImageLayout layout)
 {
   for (auto * texture : m_boundTextures)
   {

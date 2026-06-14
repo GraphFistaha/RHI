@@ -1,4 +1,5 @@
 #include <ImageUtils/ImageUtils.hpp>
+#include <Memory/Synchronizer.hpp>
 #include <TransferPass/TransferAlgorithm.hpp>
 #include <VulkanContext.hpp>
 
