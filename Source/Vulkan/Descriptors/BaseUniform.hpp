@@ -5,6 +5,7 @@
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
+#include <Memory/ResourceUser.hpp>
 
 
 namespace RHI::vulkan
@@ -18,7 +19,8 @@ namespace RHI::vulkan::details
 struct CommandBuffer;
 
 struct BaseUniform : public OwnedBy<Context>,
-                     public OwnedBy<DescriptorBufferLayout>
+                     public OwnedBy<DescriptorBufferLayout>,
+                     public IResourceUser
 {
   explicit BaseUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
                        LayoutIndex index, uint32_t arrayIndex = 0)
@@ -59,9 +61,6 @@ struct BaseUniform : public OwnedBy<Context>,
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
   uint32_t GetBinding() const noexcept { return m_index.binding; }
   uint32_t GetSet() const noexcept { return m_index.set; }
-
-  virtual void Synchronize(details::CommandBuffer & commands,
-                           VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED) = 0;
 
 protected:
   VkDescriptorType m_type;

@@ -31,9 +31,9 @@ public: // IUniformDescriptor interface
   virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
   virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
 
-public: // BaseUniform
-  virtual void Synchronize(details::CommandBuffer & commands,
-                           VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED) override;
+public: // IResourceUser
+  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
+  virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
 
 public: // IInvalidable interface
   void Invalidate();

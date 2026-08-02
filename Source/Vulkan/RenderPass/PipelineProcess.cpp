@@ -1,10 +1,11 @@
 #include "PipelineProcess.hpp"
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <Private/Overload.hpp>
-#include <Memory/BufferGPU.hpp>
 #include <utils/CastHelper.hpp>
+#include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
@@ -26,32 +27,6 @@ void PipelineProcess::RecordCommands(details::CommandBuffer & commands,
     if (task)
       task(commands, pipeline);
   }
-}
-
-void PipelineProcess::SynchroniseResources(details::CommandBuffer & commands)
-{
-  for (auto && [objPtr, pipelineStage, access, layout] : m_resourceSyncInfos)
-  {
-    std::visit(std::overload(
-                 [pipelineStage, access, layout, &commands](IInternalBuffer * buffer)
-                 {
-                   if (buffer)
-                     buffer->GetSynchronizer().RequireSynchronize(pipelineStage, access, commands,
-                                                                  layout);
-                 },
-                 [pipelineStage, access, layout, &commands](IInternalTexture * texture)
-                 {
-                   if (texture)
-                     texture->GetSynchronizer().RequireSynchronize(pipelineStage, access, commands,
-                                                                   layout);
-                 }),
-               objPtr);
-  }
-}
-
-void PipelineProcess::ResetSynchronisation()
-{
-    //TODO: implement it 
 }
 
 void PipelineProcess::CommitProcess()
@@ -142,6 +117,7 @@ void PipelineProcess::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::
     commands.PushCommand(vkCmdBindIndexBuffer, internalBuffer->GetHandle(), VkDeviceSize{offset},
                          utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
   };
+
   m_resourceSyncInfos.push_back({internalBuffer, VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
                                  VK_ACCESS_2_INDEX_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED});
   m_commands.push_back(task);
@@ -157,5 +133,34 @@ void PipelineProcess::PushConstant(const void * data, size_t size)
                          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                          static_cast<uint32_t>(size), data);
   };
+}
+
+void PipelineProcess::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  for (auto && [ptr, _, __, ___] : m_resourceSyncInfos)
+  {
+    resources.push_back(ptr);
+  }
+}
+
+void PipelineProcess::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  for (auto && [objPtr, pipelineStage, access, layout] : m_resourceSyncInfos)
+  {
+    std::visit(std::overload(
+                 [pipelineStage, access, layout, &commands](IInternalBuffer * buffer)
+                 {
+                   if (buffer)
+                     buffer->GetSynchronizer().RequireSynchronize(pipelineStage, access, commands,
+                                                                  layout);
+                 },
+                 [pipelineStage, access, layout, &commands](IInternalTexture * texture)
+                 {
+                   if (texture)
+                     texture->GetSynchronizer().RequireSynchronize(pipelineStage, access, commands,
+                                                                   layout);
+                 }),
+               objPtr);
+  }
 }
 } // namespace RHI::vulkan

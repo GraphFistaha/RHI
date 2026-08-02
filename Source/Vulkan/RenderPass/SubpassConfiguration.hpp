@@ -63,7 +63,6 @@ public: // public internal API
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
-  void SynchroniseResources(details::CommandBuffer & commands);
 
 private:
   uint32_t m_subpassIndex;

@@ -27,8 +27,9 @@ public: // ISamplerDescriptor interface
 public:
   std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;
 
-public: // BaseUniform
-  virtual void Synchronize(details::CommandBuffer & commandBuffer, VkImageLayout layout) override;
+public: // IResourceUser
+  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
+  virtual void SynchroniseResources(details::CommandBuffer& commands) const override;
 
 public: // IUniformDescriptor interface
   virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }

@@ -109,6 +109,22 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
     });
 }
 
+void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  for (auto && subpass : m_subpasses)
+  {
+    subpass.CollectResources(resources);
+  }
+}
+
+void RenderPass::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  for (auto && subpass : m_subpasses)
+  {
+    subpass.SynchroniseResources(commands);
+  }
+}
+
 void RenderPass::SetAttachments(uint32_t buffersCount,
                                 const std::vector<VkAttachmentDescription> & attachments) noexcept
 {

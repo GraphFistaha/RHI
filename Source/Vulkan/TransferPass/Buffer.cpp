@@ -11,8 +11,7 @@ static constexpr uint32_t g_stagingUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
 TrasferTaskPtr UploadBuffer(Context & ctx, IInternalBuffer & dstBuffer, const uint8_t * srcData,
                             size_t size, size_t offset)
 {
-  auto stagingBuffer =
-    std::make_shared<BufferGPU>(ctx, size - offset, g_stagingUsage, true);
+  auto stagingBuffer = std::make_shared<BufferGPU>(ctx, size - offset, g_stagingUsage, true);
   stagingBuffer->UploadSync(srcData, size, offset);
 
   auto command =

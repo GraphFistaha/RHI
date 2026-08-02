@@ -18,8 +18,20 @@ void Transferer::RecordCommands(details::CommandBuffer & commands)
     return;
   for (auto && taskPtr : m_writingTasks)
     taskPtr->RecordCommands(commands);
+  m_resourcesToSync.clear();
   std::lock_guard lk2{m_execLock};
   m_executingTasks.push_front(std::move(m_writingTasks));
+}
+
+void Transferer::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  std::lock_guard lk{m_writeLock};
+  resources.insert(resources.end(), m_resourcesToSync.begin(), m_resourcesToSync.end());
+}
+
+void Transferer::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  //Do nothing, because commands
 }
 
 void Transferer::OnSubmit(SubmitTask & submitTask)
@@ -67,7 +79,7 @@ std::shared_ptr<IAwaitable> Transferer::UploadBuffer(IInternalBuffer & dstBuffer
   auto task = details::UploadBuffer(GetContext(), dstBuffer, srcData, size, offset);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&dstBuffer});
   return task;
 }
 
@@ -77,7 +89,7 @@ std::shared_ptr<IAwaitable> Transferer::DownloadBuffer(IInternalBuffer & srcBuff
   auto task = details::DownloadBuffer(GetContext(), srcBuffer, nullptr, size, offset);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&srcBuffer});
   return task;
 }
 
@@ -87,7 +99,7 @@ std::shared_ptr<IAwaitable> Transferer::UploadImage(IInternalTexture & dstImage,
   auto task = details::UploadImage(GetContext(), dstImage, args);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&dstImage});
   return task;
 }
 
@@ -97,7 +109,7 @@ std::shared_ptr<IAwaitable> Transferer::DownloadImage(IInternalTexture & srcImag
   auto task = details::DownloadImage(GetContext(), srcImage, args);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&srcImage});
   return task;
 }
 
@@ -108,7 +120,7 @@ std::shared_ptr<IAwaitable> Transferer::BlitImageToImage(IInternalTexture & dst,
   auto task = details::BlitImageToImage(GetContext(), dst, src, region);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&dst, &src});
   return task;
 }
 
@@ -117,7 +129,7 @@ std::shared_ptr<IAwaitable> Transferer::GenerateMipmaps(IInternalTexture & textu
   auto task = details::GenerateMipmaps(GetContext(), texture);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&texture});
   return task;
 }
 
@@ -127,14 +139,16 @@ std::shared_ptr<IAwaitable> Transferer::GenerateMipmapsByRegions(
   auto task = details::GenerateMipmapsByRegions(GetContext(), texture, regions);
   if (!task)
     return nullptr;
-  WriteNewTask(task);
+  WriteNewTask(task, {&texture});
   return task;
 }
 
-void Transferer::WriteNewTask(TrasferTaskPtr task)
+void Transferer::WriteNewTask(TrasferTaskPtr task,
+                              std::initializer_list<ResourcePtr> resourcesToSync)
 {
   std::lock_guard lk{m_writeLock};
   m_writingTasks.push_back(std::move(task));
+  m_resourcesToSync.insert(m_resourcesToSync.end(), resourcesToSync.begin(), resourcesToSync.end());
 }
 
 } // namespace RHI::vulkan

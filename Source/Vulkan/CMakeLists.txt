@@ -23,6 +23,7 @@ PRIVATE
 	"Memory/BufferInterface.hpp"
 	"Memory/Synchronizer.cpp"
 	"Memory/Synchronizer.hpp"
+	"Memory/ResourceUser.hpp"
 	
 	"RenderPass/Framebuffer.cpp"
 	"RenderPass/Framebuffer.hpp"

@@ -20,7 +20,8 @@ struct RenderPass;
 namespace RHI::vulkan
 {
 struct Subpass : public OwnedBy<Context>,
-                 public OwnedBy<RenderPass>
+                 public OwnedBy<RenderPass>,
+                 public ICommandWriter
 {
   using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderAttachmentSlot>;
   explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
@@ -29,19 +30,24 @@ struct Subpass : public OwnedBy<Context>,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
+public: //ICommandWriter
+  virtual void RecordCommands(details::CommandBuffer & commands) override;
+
+public: // IResourceUser
+  void CollectResources(std::vector<ResourcePtr> & resources) const;
+  void SynchroniseResources(details::CommandBuffer & commands) const;
+
 public:
   ISubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
 
-  void RecordCommands(details::CommandBuffer & commands);
+
   void SetRenderProcess(PipelineProcessPtr process);
   void SetDirtyCommands() noexcept;
 
   void SetInvalid();
   void Invalidate();
-
-  void SynchroniseResources(details::CommandBuffer & commandBuffer);
 
   template<typename DescriptorT>
   void OnDescriptorChanged(const DescriptorT & descriptor) noexcept

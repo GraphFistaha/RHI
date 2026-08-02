@@ -1,8 +1,8 @@
 #include "Subpass.hpp"
 
 #include <CommandsExecution/CommandBuffer.hpp>
-#include <RenderPass/RenderPass.hpp>
 #include <Memory/BufferGPU.hpp>
+#include <RenderPass/RenderPass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -51,16 +51,27 @@ void Subpass::RecordCommands(details::CommandBuffer & commands)
   commands.AddCommands(m_execBuffer.GetHandle());
 }
 
+void Subpass::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  // collect descriptors and uniforms
+  m_pipeline.GetDescriptorsLayout().CollectResources(resources);
+  // collect resources from draw commands (vertex/index buffers)
+  if (m_process)
+    m_process->CollectResources(resources);
+}
+
+void Subpass::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  // collect descriptors and uniforms
+  m_pipeline.GetDescriptorsLayout().SynchroniseResources(commands);
+  // collect resources from draw commands (vertex/index buffers)
+  if (m_process)
+    m_process->SynchroniseResources(commands);
+}
+
 void Subpass::SetDirtyCommands() noexcept
 {
   m_dirtyCommands = true;
-}
-
-void Subpass::SynchroniseResources(details::CommandBuffer & commands)
-{
-  m_pipeline.SynchroniseResources(commands);
-  if (m_process)
-    m_process->SynchroniseResources(commands);
 }
 
 const SubpassLayout & Subpass::GetLayout() const & noexcept

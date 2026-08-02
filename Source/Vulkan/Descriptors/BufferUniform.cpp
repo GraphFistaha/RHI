@@ -47,12 +47,19 @@ bool BufferUniform::IsBufferAssigned() const noexcept
   return m_buffer;
 }
 
-void BufferUniform::Synchronize(details::CommandBuffer & commands, VkImageLayout layout)
+void BufferUniform::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  if (m_buffer)
+    resources.push_back(m_buffer);
+}
+
+void BufferUniform::SynchroniseResources(details::CommandBuffer & commands) const
 {
   if (m_buffer)
   {
     m_buffer->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                   VK_ACCESS_2_SHADER_READ_BIT, commands, layout);
+                                                   VK_ACCESS_2_SHADER_READ_BIT, commands,
+                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   }
 }
 

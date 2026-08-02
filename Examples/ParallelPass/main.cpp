@@ -59,7 +59,7 @@ void thread_main(Renderer * renderer)
 
     renderer->UpdateGeometry(newVertices);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    t += 0.00001;
+    t += 0.01;
   }
 }
 

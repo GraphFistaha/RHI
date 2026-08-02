@@ -203,9 +203,4 @@ void SubpassConfiguration::BindToCommandBuffer(details::CommandBuffer & commands
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
 }
 
-void SubpassConfiguration::SynchroniseResources(details::CommandBuffer & commands)
-{
-  m_descriptorsLayout.SynchroniseResources(commands);
-}
-
 } // namespace RHI::vulkan

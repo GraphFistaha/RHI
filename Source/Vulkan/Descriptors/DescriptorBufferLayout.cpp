@@ -62,16 +62,28 @@ DescriptorBufferLayout::~DescriptorBufferLayout()
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
 }
 
-void DescriptorBufferLayout::SynchroniseResources(details::CommandBuffer & commandBuffer)
+void DescriptorBufferLayout::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   for (auto && uniform : m_bufferUniformDescriptors)
-    uniform.Synchronize(commandBuffer);
+    uniform.CollectResources(resources);
 
   for (auto && sampler : m_samplerDescriptors)
-    sampler.Synchronize(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    sampler.CollectResources(resources);
 
   for (auto && sampler : m_samplerArrayDescriptors)
-    sampler.Synchronize(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    sampler.CollectResources(resources);
+}
+
+void DescriptorBufferLayout::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  for (auto && uniform : m_bufferUniformDescriptors)
+    uniform.SynchroniseResources(commands);
+
+  for (auto && sampler : m_samplerDescriptors)
+    sampler.SynchroniseResources(commands);
+
+  for (auto && sampler : m_samplerArrayDescriptors)
+    sampler.SynchroniseResources(commands);
 }
 
 void DescriptorBufferLayout::SetInvalid()

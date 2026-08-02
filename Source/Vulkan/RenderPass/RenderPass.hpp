@@ -30,11 +30,10 @@ struct RenderPass : public IInvalidable,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
-public: // IFramebuffer Interface
+public:
   Subpass * CreateSubpass();
   void DeleteSubpass(Subpass * subpass);
 
-  void RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget);
   void SetAttachments(uint32_t buffersCount,
                       const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
@@ -48,6 +47,12 @@ public:
   VkRenderPass GetHandle() const noexcept { return m_renderPass; }
   void WaitForRenderPassIsValid() const noexcept;
   void UpdateRenderPassValidFlag() noexcept;
+
+  void RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget);
+
+public: // IResourceUser
+  void CollectResources(std::vector<ResourcePtr> & resources) const;
+  void SynchroniseResources(details::CommandBuffer & commands) const;
 
 private:
   std::vector<VkAttachmentDescription> m_cachedAttachments;

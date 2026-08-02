@@ -3,13 +3,13 @@
 #include <bitset>
 #include <vector>
 
+#include <Attachments/Attachment.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <RenderPass/RenderTarget.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-
-#include "../Attachments/Attachment.hpp"
 
 namespace RHI::vulkan
 {
@@ -35,12 +35,18 @@ public: // IFramebuffer interface
   virtual void Resize(uint32_t width, uint32_t height) override;
   virtual RHI::TexelIndex GetExtent() const override;
 
+public: // ICommandWriter
+  void RecordCommands(details::CommandBuffer & commands);
+
+public: // IResourceUser
+  void CollectResources(std::vector<ResourcePtr> & resources) const;
+  void SynchroniseResources(details::CommandBuffer & commands) const;
+
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
   void Invalidate();
   /// begins rendering
   RenderTarget * BeginFrame();
-  void RecordCommands(details::CommandBuffer & commands);
   /// finish rendering
   void EndFrame(VkSemaphore renderPassSemaphore);
 

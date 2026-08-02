@@ -5,9 +5,8 @@
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Memory/BufferInterface.hpp>
-#include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <TransferPass/TransferTask.hpp>
 #include <vulkan/vulkan.h>
@@ -19,13 +18,21 @@ struct Context;
 
 namespace RHI::vulkan
 {
-struct Transferer final : public OwnedBy<Context>
+struct Transferer final : public OwnedBy<Context>,
+                          public IResourceUser,
+                          public ICommandWriter
 {
   explicit Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount);
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
+public: // ICommandWriter
+  virtual void RecordCommands(details::CommandBuffer & commands) override;
+
+public: // IResourceUser
+  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
+  virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
+
 public:
-  void RecordCommands(details::CommandBuffer & commands);
   void OnSubmit(SubmitTask & submitTask);
   void ProcessExecutingCommands();
 
@@ -47,13 +54,14 @@ public:
 
 private:
   using TasksBatch = std::vector<TrasferTaskPtr>;
-  std::mutex m_writeLock;
+  mutable std::mutex m_writeLock;
   std::mutex m_execLock;
   TasksBatch m_writingTasks;
   std::list<TasksBatch> m_executingTasks;
+  std::vector<ResourcePtr> m_resourcesToSync;
 
 private:
-  void WriteNewTask(TrasferTaskPtr task);
+  void WriteNewTask(TrasferTaskPtr task, std::initializer_list<ResourcePtr> resourcesToSync);
 };
 
 } // namespace RHI::vulkan

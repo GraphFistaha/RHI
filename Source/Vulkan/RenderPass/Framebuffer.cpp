@@ -167,6 +167,16 @@ void Framebuffer::RecordCommands(details::CommandBuffer & commands)
   m_renderPass.RecordCommands(commands, m_targets[m_activeTarget]);
 }
 
+void Framebuffer::CollectResources(std::vector<ResourcePtr> & resources) const
+{
+  m_renderPass.CollectResources(resources);
+}
+
+void Framebuffer::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  m_renderPass.SynchroniseResources(commands);
+}
+
 void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
 {
   for (auto && attachment : m_attachments)

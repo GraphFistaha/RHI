@@ -65,16 +65,23 @@ std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() c
   return infos;
 }
 
-void SamplerArrayUniform::Synchronize(details::CommandBuffer & commandBuffer, VkImageLayout layout)
+void SamplerArrayUniform::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   for (auto * texture : m_boundTextures)
   {
     if (texture)
-    {
+      resources.push_back(texture);
+  }
+}
+
+void SamplerArrayUniform::SynchroniseResources(details::CommandBuffer & commands) const
+{
+  for (auto * texture : m_boundTextures)
+  {
+    if (texture)
       texture->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                    VK_ACCESS_2_SHADER_READ_BIT, commandBuffer,
-                                                    layout);
-    }
+                                                    VK_ACCESS_2_SHADER_READ_BIT, commands,
+                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   }
 }
 

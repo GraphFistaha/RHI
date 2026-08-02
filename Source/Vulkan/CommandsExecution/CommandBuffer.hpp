@@ -51,3 +51,12 @@ private:
 };
 
 } // namespace RHI::vulkan::details
+
+namespace RHI::vulkan
+{
+struct ICommandWriter
+{
+  virtual ~ICommandWriter() = default;
+  virtual void RecordCommands(details::CommandBuffer & commands) = 0;
+};
+} // namespace RHI::vulkan

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RenderPass/SubpassConfiguration.hpp>
 #include <RHI.hpp>
@@ -21,6 +22,7 @@ namespace RHI::vulkan
 
 /// @brief class to accumulate commands to call them every frame
 struct PipelineProcess final : public RHI::IPipelineProcess,
+                               public IResourceUser,
                                public OwnedBy<Context>
 {
   explicit PipelineProcess(Context & ctx);
@@ -54,23 +56,21 @@ public: // Commands
 
   virtual void PushConstant(const void * data, size_t size) override;
 
+public: // IResourceUser
+  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
+  virtual void SynchroniseResources(details::CommandBuffer& commands) const override;
+
 public:
   void RecordCommands(details::CommandBuffer & commands, const SubpassConfiguration & pipeline);
-  /// @brief push barriers to command buffers to use resources in pipeline
-  void SynchroniseResources(details::CommandBuffer & commands);
-  /// @brief reset synchronization 
-  void ResetSynchronisation();
   /// @brief make process not editable
   void CommitProcess();
 
 private:
   using DrawCommand = std::function<void(details::CommandBuffer &, const SubpassConfiguration &)>;
-  using BoundResourcePtr = std::variant<IInternalTexture *, IInternalBuffer *>;
-  using BoundResourceSyncInfo = std::tuple<BoundResourcePtr, VkPipelineStageFlags2, VkAccessFlags2, VkImageLayout>;
   /// @brief when pipeline has just created it's editable, but when you bind it to pipeline - it's not
   std::atomic_bool m_editable = true;
   std::vector<DrawCommand> m_commands;
-  std::vector<BoundResourceSyncInfo> m_resourceSyncInfos;
+  std::vector<ResourceUsageInfo> m_resourceSyncInfos;
 };
 
 } // namespace RHI::vulkan

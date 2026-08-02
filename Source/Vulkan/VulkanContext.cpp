@@ -7,6 +7,7 @@
 #include <Memory/BufferGPU.hpp>
 #include <Memory/Texture.hpp>
 #include <Private/FastDynamicCast.hpp>
+#include <Private/Overload.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/PipelineProcess.hpp>
 #include <RHI.hpp>
@@ -14,7 +15,36 @@
 #include <TransferPass/Transferer.hpp>
 
 // --------------------- Static functions ------------------------------
+namespace RHI::vulkan
+{
+static void ResetResourceSynchronization(std::vector<ResourcePtr> & resources)
+{
+  std::ranges::sort(resources); // sort to equal pointers stay close
 
+  constexpr ResourcePtr nullPtr = static_cast<IInternalTexture *>(nullptr);
+  ResourcePtr prevPtr = static_cast<IInternalTexture *>(nullptr);
+  // reset synchronization in the begining of pass
+  for (auto && ptr : resources)
+  {
+    if (prevPtr == nullPtr || ptr != prevPtr)
+    {
+      std::visit(std::overload(
+                   [](IInternalBuffer * buffer)
+                   {
+                     if (buffer)
+                       buffer->GetSynchronizer().ResetSynchronization();
+                   },
+                   [](IInternalTexture * texture)
+                   {
+                     if (texture)
+                       texture->GetSynchronizer().ResetSynchronization();
+                   }),
+                 ptr);
+      prevPtr = ptr;
+    }
+  }
+}
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
@@ -148,6 +178,14 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
   waitSemaphores.reserve(fbo->GetImagesCount() + commandsToWait.size());
   if (RenderTarget * renderTarget = fbo->BeginFrame())
   {
+    std::vector<ResourcePtr> usedResources;
+    m_graphicTransferer.CollectResources(usedResources);
+    fbo->CollectResources(usedResources);
+    ResetResourceSynchronization(usedResources);
+
+    m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+    fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+
     auto && imageSemaphores = renderTarget->GetImageAvailableForRenderSemaphores();
     waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
     for (auto taskPtr : commandsToWait)
@@ -155,16 +193,13 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
       if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
       {
         /*
-        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
-        In that case, access is synchronized by barriers
-        */
+            If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
+            In that case, access is synchronized by barriers
+            */
         if (auto sem = ptr->GetSemaphore())
           waitSemaphores.push_back(sem);
       }
     }
-
-    m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
-    fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
 
     result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
     m_graphicTransferer.OnSubmit(*result);

@@ -7,6 +7,7 @@
 #include <Descriptors/BufferUniform.hpp>
 #include <Descriptors/SamplerArrayUniform.hpp>
 #include <Descriptors/SamplerUniform.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
@@ -42,7 +43,9 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
   void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                         ISamplerArrayUniformDescriptor * outArray[]);
 
-  void SynchroniseResources(details::CommandBuffer & commands);
+public:
+  void CollectResources(std::vector<ResourcePtr> & resources) const;
+  void SynchroniseResources(details::CommandBuffer & commands) const;
 
 public:
   void SetInvalid();
