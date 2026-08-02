@@ -50,7 +50,7 @@ private:
 
   RHI::IBufferGPU * m_uniformBuffer = nullptr; ///< buffer for uniform
   RHI::IBufferGPU * m_cubesBuffer = nullptr;
-  RHI::ISubpass * m_renderPass = nullptr; ///< renderPass for rendering cubes
+  RHI::ISubpassConfiguration * m_renderPass = nullptr; ///< renderPass for rendering cubes
   std::array<RHI::ISamplerUniformDescriptor *, g_MaxTexturesCount> m_textures;
 
   /// current draw task

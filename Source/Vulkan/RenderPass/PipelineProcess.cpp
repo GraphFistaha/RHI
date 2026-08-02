@@ -127,12 +127,16 @@ void PipelineProcess::PushConstant(const void * data, size_t size)
 {
   if (!m_editable)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  std::vector<uint8_t> capturedData(size, 0);
+  std::memcpy(capturedData.data(), data, size);
+  auto task = [data = std::move(capturedData)](details::CommandBuffer & commands,
+                                               const SubpassConfiguration & pipeline)
   {
     commands.PushCommand(vkCmdPushConstants, pipeline.GetPipelineLayoutHandle(),
                          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                         static_cast<uint32_t>(size), data);
+                         static_cast<uint32_t>(data.size()), data.data());
   };
+  m_commands.push_back(task);
 }
 
 void PipelineProcess::CollectResources(std::vector<ResourcePtr> & resources) const

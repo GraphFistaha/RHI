@@ -157,7 +157,6 @@ int main()
       const auto start{std::chrono::steady_clock::now()};
       ctx->TransferPass();
       ctx->RenderPass(framebuffer);
-
       ctx->ClearResources();
       const auto finish{std::chrono::steady_clock::now()};
       const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};

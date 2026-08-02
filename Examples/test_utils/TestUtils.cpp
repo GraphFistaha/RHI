@@ -198,7 +198,7 @@ RHI::ITexture * BuildAtlasTexture(RHI::IContext * ctx, uint16_t atlasSize,
   }
 
   if (useMips)
-    texture->GenerateMipmapsByRegions(mipRegions);
+    texture->GenerateMipmaps();
 
   for (auto && hostTexture : textures)
     stbi_image_free(hostTexture.pixelData);

@@ -39,42 +39,37 @@ int main()
     framebuffer->Resize(width, height);
   };
 
-  auto * subpass = framebuffer->CreateSubpass();
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto && trianglePipeline = subpass->GetConfiguration();
-  trianglePipeline.BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline.AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("textureAtlas.vert")));
-  trianglePipeline.AttachShader(RHI::ShaderType::Fragment,
-                                ReadSpirV(FromGLSL("textureAtlas.frag")));
-  trianglePipeline.DefinePushConstant(sizeof(PushConstant),
-                                      RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
+  auto * trianglePipeline = framebuffer->CreatePipeline();
+  trianglePipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+  trianglePipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("textureAtlas.vert")));
+  trianglePipeline->AttachShader(RHI::ShaderType::Fragment,
+                                 ReadSpirV(FromGLSL("textureAtlas.frag")));
+  trianglePipeline->DefinePushConstant(sizeof(PushConstant),
+                                       RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
 
-  RHI::ISamplerUniformDescriptor * sampler;
   {
-    auto * sampler = trianglePipeline.DeclareSampler({0, 0}, RHI::ShaderType::Fragment);
+    auto * sampler = trianglePipeline->DeclareSampler({0, 0}, RHI::ShaderType::Fragment);
     sampler->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     sampler->AssignImage(texture);
   }
+  auto process = ctx->CreateProcess();
+  {
+    // get size of window
+    auto [width, height] = window.GetSize();
+    process->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    process->DrawVertices(6, 1);
+  }
+  trianglePipeline->SetRenderProcess(process);
 
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(
     [&](float delta)
     {
+      ctx->ClearResources();
       ctx->TransferPass();
       ctx->RenderPass(framebuffer);
-
-      if (subpass->ShouldBeInvalidated())
-      {
-        auto [width, height, depth] = framebuffer->GetExtent();
-        if (subpass->BeginPass())
-        {
-          subpass->SetViewport(static_cast<float>(width), static_cast<float>(height));
-          subpass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-          subpass->DrawVertices(6, 1);
-
-          subpass->EndPass();
-        }
-      }
     });
 
   return 0;

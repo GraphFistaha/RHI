@@ -49,8 +49,6 @@ public:
   std::shared_ptr<IAwaitable> BlitImageToImage(IInternalTexture & dst, IInternalTexture & src,
                                                const TextureRegion & region);
   std::shared_ptr<IAwaitable> GenerateMipmaps(IInternalTexture & texture);
-  std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(IInternalTexture & texture,
-                                                       std::span<const RHI::TextureRegion> regions);
 
 private:
   using TasksBatch = std::vector<TrasferTaskPtr>;

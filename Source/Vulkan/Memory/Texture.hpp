@@ -26,8 +26,6 @@ public: // ITexture interface
   virtual std::shared_ptr<IAwaitable> UploadImage(const UploadImageArgs & args) override;
   virtual std::shared_ptr<IAwaitable> DownloadImage(const DownloadImageArgs & args) override;
   virtual std::shared_ptr<IAwaitable> GenerateMipmaps() override;
-  virtual std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(
-    std::span<const RHI::TextureRegion> regions) override;
 
   virtual TextureDescription GetDescription() const noexcept override;
   virtual size_t Size() const override;

@@ -42,12 +42,6 @@ std::shared_ptr<IAwaitable> Texture::GenerateMipmaps()
   return GetContext().GetTransferer(QueueType::Graphics).GenerateMipmaps(*this);
 }
 
-std::shared_ptr<IAwaitable> Texture::GenerateMipmapsByRegions(
-  std::span<const RHI::TextureRegion> regions)
-{
-  return GetContext().GetTransferer(QueueType::Graphics).GenerateMipmapsByRegions(*this, regions);
-}
-
 TextureDescription Texture::GetDescription() const noexcept
 {
   return m_description;

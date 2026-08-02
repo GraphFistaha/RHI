@@ -133,16 +133,6 @@ std::shared_ptr<IAwaitable> Transferer::GenerateMipmaps(IInternalTexture & textu
   return task;
 }
 
-std::shared_ptr<IAwaitable> Transferer::GenerateMipmapsByRegions(
-  IInternalTexture & texture, std::span<const RHI::TextureRegion> regions)
-{
-  auto task = details::GenerateMipmapsByRegions(GetContext(), texture, regions);
-  if (!task)
-    return nullptr;
-  WriteNewTask(task, {&texture});
-  return task;
-}
-
 void Transferer::WriteNewTask(TrasferTaskPtr task,
                               std::initializer_list<ResourcePtr> resourcesToSync)
 {

@@ -156,7 +156,9 @@ Synchronizer::~Synchronizer()
 void Synchronizer::ResetSynchronization()
 {
   std::lock_guard lk{m_syncMutex};
-  m_prevBarrier = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE, VK_IMAGE_LAYOUT_UNDEFINED};
+  m_prevBarrier = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                   // don't reset layout for images
+                   m_buffer ? VK_IMAGE_LAYOUT_UNDEFINED : m_prevBarrier.requiredLayout};
 }
 
 void Synchronizer::RequireSynchronize(VkPipelineStageFlags2 currentStage,

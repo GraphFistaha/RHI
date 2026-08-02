@@ -329,8 +329,6 @@ struct ITexture
   /// @brief generate mipmaps as declared in TextureDescription
   /// @return future with count of generated mip levels
   virtual std::shared_ptr<IAwaitable> GenerateMipmaps() = 0;
-  virtual std::shared_ptr<IAwaitable> GenerateMipmapsByRegions(
-    std::span<const RHI::TextureRegion> regions) = 0;
 
   virtual TextureDescription GetDescription() const noexcept = 0;
   virtual size_t Size() const = 0;
