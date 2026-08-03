@@ -68,7 +68,19 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.mipLevels = 1;
     args.type = RHI::ImageType::Image2D;
   }
-  m_nullTexture = CreateTexture(args);
+  auto * texture = CreateTexture(args);
+  int freeColor = 0xFF;
+  RHI::UploadImageArgs uploadArgs{};
+  {
+    uploadArgs.copyRegion = {{0, 0, 0}, {1, 1, 1}};
+    uploadArgs.dstOffset = {0, 0, 0};
+    uploadArgs.srcTexture.extent = {1, 1, 1};
+    uploadArgs.srcTexture.format = RHI::HostImageFormat::RGBA8;
+    uploadArgs.srcTexture.type = RHI::ImageType::Image2D;
+    uploadArgs.srcTexture.pixelData = reinterpret_cast<uint8_t *>(&freeColor);
+  }
+  texture->UploadImage(uploadArgs);
+  m_nullTexture = texture;
 }
 
 

@@ -166,6 +166,7 @@ void Synchronizer::RequireSynchronize(VkPipelineStageFlags2 currentStage,
                                       details::CommandBuffer & commands,
                                       VkImageLayout requiredLayout /* = VK_IMAGE_LAYOUT_UNDEFINED*/)
 {
+  assert(!m_image || requiredLayout != VK_IMAGE_LAYOUT_UNDEFINED);
   BarrierInfo barrierInfo{};
   barrierInfo.currentStage = currentStage;
   barrierInfo.requiredAccess = requiredAccess;
