@@ -149,15 +149,16 @@ int main()
   surfaceAttachment->SetClearValue(0, 0, 0, 1);
   colorAttachment->SetClearValue(0.1f, 0.2f, 0.4f, 1.0f);
   depthAttachment->SetClearValue(1.0f, 0);
+  renderer.InvalidateScene();
   window.MainLoop(
     [&](float delta)
     {
       ProcessInput(window, camera, isRunningFlag);
       renderer.SetCameraTransform(camera.GetVP());
       const auto start{std::chrono::steady_clock::now()};
+      ctx->ClearResources();
       ctx->TransferPass();
       ctx->RenderPass(framebuffer);
-      ctx->ClearResources();
       const auto finish{std::chrono::steady_clock::now()};
       const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};
       std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());

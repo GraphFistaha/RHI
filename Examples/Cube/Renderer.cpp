@@ -51,6 +51,7 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
   DestroyHandles();
   m_renderPass = pipeline;
   m_drawSurface = framebuffer;
+  InvalidateScene();
 }
 
 size_t CubesRenderer::AddCubeToScene(const CubeDescription & description)
