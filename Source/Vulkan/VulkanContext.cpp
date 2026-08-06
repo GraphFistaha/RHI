@@ -216,6 +216,7 @@ IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
     result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
     m_graphicTransferer.OnSubmit(*result);
     fbo->EndFrame(result->GetSemaphore());
+    m_graphicTransferer.ProcessExecutingCommands();
   }
 
   return result;

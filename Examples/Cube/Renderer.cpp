@@ -15,8 +15,8 @@ CubesRenderer::CubesRenderer(RHI::IContext & ctx)
 
 CubesRenderer::~CubesRenderer()
 {
-  //TODO: Destroy uniform buffer
-  //TODO: destroy cubesBuffer
+  m_context.DeleteBuffer(m_uniformBuffer);
+  m_context.DeleteBuffer(m_cubesBuffer);
   DestroyHandles();
 }
 
@@ -51,7 +51,6 @@ void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
   DestroyHandles();
   m_renderPass = pipeline;
   m_drawSurface = framebuffer;
-  InvalidateScene();
 }
 
 size_t CubesRenderer::AddCubeToScene(const CubeDescription & description)
@@ -87,13 +86,12 @@ void CubesRenderer::Draw()
   {
     m_cubesBuffer->UploadAsync(m_cubes.data(), m_cubesCount * sizeof(CubeDescription));
     m_invalidGeometry = false;
-    m_invalidScene = true;
+    InvalidateScene();
   }
 }
 
 void CubesRenderer::InvalidateScene()
 {
-  m_invalidScene = true;
   auto process = m_context.CreateProcess();
   {
     auto extent = m_drawSurface->GetExtent();
@@ -109,7 +107,7 @@ void CubesRenderer::InvalidateScene()
 
 void CubesRenderer::DestroyHandles()
 {
-  //TODO: Destroy buffers, renderPass
+  //TODO: remove m_renderPass
 }
 
 CubesRenderer::UniformBlock::UniformBlock()

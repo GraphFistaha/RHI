@@ -41,7 +41,7 @@ public: // internal interface
 
 private:
   SubmitTask * m_submitTask = nullptr;
-
+  std::atomic_bool m_isReady = false;
   RecordCommand m_command;
   OnCompleteFunc m_onComplete;
 };

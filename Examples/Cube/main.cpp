@@ -149,7 +149,6 @@ int main()
   surfaceAttachment->SetClearValue(0, 0, 0, 1);
   colorAttachment->SetClearValue(0.1f, 0.2f, 0.4f, 1.0f);
   depthAttachment->SetClearValue(1.0f, 0);
-  renderer.InvalidateScene();
   window.MainLoop(
     [&](float delta)
     {

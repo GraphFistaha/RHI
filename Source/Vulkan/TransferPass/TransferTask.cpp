@@ -26,7 +26,7 @@ bool TransferTask::Wait() noexcept
 
 bool TransferTask::IsReady() const noexcept
 {
-  return m_submitTask ? m_submitTask->IsReady() : false;
+  return m_submitTask ? m_submitTask->IsReady() : m_isReady.load();
 }
 
 VkSemaphore TransferTask::GetSemaphore() const noexcept
@@ -52,6 +52,7 @@ void TransferTask::OnSubmit(SubmitTask & submitTask)
 
 void TransferTask::Complete()
 {
+  m_isReady = true;
   m_submitTask = nullptr;
   if (m_onComplete)
     m_onComplete(*this);

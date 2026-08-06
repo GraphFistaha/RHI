@@ -31,7 +31,7 @@ void Transferer::CollectResources(std::vector<ResourcePtr> & resources) const
 
 void Transferer::SynchroniseResources(details::CommandBuffer & commands) const
 {
-  //Do nothing, because commands
+  //Do nothing, because commands synchronise resources themselfs
 }
 
 void Transferer::OnSubmit(SubmitTask & submitTask)
@@ -49,26 +49,26 @@ void Transferer::OnSubmit(SubmitTask & submitTask)
 void Transferer::ProcessExecutingCommands()
 {
   std::lock_guard lk{m_execLock};
-  for (auto it = m_executingTasks.begin(); it != m_executingTasks.end(); it++)
+  for (auto it = m_executingTasks.begin(); it != m_executingTasks.end();)
   {
-    auto && batch = *it;
-    size_t count = batch.size();
-    for (size_t i = 0; i < count; ++i)
+    auto & batch = *it;
+
+    // Complete all ready tasks first
+    for (auto & task : batch)
     {
-      if (batch[i]->IsReady())
-      {
-        batch[i]->Complete();
-        std::swap(batch[i], batch[count - 1]);
-        i--;
-        count--;
-      }
+      if (task->IsReady())
+        task->Complete();
     }
-    batch.erase(batch.begin() + count, batch.end());
+
+    // Remove all completed tasks
+    auto newEnd =
+      std::remove_if(batch.begin(), batch.end(), [](const auto & task) { return task->IsReady(); });
+    batch.erase(newEnd, batch.end());
+
     if (batch.empty())
-    {
       it = m_executingTasks.erase(it);
-      it--;
-    }
+    else
+      ++it;
   }
 }
 
