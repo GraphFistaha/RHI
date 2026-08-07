@@ -1,6 +1,7 @@
 #include "Transferer.hpp"
 
 #include <TransferPass/TransferAlgorithm.hpp>
+#include <TransferPass/TransferTask.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan

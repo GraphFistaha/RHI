@@ -5,15 +5,16 @@
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <CommandsExecution/SubmitTask.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
-#include <TransferPass/TransferTask.hpp>
 #include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
 struct Context;
+struct TransferTask;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -51,7 +52,7 @@ public:
   std::shared_ptr<IAwaitable> GenerateMipmaps(IInternalTexture & texture);
 
 private:
-  using TasksBatch = std::vector<TrasferTaskPtr>;
+  using TasksBatch = std::vector<std::shared_ptr<TransferTask>>;
   mutable std::mutex m_writeLock;
   std::mutex m_execLock;
   TasksBatch m_writingTasks;
@@ -59,7 +60,8 @@ private:
   std::vector<ResourcePtr> m_resourcesToSync;
 
 private:
-  void WriteNewTask(TrasferTaskPtr task, std::initializer_list<ResourcePtr> resourcesToSync);
+  void WriteNewTask(std::shared_ptr<TransferTask> task,
+                    std::initializer_list<ResourcePtr> resourcesToSync);
 };
 
 } // namespace RHI::vulkan
