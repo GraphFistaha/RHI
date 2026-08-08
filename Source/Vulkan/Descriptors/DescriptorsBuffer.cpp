@@ -72,9 +72,9 @@ constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 namespace RHI::vulkan
 {
 
-DescriptorBuffer::DescriptorBuffer(Context & ctx, const DescriptorBufferLayout & layout)
+DescriptorBuffer::DescriptorBuffer(Context & ctx, DescriptorBufferLayout & layout)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<const DescriptorBufferLayout>(layout)
+  , OwnedBy<DescriptorBufferLayout>(layout)
 {
 }
 
@@ -85,7 +85,7 @@ DescriptorBuffer::~DescriptorBuffer()
 
 DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
-  , OwnedBy<const DescriptorBufferLayout>(std::move(rhs))
+  , OwnedBy<DescriptorBufferLayout>(std::move(rhs))
 {
   std::swap(m_pool, rhs.m_pool);
   std::swap(m_sets, rhs.m_sets);
@@ -98,7 +98,7 @@ DescriptorBuffer & DescriptorBuffer::operator=(DescriptorBuffer && rhs) noexcept
   if (this != &rhs)
   {
     OwnedBy<Context>::operator=(std::move(rhs));
-    OwnedBy<const DescriptorBufferLayout>::operator=(std::move(rhs));
+    OwnedBy<DescriptorBufferLayout>::operator=(std::move(rhs));
     std::swap(m_pool, rhs.m_pool);
     std::swap(m_sets, rhs.m_sets);
     std::swap(m_cachedLayouts, rhs.m_cachedLayouts);

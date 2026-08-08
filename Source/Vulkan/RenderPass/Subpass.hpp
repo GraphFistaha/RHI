@@ -41,6 +41,7 @@ public:
   ISubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
+  DescriptorBuffer & GetDescriptorBuffer() & noexcept;
 
 
   void SetRenderProcess(PipelineProcessPtr process);

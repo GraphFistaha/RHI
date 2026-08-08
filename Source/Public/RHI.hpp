@@ -254,7 +254,8 @@ struct ISubpassConfiguration : public IInvalidable
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const SpirV & spirv) = 0;
-  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) = 0;
+  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
+                              LayoutIndex inputIndex = LayoutIndex()) = 0;
   virtual void BindResolver(uint32_t binding, uint32_t resolve_for) = 0;
 
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) = 0;

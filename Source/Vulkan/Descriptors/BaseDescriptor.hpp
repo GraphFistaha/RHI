@@ -2,10 +2,10 @@
 
 #include <variant>
 
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
-#include <Memory/ResourceUser.hpp>
 
 
 namespace RHI::vulkan
@@ -18,12 +18,12 @@ namespace RHI::vulkan::details
 {
 struct CommandBuffer;
 
-struct BaseUniform : public OwnedBy<Context>,
-                     public OwnedBy<DescriptorBufferLayout>,
-                     public IResourceUser
+struct BaseDescriptor : public OwnedBy<Context>,
+                        public OwnedBy<DescriptorBufferLayout>,
+                        public IResourceUser
 {
-  explicit BaseUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
-                       LayoutIndex index, uint32_t arrayIndex = 0)
+  explicit BaseDescriptor(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+                          LayoutIndex index, uint32_t arrayIndex = 0)
     : OwnedBy<Context>(ctx)
     , OwnedBy<DescriptorBufferLayout>(owner)
     , m_type(type)
@@ -31,11 +31,11 @@ struct BaseUniform : public OwnedBy<Context>,
     , m_index(index)
   {
   }
-  virtual ~BaseUniform() override = default;
+  virtual ~BaseDescriptor() override = default;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(DescriptorBufferLayout, GetLayout);
 
-  BaseUniform(BaseUniform && rhs) noexcept
+  BaseDescriptor(BaseDescriptor && rhs) noexcept
     : OwnedBy<Context>(std::move(rhs))
     , OwnedBy<DescriptorBufferLayout>(std::move(rhs))
   {
@@ -44,7 +44,7 @@ struct BaseUniform : public OwnedBy<Context>,
     std::swap(m_index, rhs.m_index);
   }
 
-  BaseUniform & operator=(BaseUniform && rhs) noexcept
+  BaseDescriptor & operator=(BaseDescriptor && rhs) noexcept
   {
     if (this != &rhs)
     {

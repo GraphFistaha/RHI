@@ -42,6 +42,7 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>,
                                    ISamplerUniformDescriptor * outArray[]);
   void DeclareSamplerArrayUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                         ISamplerArrayUniformDescriptor * outArray[]);
+  void DeclareInputAttachmentUniform(LayoutIndex index, ShaderType shaderStage);
 
 public:
   void CollectResources(std::vector<ResourcePtr> & resources) const;
@@ -77,7 +78,7 @@ private:
   SamplerUniforms m_samplerDescriptors;
   SamplerArrayUniforms m_samplerArrayDescriptors;
   std::unordered_map<VkDescriptorType, std::vector<DescriptorMetaInfo>> m_setsInfo;
-  std::unordered_map<LayoutIndex, std::vector<details::BaseUniform *>> m_indexedDescriptors;
+  std::unordered_map<LayoutIndex, std::vector<details::BaseDescriptor *>> m_indexedDescriptors;
 };
 
 } // namespace RHI::vulkan

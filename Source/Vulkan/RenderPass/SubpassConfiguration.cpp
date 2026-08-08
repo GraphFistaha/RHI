@@ -30,7 +30,8 @@ void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
   m_invalidPipeline.notify_one();
 }
 
-void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot)
+void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
+                                          LayoutIndex inputIndex/* = LayoutIndex()*/)
 {
   GetSubpass().GetLayout().BindAttachment(slot, binding);
   //  only colored attachment should have colorBlendState
@@ -39,6 +40,16 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
     m_pipelineBuilder.OnColorAttachmentHasBound();
     m_invalidPipeline = true;
     m_invalidPipeline.notify_one();
+  }
+  if (slot == ShaderAttachmentSlot::Input)
+  {
+    if (!inputIndex.IsValid())
+    {
+      throw std::runtime_error(
+        "Input attachments require valid layout index. Don't forget to declare this uniform in fragment shader");
+    }
+    GetSubpass().GetDescriptorBuffer().GetLayout().DeclareInputAttachmentUniform(
+      inputIndex, RHI::ShaderType::Fragment); // input attachments are fragment-shader-only feature
   }
   GetSubpass().GetRenderPass().SetInvalid();
 }
@@ -192,6 +203,11 @@ bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
 }
 
 const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() const & noexcept
+{
+  return m_descriptorsLayout;
+}
+
+DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() & noexcept
 {
   return m_descriptorsLayout;
 }

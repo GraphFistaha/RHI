@@ -178,7 +178,7 @@ int main()
   auto summaryPipeline = framebuffer->CreatePipeline();
   {
     // setup attachments
-    summaryPipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Input);
+    summaryPipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Input, {0, 0});
     summaryPipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     summaryPipeline->BindAttachment(1, RHI::ShaderAttachmentSlot::Preserved);
     summaryPipeline->BindAttachment(2, RHI::ShaderAttachmentSlot::Preserved);
@@ -212,7 +212,7 @@ int main()
     accumProcess->DrawVertices(36, c_MaxCubesCount);
   }
   //accumPipeline->SetRenderProcess(std::move(accumProcess));
-   
+
   RHI::PipelineProcessPtr summaryProcess = ctx->CreateProcess();
   {
     auto [width, height] = window.GetSize();

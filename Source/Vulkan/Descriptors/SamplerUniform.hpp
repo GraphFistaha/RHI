@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Descriptors/BaseUniform.hpp>
+#include <Descriptors/BaseDescriptor.hpp>
 #include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <Utils/SamplerBuilder.hpp>
@@ -10,7 +10,7 @@ namespace RHI::vulkan
 {
 
 struct SamplerUniform final : public ISamplerUniformDescriptor,
-                              public details::BaseUniform
+                              public details::BaseDescriptor
 {
   explicit SamplerUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
                           LayoutIndex index, uint32_t arrayIndex = 0);
@@ -32,12 +32,15 @@ public:
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(details::CommandBuffer& commands) const override;
+  virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
 
 public: // IUniformDescriptor interface
-  virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }
-  virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
-  virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
+  virtual uint32_t GetSet() const noexcept override { return BaseDescriptor::GetSet(); }
+  virtual uint32_t GetBinding() const noexcept override { return BaseDescriptor::GetBinding(); }
+  virtual uint32_t GetArrayIndex() const noexcept override
+  {
+    return BaseDescriptor::GetArrayIndex();
+  }
 
 public: // IInvalidable interface
   void Invalidate();
@@ -45,7 +48,7 @@ public: // IInvalidable interface
 
 public: // public internal API
   VkSampler GetHandle() const noexcept;
-  using BaseUniform::GetDescriptorType;
+  using BaseDescriptor::GetDescriptorType;
 
 private:
   IInternalTexture * m_boundTexture = nullptr;

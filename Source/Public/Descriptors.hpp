@@ -9,13 +9,15 @@ struct ITexture;
 
 struct LayoutIndex final
 {
-  uint32_t set;
-  uint32_t binding;
+  uint32_t set = -1;
+  uint32_t binding = -1;
 
   bool operator==(const LayoutIndex & rhs) const noexcept
   {
     return set == rhs.set && binding == rhs.binding;
   }
+
+  inline bool IsValid() const noexcept { return set != -1 && binding != -1; }
 };
 
 

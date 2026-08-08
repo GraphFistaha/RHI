@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Descriptors/BaseUniform.hpp>
+#include <Descriptors/BaseDescriptor.hpp>
 #include <Memory/BufferInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
@@ -10,7 +10,7 @@ namespace RHI::vulkan
 {
 
 struct BufferUniform final : public IBufferUniformDescriptor,
-                             public details::BaseUniform
+                             public details::BaseDescriptor
 {
   explicit BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
                          LayoutIndex index, uint32_t arrayIndex = 0);
@@ -27,9 +27,12 @@ public: // IBufferUniformDescriptor interface
   virtual bool IsBufferAssigned() const noexcept override;
 
 public: // IUniformDescriptor interface
-  virtual uint32_t GetSet() const noexcept override { return BaseUniform::GetSet(); }
-  virtual uint32_t GetBinding() const noexcept override { return BaseUniform::GetBinding(); }
-  virtual uint32_t GetArrayIndex() const noexcept override { return BaseUniform::GetArrayIndex(); }
+  virtual uint32_t GetSet() const noexcept override { return BaseDescriptor::GetSet(); }
+  virtual uint32_t GetBinding() const noexcept override { return BaseDescriptor::GetBinding(); }
+  virtual uint32_t GetArrayIndex() const noexcept override
+  {
+    return BaseDescriptor::GetArrayIndex();
+  }
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
@@ -42,7 +45,7 @@ public: // IInvalidable interface
 public: // public internal API
   size_t GetOffset() const noexcept { return m_offset; }
   VkBuffer GetBuffer() const noexcept;
-  using BaseUniform::GetDescriptorType;
+  using BaseDescriptor::GetDescriptorType;
 
 private:
   IInternalBuffer * m_buffer = nullptr;

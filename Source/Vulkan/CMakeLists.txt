@@ -44,7 +44,7 @@ PRIVATE
 	"Descriptors/DescriptorBufferLayout.hpp"
 	"Descriptors/DescriptorsBuffer.cpp"
 	"Descriptors/DescriptorsBuffer.hpp"
-	"Descriptors/BaseUniform.hpp"
+	"Descriptors/BaseDescriptor.hpp"
 	"Descriptors/SamplerUniform.hpp"
 	"Descriptors/SamplerUniform.cpp"
 	"Descriptors/SamplerArrayUniform.hpp"

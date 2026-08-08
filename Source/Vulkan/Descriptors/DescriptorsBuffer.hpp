@@ -23,12 +23,12 @@ namespace RHI::vulkan
 {
 
 struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
-                                public OwnedBy<const DescriptorBufferLayout>
+                                public OwnedBy<DescriptorBufferLayout>
 {
-  explicit DescriptorBuffer(Context & ctx, const DescriptorBufferLayout & layout);
+  explicit DescriptorBuffer(Context & ctx, DescriptorBufferLayout & layout);
   ~DescriptorBuffer();
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(const DescriptorBufferLayout, GetLayout);
+  MAKE_ALIAS_FOR_GET_OWNER(DescriptorBufferLayout, GetLayout);
   DescriptorBuffer(DescriptorBuffer && rhs) noexcept;
   DescriptorBuffer & operator=(DescriptorBuffer && rhs) noexcept;
 

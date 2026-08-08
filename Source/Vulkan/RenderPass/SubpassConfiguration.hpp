@@ -28,7 +28,8 @@ struct SubpassConfiguration final : public ISubpassConfiguration,
 
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const SpirV & spirv) override;
-  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot) override;
+  virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
+                              LayoutIndex inputIndex = LayoutIndex()) override;
   virtual void BindResolver(uint32_t binding, uint32_t resolve_for) override;
   virtual void AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type) override;
   virtual void AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
@@ -62,6 +63,7 @@ public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
+  DescriptorBufferLayout & GetDescriptorsLayout() & noexcept;
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
 
 private:

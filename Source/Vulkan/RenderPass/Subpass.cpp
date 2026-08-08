@@ -84,6 +84,11 @@ SubpassLayout & Subpass::GetLayout() & noexcept
   return m_layout;
 }
 
+DescriptorBuffer & Subpass::GetDescriptorBuffer() & noexcept
+{
+  return m_writeDescriptorBuffer;
+}
+
 void Subpass::SetRenderProcess(PipelineProcessPtr process)
 {
   m_process = FastDynamicCast<PipelineProcess>(process);

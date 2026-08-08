@@ -12,7 +12,7 @@ namespace RHI::vulkan
 SamplerArrayUniform::SamplerArrayUniform(Context & ctx, DescriptorBufferLayout & owner, size_t size,
                                          VkDescriptorType type, LayoutIndex index,
                                          uint32_t arrayIndex)
-  : BaseUniform(ctx, owner, type, index, arrayIndex)
+  : BaseDescriptor(ctx, owner, type, index, arrayIndex)
 {
   m_builder.Reset();
   m_boundTextures.resize(size, dynamic_cast<IInternalTexture *>(ctx.GetNullTexture()));
@@ -24,7 +24,7 @@ SamplerArrayUniform::~SamplerArrayUniform()
 }
 
 SamplerArrayUniform::SamplerArrayUniform(SamplerArrayUniform && rhs) noexcept
-  : BaseUniform(std::move(rhs))
+  : BaseDescriptor(std::move(rhs))
 {
   std::swap(rhs.m_boundTextures, m_boundTextures);
   std::swap(rhs.m_sampler, m_sampler);
@@ -36,7 +36,7 @@ SamplerArrayUniform & SamplerArrayUniform::operator=(SamplerArrayUniform && rhs)
 {
   if (this != &rhs)
   {
-    BaseUniform::operator=(std::move(rhs));
+    BaseDescriptor::operator=(std::move(rhs));
     std::swap(rhs.m_boundTextures, m_boundTextures);
     std::swap(rhs.m_sampler, m_sampler);
     std::swap(rhs.m_invalidSampler, m_invalidSampler);

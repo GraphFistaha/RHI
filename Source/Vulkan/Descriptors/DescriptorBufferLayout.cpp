@@ -171,6 +171,13 @@ void DescriptorBufferLayout::DeclareSamplerArrayUniformsArray(
   }
 }
 
+void DescriptorBufferLayout::DeclareInputAttachmentUniform(LayoutIndex index,
+                                                           ShaderType shaderStage)
+{
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+  DeclareDescriptorsArray(index, type, shaderStage, 1);
+}
+
 std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorBufferLayout::
   AllocDescriptorSets() const
 {

@@ -11,13 +11,13 @@ namespace RHI::vulkan
 {
 BufferUniform::BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
                              LayoutIndex index, uint32_t arrayIndex)
-  : BaseUniform(ctx, owner, type, index, arrayIndex)
+  : BaseDescriptor(ctx, owner, type, index, arrayIndex)
   , IBufferUniformDescriptor()
 {
 }
 
 BufferUniform::BufferUniform(BufferUniform && rhs) noexcept
-  : BaseUniform(std::move(rhs))
+  : BaseDescriptor(std::move(rhs))
 {
   std::swap(m_buffer, rhs.m_buffer);
   std::swap(m_offset, rhs.m_offset);
@@ -27,7 +27,7 @@ BufferUniform & BufferUniform::operator=(BufferUniform && rhs) noexcept
 {
   if (this != &rhs)
   {
-    BaseUniform::operator=(std::move(rhs));
+    BaseDescriptor::operator=(std::move(rhs));
     std::swap(m_buffer, rhs.m_buffer);
     std::swap(m_offset, rhs.m_offset);
   }
