@@ -109,6 +109,7 @@ vkb::PhysicalDevice SelectPhysicalDevice(vkb::Instance inst, const RHI::GpuTrait
       selector.set_name(*gpuTraits.name);
     if (gpuTraits.require_presentation)
       selector.defer_surface_initialization();
+    features.sampleRateShading = VK_TRUE;
   }
   auto phys_ret =
     selector.set_required_features(features)

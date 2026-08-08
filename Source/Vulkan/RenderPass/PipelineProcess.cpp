@@ -98,7 +98,7 @@ void PipelineProcess::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffe
   {
     VkDeviceSize vkOffset = offset;
     VkBuffer buf = internalBuffer->GetHandle();
-    commands.PushCommand(vkCmdBindVertexBuffers, 0, 1, &buf, &vkOffset);
+    commands.PushCommand(vkCmdBindVertexBuffers, binding, 1, &buf, &vkOffset);
   };
   m_resourceSyncInfos.push_back({internalBuffer, VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
                                  VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED});

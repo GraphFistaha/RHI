@@ -16,3 +16,4 @@ add_subdirectory(TextureAtlas)
 
 # hard examples
 add_subdirectory(Cube)
+add_subdirectory(OIT)
