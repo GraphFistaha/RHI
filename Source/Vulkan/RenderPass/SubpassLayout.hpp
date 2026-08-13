@@ -12,7 +12,7 @@ struct SubpassLayout final
   void BindAttachment(ShaderAttachmentSlot slot, uint32_t idx);
   void BindResolver(uint32_t idx, uint32_t resolve_idx);
   VkSubpassDescription BuildDescription() const noexcept;
-  void ForEachAttachment(std::function<void(uint32_t attachmentIdx)> && func) const;
+  void CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> result) const;
 
 private:
   VkPipelineBindPoint m_bindPoint;

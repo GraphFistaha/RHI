@@ -50,7 +50,7 @@ VkSampler SamplerArrayUniform::GetHandle() const noexcept
   return m_sampler;
 }
 
-std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() const
+UpdateDescriptorTask SamplerArrayUniform::CreateUpdateTask() const noexcept
 {
   assert(m_sampler);
   std::vector<VkDescriptorImageInfo> infos;
@@ -62,7 +62,19 @@ std::vector<VkDescriptorImageInfo> SamplerArrayUniform::CreateDescriptorInfo() c
     imageInfo.imageView = texture->GetImageView();
     imageInfo.sampler = m_sampler;
   }
-  return infos;
+  return [infos, binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
+          setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  {
+    VkWriteDescriptorSet writeInfo{};
+    writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeInfo.descriptorType = type;
+    writeInfo.dstArrayElement = arrayIdx;
+    writeInfo.dstBinding = binding;
+    writeInfo.descriptorCount = static_cast<uint32_t>(infos.size());
+    writeInfo.dstSet = sets[setIdx];
+    writeInfo.pImageInfo = infos.data();
+    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
+  };
 }
 
 void SamplerArrayUniform::CollectResources(std::vector<ResourcePtr> & resources) const
@@ -106,7 +118,7 @@ void SamplerArrayUniform::AssignImage(uint32_t index, ITexture * image)
 {
   m_boundTextures[index] = image ? dynamic_cast<IInternalTexture *>(image)
                                  : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
+  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
 }
 
 

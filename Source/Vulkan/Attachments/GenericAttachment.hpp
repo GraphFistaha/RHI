@@ -47,7 +47,7 @@ public: //IInternalTexture interface
   virtual details::Synchronizer & GetSynchronizer() & noexcept override;
 
 public: // IInternalAttachment interface
-  virtual void Invalidate() override;
+  virtual void Invalidate(VkImageUsageFlags usage) override;
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual uint32_t GetBuffering() const noexcept override;

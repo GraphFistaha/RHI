@@ -23,7 +23,7 @@ Subpass::~Subpass()
 {
 }
 
-ISubpassConfiguration & Subpass::GetConfiguration() & noexcept
+SubpassConfiguration & Subpass::GetConfiguration() & noexcept
 {
   return m_pipeline;
 }

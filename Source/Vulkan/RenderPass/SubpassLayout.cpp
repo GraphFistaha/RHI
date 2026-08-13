@@ -34,27 +34,23 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
     m_preservedAttachments.push_back(idx);
     return;
   }
-
-  switch (slot)
+  if (slot & ShaderAttachmentSlot::Color)
   {
-    case ShaderAttachmentSlot::Color:
-      assignOrInsert(m_colorAttachments,
-                     VkAttachmentReference{idx, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-      assignOrInsert(m_resolveAttachments,
-                     VkAttachmentReference{VK_ATTACHMENT_UNUSED,
-                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-      break;
-    case ShaderAttachmentSlot::Input:
-      assignOrInsert(m_inputAttachments,
-                     VkAttachmentReference{idx, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL});
-      break;
-    case ShaderAttachmentSlot::DepthStencil:
-      m_depthStencilAttachment =
-        VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-      break;
-    default:
-      throw std::invalid_argument("Unknown ShaderAttachmentSlot");
-      break;
+    assignOrInsert(m_colorAttachments,
+                   VkAttachmentReference{idx, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    assignOrInsert(m_resolveAttachments,
+                   VkAttachmentReference{VK_ATTACHMENT_UNUSED,
+                                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+  }
+  if (slot & ShaderAttachmentSlot::DepthStencil)
+  {
+    m_depthStencilAttachment =
+      VkAttachmentReference{idx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+  }
+  if (slot & ShaderAttachmentSlot::Input)
+  {
+    assignOrInsert(m_inputAttachments,
+                   VkAttachmentReference{idx, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL});
   }
 }
 
@@ -80,14 +76,18 @@ VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
   return subpassDescription;
 }
 
-void SubpassLayout::ForEachAttachment(std::function<void(uint32_t attachmentIdx)> && func) const
+void SubpassLayout::CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> result) const
 {
-  std::for_each(m_colorAttachments.begin(), m_colorAttachments.end(),
-                [&func](const VkAttachmentReference & ref) { func(ref.attachment); });
-  std::for_each(m_inputAttachments.begin(), m_inputAttachments.end(),
-                [&func](const VkAttachmentReference & ref) { func(ref.attachment); });
+  for (auto && ref : m_colorAttachments)
+  {
+    result[ref.attachment] |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  }
+  for (auto && ref : m_inputAttachments)
+  {
+    result[ref.attachment] |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+  }
   if (UseDepthStencil())
-    func(m_depthStencilAttachment.attachment);
+    result[m_depthStencilAttachment.attachment] |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 }
 
 } // namespace RHI::vulkan

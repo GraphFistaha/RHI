@@ -1,5 +1,6 @@
 #include "SubpassConfiguration.hpp"
 
+#include <Descriptors/InputAttachmentUniform.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <RenderPass/Subpass.hpp>
@@ -31,17 +32,17 @@ void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
 }
 
 void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
-                                          LayoutIndex inputIndex/* = LayoutIndex()*/)
+                                          LayoutIndex inputIndex /* = LayoutIndex()*/)
 {
   GetSubpass().GetLayout().BindAttachment(slot, binding);
   //  only colored attachment should have colorBlendState
-  if (slot == ShaderAttachmentSlot::Color)
+  if (slot & ShaderAttachmentSlot::Color)
   {
     m_pipelineBuilder.OnColorAttachmentHasBound();
     m_invalidPipeline = true;
     m_invalidPipeline.notify_one();
   }
-  if (slot == ShaderAttachmentSlot::Input)
+  if (slot & ShaderAttachmentSlot::Input)
   {
     if (!inputIndex.IsValid())
     {
@@ -50,6 +51,9 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
     }
     GetSubpass().GetDescriptorBuffer().GetLayout().DeclareInputAttachmentUniform(
       inputIndex, RHI::ShaderType::Fragment); // input attachments are fragment-shader-only feature
+    InputAttachmentUniform uniform(GetContext(), GetSubpass().GetDescriptorBuffer().GetLayout(),
+                                   inputIndex);
+    GetSubpass().OnDescriptorChanged(uniform.CreateUpdateTask());
   }
   GetSubpass().GetRenderPass().SetInvalid();
 }

@@ -46,7 +46,7 @@ public: // IAttachment interface
 
 public: // IInternalAttachment interface
   virtual std::pair<VkImageView, VkSemaphore> AcquireForRendering() override;
-  virtual void Invalidate() override;
+  virtual void Invalidate(VkImageUsageFlags usage) override;
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual uint32_t GetBuffering() const noexcept override;
   virtual RHI::SamplesCount GetSamplesCount() const noexcept override;

@@ -38,7 +38,7 @@ public: // IResourceUser
   void SynchroniseResources(details::CommandBuffer & commands) const;
 
 public:
-  ISubpassConfiguration & GetConfiguration() & noexcept;
+  SubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
   DescriptorBuffer & GetDescriptorBuffer() & noexcept;
@@ -50,11 +50,10 @@ public:
   void SetInvalid();
   void Invalidate();
 
-  template<typename DescriptorT>
-  void OnDescriptorChanged(const DescriptorT & descriptor) noexcept
+  void OnDescriptorChanged(UpdateDescriptorTask task) noexcept
   {
-    m_execDescriptorBuffer.UpdateDescriptor(descriptor);
-    m_writeDescriptorBuffer.UpdateDescriptor(descriptor);
+    m_execDescriptorBuffer.UpdateDescriptor(task);
+    m_writeDescriptorBuffer.UpdateDescriptor(task);
     SetDirtyCommands();
   }
 

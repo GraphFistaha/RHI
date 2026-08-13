@@ -2,6 +2,7 @@
 
 #include <variant>
 
+#include <Descriptors/UpdateDescriptorTask.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
@@ -18,7 +19,8 @@ namespace RHI::vulkan::details
 {
 struct CommandBuffer;
 
-struct BaseDescriptor : public OwnedBy<Context>,
+
+struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
                         public OwnedBy<DescriptorBufferLayout>,
                         public IResourceUser
 {
@@ -61,11 +63,13 @@ struct BaseDescriptor : public OwnedBy<Context>,
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
   uint32_t GetBinding() const noexcept { return m_index.binding; }
   uint32_t GetSet() const noexcept { return m_index.set; }
+  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept = 0;
 
 protected:
   VkDescriptorType m_type;
   uint32_t m_arrayIndex = 0;
   LayoutIndex m_index{0, 0};
 };
+
 
 } // namespace RHI::vulkan::details

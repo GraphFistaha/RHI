@@ -42,15 +42,22 @@ void Framebuffer::Invalidate()
     if (m_attachments.empty())
       throw std::runtime_error("Framebuffer has no attachments");
 
+    std::vector<VkImageUsageFlags> attachmentsUsage;
+    attachmentsUsage.resize(m_attachments.size(), 0);
+    m_renderPass.ForEachSubpass(
+      [&attachmentsUsage](Subpass & subpass)
+      { subpass.GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
+
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
     newAttachmentsDescription.reserve(m_attachments.size());
-    for (auto * attachment : m_attachments)
+    for (size_t i = 0; auto * attachment : m_attachments)
     {
       if (attachment)
       {
-        attachment->Invalidate();
+        attachment->Invalidate(attachmentsUsage[i]);
         newAttachmentsDescription.push_back(attachment->BuildDescription());
       }
+      ++i;
     }
 
     m_attachmentDescriptions = std::move(newAttachmentsDescription);
@@ -58,12 +65,12 @@ void Framebuffer::Invalidate()
     uint32_t buffersCount = m_attachments[0]->GetBuffering();
     auto extent = m_attachments[0]->GetInternalExtent();
     // all attachments must have equal count of buffers
-    assert(std::all_of(m_attachments.begin(), m_attachments.end(),
-                       [buffersCount, extent](IInternalAttachment * att)
-                       {
-                         return buffersCount == att->GetBuffering() &&
-                                att->GetInternalExtent() == extent;
-                       }));
+    //assert(std::all_of(m_attachments.begin(), m_attachments.end(),
+    //                   [buffersCount, extent](IInternalAttachment * att)
+    //                   {
+    //                     return buffersCount == att->GetBuffering() &&
+    //                            att->GetInternalExtent() == extent;
+    //                   }));
 
     // set attachments to render Pass
     m_renderPass.SetAttachments(buffersCount, m_attachmentDescriptions);

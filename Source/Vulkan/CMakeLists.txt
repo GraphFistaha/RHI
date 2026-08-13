@@ -51,6 +51,9 @@ PRIVATE
 	"Descriptors/SamplerArrayUniform.cpp"
 	"Descriptors/BufferUniform.cpp"
 	"Descriptors/BufferUniform.hpp"
+	"Descriptors/InputAttachmentUniform.cpp"
+	"Descriptors/InputAttachmentUniform.hpp"
+	"Descriptors/UpdateDescriptorTask.hpp"
 	
 	
 	"Utils/CastHelper.hpp"

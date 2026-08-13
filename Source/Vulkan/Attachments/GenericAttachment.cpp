@@ -34,26 +34,6 @@ constexpr VkImageLayout MakeAttachmentFinalLayout(RHI::ImageFormat format)
   }
 }
 
-constexpr VkImageUsageFlagBits CalcImageUsageByFormat(RHI::ImageFormat format)
-{
-  switch (format)
-  {
-    case RHI::ImageFormat::A8:
-    case RHI::ImageFormat::R8:
-    case RHI::ImageFormat::RG8:
-    case RHI::ImageFormat::RGB8:
-    case RHI::ImageFormat::RGBA8:
-    case RHI::ImageFormat::BGR8:
-    case RHI::ImageFormat::BGRA8:
-      return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    case RHI::ImageFormat::DEPTH:
-    case RHI::ImageFormat::DEPTH_STENCIL:
-      return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    default:
-      return VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
-  }
-}
-
 constexpr VkImageAspectFlags CalcImageAspectByFormat(RHI::ImageFormat format)
 {
   switch (format)
@@ -214,7 +194,7 @@ details::Synchronizer & GenericAttachment::GetSynchronizer() & noexcept
 
 //-------------------- IAttachment interface --------------------
 
-void GenericAttachment::Invalidate()
+void GenericAttachment::Invalidate(VkImageUsageFlags usage)
 {
   if (m_changedSize || m_changedMSAA)
   {
@@ -243,9 +223,7 @@ void GenericAttachment::Invalidate()
     while (m_images.size() < m_instancesCount)
     {
       auto memoryBlock =
-        GetContext().GetBuffersAllocator().AllocImage(m_description,
-                                                      CalcImageUsageByFormat(m_description.format),
-                                                      desiredMSAA);
+        GetContext().GetBuffersAllocator().AllocImage(m_description, usage, desiredMSAA);
       m_synchronizers.emplace_back(GetContext(), memoryBlock.GetImage());
       m_views.emplace_back(utils::CreateImageView(GetContext().GetGpuConnection().GetDevice(),
                                                   memoryBlock.GetImage(), GetInternalFormat(),

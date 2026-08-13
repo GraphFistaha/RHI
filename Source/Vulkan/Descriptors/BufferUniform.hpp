@@ -19,7 +19,7 @@ struct BufferUniform final : public IBufferUniformDescriptor,
   BufferUniform & operator=(BufferUniform && rhs) noexcept;
 
 public:
-  std::vector<VkDescriptorBufferInfo> CreateDescriptorInfo() const;
+  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
 
 
 public: // IBufferUniformDescriptor interface

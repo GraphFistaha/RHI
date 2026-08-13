@@ -52,17 +52,6 @@ VkSampler SamplerUniform::GetHandle() const noexcept
   return m_sampler;
 }
 
-std::vector<VkDescriptorImageInfo> SamplerUniform::CreateDescriptorInfo() const
-{
-  assert(m_sampler);
-  assert(m_boundTexture);
-  VkDescriptorImageInfo imageInfo{};
-  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_boundTexture->GetImageView();
-  imageInfo.sampler = m_sampler;
-  return {imageInfo};
-}
-
 void SamplerUniform::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   if (m_boundTexture)
@@ -102,7 +91,30 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? FastDynamicCast<IInternalTexture>(image)
                          : FastDynamicCast<IInternalTexture>(GetContext().GetNullTexture());
-  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(*this);
+  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+}
+
+UpdateDescriptorTask SamplerUniform::CreateUpdateTask() const noexcept
+{
+  assert(m_sampler);
+  assert(m_boundTexture);
+  VkDescriptorImageInfo imageInfo{};
+  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  imageInfo.imageView = m_boundTexture->GetImageView();
+  imageInfo.sampler = m_sampler;
+  return [imageInfo, binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
+          setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  {
+    VkWriteDescriptorSet writeInfo{};
+    writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeInfo.descriptorType = type;
+    writeInfo.dstArrayElement = arrayIdx;
+    writeInfo.dstBinding = binding;
+    writeInfo.descriptorCount = 1;
+    writeInfo.dstSet = sets[setIdx];
+    writeInfo.pImageInfo = &imageInfo;
+    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
+  };
 }
 
 void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,

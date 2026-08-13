@@ -8,6 +8,7 @@
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
+#include <Descriptors/UpdateDescriptorTask.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan
@@ -34,26 +35,18 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
 
   void Invalidate();
 
-  template<typename DescriptorT>
-  void UpdateDescriptor(const DescriptorT & descriptor) noexcept
-  {
-    std::lock_guard lk{m_updateDescriptorsLock};
-    m_updateTasks.emplace_back(&descriptor);
-  }
+  void UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcept;
 
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineLayout pipelineLayout,
                            VkPipelineBindPoint bindPoint);
 
 private:
-  using GenericUniformPtr =
-    std::variant<const BufferUniform *, const SamplerUniform *, const SamplerArrayUniform *>;
-
   std::mutex m_setsLock;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;
   std::vector<VkDescriptorSet> m_sets;
   std::vector<VkDescriptorSetLayout> m_cachedLayouts;
   std::mutex m_updateDescriptorsLock;
-  std::vector<GenericUniformPtr> m_updateTasks;
+  std::vector<UpdateDescriptorTask> m_updateTasks;
 };
 
 } // namespace RHI::vulkan

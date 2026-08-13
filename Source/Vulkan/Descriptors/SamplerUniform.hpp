@@ -28,7 +28,7 @@ public: // ISamplerUniformDescriptor interface
   virtual void AssignImage(ITexture * image) override;
 
 public:
-  std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;
+  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;

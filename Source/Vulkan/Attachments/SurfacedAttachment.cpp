@@ -132,7 +132,7 @@ void SurfacedAttachment::BlitTo(ITexture * texture)
 
 // --------------------- IAttachment interface ----------------------
 
-void SurfacedAttachment::Invalidate()
+void SurfacedAttachment::Invalidate(VkImageUsageFlags usage)
 {
   if (m_invalidSwapchain || !m_swapchain->swapchain)
   {
@@ -209,7 +209,7 @@ bool SurfacedAttachment::FinalRendering(VkSemaphore waitSemaphore)
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
   {
     m_renderingMutex.unlock();
-    Invalidate();
+    Invalidate(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     return false;
   }
   else if (res != VK_SUCCESS)

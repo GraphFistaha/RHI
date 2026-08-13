@@ -25,7 +25,8 @@ public: // ISamplerDescriptor interface
                          RHI::TextureFilteration magFilter) noexcept override;
 
 public:
-  std::vector<VkDescriptorImageInfo> CreateDescriptorInfo() const;
+  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
+
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;

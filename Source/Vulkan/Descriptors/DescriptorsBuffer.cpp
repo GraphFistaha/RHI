@@ -4,53 +4,18 @@
 #include <array>
 #include <numeric>
 
+#include <Descriptors/BufferUniform.hpp>
+#include <Descriptors/DescriptorBufferLayout.hpp>
+#include <Descriptors/InputAttachmentUniform.hpp>
+#include <Descriptors/SamplerUniform.hpp>
 #include <Memory/BufferGPU.hpp>
+#include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
-
-#include "../RenderPass/Subpass.hpp"
-#include "BufferUniform.hpp"
-#include "DescriptorBufferLayout.hpp"
-#include "SamplerUniform.hpp"
 
 
 namespace RHI::vulkan::details
 {
-
-//discover https://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
-template<typename UniformT>
-  requires(std::is_same_v<UniformT, BufferUniform> || std::is_same_v<UniformT, SamplerUniform> ||
-           std::is_same_v<UniformT, SamplerArrayUniform>)
-void UpdateDescriptorResource(const Context & ctx, VkDescriptorSet set, const UniformT & uniform)
-{
-  assert(set);
-  auto && infos = uniform.CreateDescriptorInfo();
-
-  VkWriteDescriptorSet descriptorWrite{};
-  descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptorWrite.dstSet = set;
-  descriptorWrite.dstBinding = uniform.GetBinding();
-  descriptorWrite.dstArrayElement = uniform.GetArrayIndex();
-  descriptorWrite.descriptorType = uniform.GetDescriptorType();
-  descriptorWrite.descriptorCount = static_cast<uint32_t>(infos.size());
-  if constexpr (std::is_same_v<UniformT, BufferUniform>)
-  {
-    descriptorWrite.pBufferInfo = infos.data();
-    descriptorWrite.pImageInfo = nullptr; // Optional
-  }
-  else if constexpr (std::is_same_v<UniformT, SamplerUniform>)
-  {
-    assert(uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-           uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-           uniform.GetDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER);
-    descriptorWrite.pBufferInfo = nullptr;
-    descriptorWrite.pImageInfo = infos.data(); // Optional
-  }
-  descriptorWrite.pTexelBufferView = nullptr; // Optional
-
-  vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &descriptorWrite, 0, nullptr);
-}
-
 
 constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 {
@@ -123,6 +88,12 @@ void DescriptorBuffer::Invalidate()
   }
 }
 
+void DescriptorBuffer::UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcept
+{
+  std::lock_guard lk{m_updateDescriptorsLock};
+  m_updateTasks.emplace_back(std::move(updateFunc));
+}
+
 
 void DescriptorBuffer::BindToCommandBuffer(details::CommandBuffer & commands,
                                            VkPipelineLayout pipelineLayout,
@@ -135,16 +106,8 @@ void DescriptorBuffer::BindToCommandBuffer(details::CommandBuffer & commands,
   assert(!m_sets.empty());
   {
     std::lock_guard lk{m_updateDescriptorsLock};
-    for (const GenericUniformPtr & task : m_updateTasks)
-    {
-      std::visit(
-        [this](auto && uniformPtr)
-        {
-          uint32_t setIdx = uniformPtr->GetSet();
-          details::UpdateDescriptorResource(GetContext(), m_sets[setIdx], *uniformPtr);
-        },
-        task);
-    }
+    for (auto && task : m_updateTasks)
+      task(GetContext(), m_sets);
     m_updateTasks.clear();
   }
   commands.PushCommand(vkCmdBindDescriptorSets, bindPoint, pipelineLayout, 0,
