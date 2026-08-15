@@ -61,7 +61,7 @@ void BufferUniform::AssignBuffer(IBufferGPU * buffer, size_t offset)
   Invalidate();
   m_buffer = FastDynamicCast<IInternalBuffer>(buffer);
   m_offset = offset;
-  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+  GetLayout().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept

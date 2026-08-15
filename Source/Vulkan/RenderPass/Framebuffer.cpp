@@ -65,12 +65,12 @@ void Framebuffer::Invalidate()
     uint32_t buffersCount = m_attachments[0]->GetBuffering();
     auto extent = m_attachments[0]->GetInternalExtent();
     // all attachments must have equal count of buffers
-    //assert(std::all_of(m_attachments.begin(), m_attachments.end(),
-    //                   [buffersCount, extent](IInternalAttachment * att)
-    //                   {
-    //                     return buffersCount == att->GetBuffering() &&
-    //                            att->GetInternalExtent() == extent;
-    //                   }));
+    assert(std::all_of(m_attachments.begin(), m_attachments.end(),
+                       [buffersCount, extent](IInternalAttachment * att)
+                       {
+                         return buffersCount == att->GetBuffering() &&
+                                att->GetInternalExtent() == extent;
+                       }));
 
     // set attachments to render Pass
     m_renderPass.SetAttachments(buffersCount, m_attachmentDescriptions);

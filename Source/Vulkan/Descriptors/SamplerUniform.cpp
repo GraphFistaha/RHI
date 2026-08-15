@@ -91,7 +91,7 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? FastDynamicCast<IInternalTexture>(image)
                          : FastDynamicCast<IInternalTexture>(GetContext().GetNullTexture());
-  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+  GetLayout().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
 }
 
 UpdateDescriptorTask SamplerUniform::CreateUpdateTask() const noexcept

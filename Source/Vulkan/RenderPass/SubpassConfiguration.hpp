@@ -62,15 +62,12 @@ public: // public internal API
   bool WaitForPipelineIsValid() const noexcept;
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
-  const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
-  DescriptorBufferLayout & GetDescriptorsLayout() & noexcept;
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
 
 private:
   uint32_t m_subpassIndex;
 
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
-  DescriptorBufferLayout m_descriptorsLayout;
   VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
   VkPipeline m_pipeline = VK_NULL_HANDLE;
 

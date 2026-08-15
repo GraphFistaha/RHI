@@ -26,7 +26,8 @@ UpdateDescriptorTask InputAttachmentUniform::CreateUpdateTask() const noexcept
     writeInfo.dstArrayElement = arrayIdx;
     writeInfo.dstBinding = binding;
     writeInfo.dstSet = sets[setIdx];
-    writeInfo.descriptorCount = 0;
+    writeInfo.descriptorCount = 1;
+    //writeInfo.pImageInfo[0].
     vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
   };
 }

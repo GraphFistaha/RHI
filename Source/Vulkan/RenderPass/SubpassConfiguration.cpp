@@ -14,7 +14,6 @@ SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner, uint3
   : OwnedBy<Context>(ctx)
   , OwnedBy<Subpass>(owner)
   , m_subpassIndex(subpassIndex)
-  , m_descriptorsLayout(ctx, *this)
 {
 }
 
@@ -84,7 +83,7 @@ IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(LayoutIndex inde
                                                                 ShaderType shaderStage)
 {
   IBufferUniformDescriptor * result = nullptr;
-  m_descriptorsLayout.DeclareBufferUniformsArray(index, shaderStage, 1, &result);
+  GetSubpass().GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
@@ -92,7 +91,7 @@ ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex ind
                                                                  ShaderType shaderStage)
 {
   ISamplerUniformDescriptor * result = nullptr;
-  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
+  GetSubpass().GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
@@ -100,14 +99,14 @@ void SubpassConfiguration::DeclareUniformsArray(LayoutIndex index, ShaderType sh
                                                 uint32_t size,
                                                 IBufferUniformDescriptor * outArray[])
 {
-  m_descriptorsLayout.DeclareBufferUniformsArray(index, shaderStage, size, outArray);
+    GetSubpass().GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size, outArray);
 }
 
 void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
                                                 ISamplerUniformDescriptor * outArray[])
 {
-  m_descriptorsLayout.DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
+    GetSubpass().GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
 }
 
 
@@ -151,11 +150,9 @@ void SubpassConfiguration::SetRenderProcess(PipelineProcessPtr process)
 
 void SubpassConfiguration::Invalidate()
 {
-  m_descriptorsLayout.Invalidate();
-
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
-    auto && layoutHandles = m_descriptorsLayout.GetHandles();
+    auto && layoutHandles = GetSubpass().GetDescriptorsLayout().GetHandles();
     auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
                                                    layoutHandles.data(),
                                                    static_cast<uint32_t>(layoutHandles.size()),
@@ -189,7 +186,6 @@ void SubpassConfiguration::Invalidate()
 
 void SubpassConfiguration::SetInvalid()
 {
-  m_descriptorsLayout.SetInvalid();
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
   m_invalidPipelineLayout = true;
@@ -204,16 +200,6 @@ bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
       return true;
   }
   return false;
-}
-
-const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() const & noexcept
-{
-  return m_descriptorsLayout;
-}
-
-DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() & noexcept
-{
-  return m_descriptorsLayout;
 }
 
 void SubpassConfiguration::BindToCommandBuffer(details::CommandBuffer & commands,

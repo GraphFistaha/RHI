@@ -50,9 +50,9 @@ VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
 namespace RHI::vulkan
 {
 
-DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx, SubpassConfiguration & owner)
+DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx, Subpass & owner)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<SubpassConfiguration>(owner)
+  , OwnedBy<Subpass>(owner)
 {
 }
 

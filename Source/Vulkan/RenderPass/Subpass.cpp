@@ -14,8 +14,9 @@ Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, u
   , m_pipeline(ctx, *this, subpassIndex)
   , m_execBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writeBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_execDescriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
-  , m_writeDescriptorBuffer(ctx, m_pipeline.GetDescriptorsLayout())
+  , m_descriptorsLayout(ctx, *this)
+  , m_execDescriptorBuffer(ctx, m_descriptorsLayout)
+  , m_writeDescriptorBuffer(ctx, m_descriptorsLayout)
 {
 }
 
@@ -31,12 +32,10 @@ SubpassConfiguration & Subpass::GetConfiguration() & noexcept
 void Subpass::RecordCommands(details::CommandBuffer & commands)
 {
   GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
-  m_cachedRenderPass = GetRenderPass().GetHandle();
-  assert(GetRenderPass().GetHandle());
   if (m_dirtyCommands)
   {
     m_writeBuffer.Reset();
-    m_writeBuffer.BeginWriting(m_cachedRenderPass, m_pipeline.GetSubpassIndex());
+    m_writeBuffer.BeginWriting(GetRenderPass().GetHandle(), m_pipeline.GetSubpassIndex());
     m_pipeline.BindToCommandBuffer(m_writeBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer, m_pipeline.GetPipelineLayoutHandle(),
                                                 VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -54,7 +53,7 @@ void Subpass::RecordCommands(details::CommandBuffer & commands)
 void Subpass::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   // collect descriptors and uniforms
-  m_pipeline.GetDescriptorsLayout().CollectResources(resources);
+  m_descriptorsLayout.CollectResources(resources);
   // collect resources from draw commands (vertex/index buffers)
   if (m_process)
     m_process->CollectResources(resources);
@@ -63,7 +62,7 @@ void Subpass::CollectResources(std::vector<ResourcePtr> & resources) const
 void Subpass::SynchroniseResources(details::CommandBuffer & commands) const
 {
   // collect descriptors and uniforms
-  m_pipeline.GetDescriptorsLayout().SynchroniseResources(commands);
+  m_descriptorsLayout.SynchroniseResources(commands);
   // collect resources from draw commands (vertex/index buffers)
   if (m_process)
     m_process->SynchroniseResources(commands);
@@ -84,6 +83,16 @@ SubpassLayout & Subpass::GetLayout() & noexcept
   return m_layout;
 }
 
+const DescriptorBufferLayout & Subpass::GetDescriptorsLayout() const & noexcept
+{
+  return m_descriptorsLayout;
+}
+
+DescriptorBufferLayout & Subpass::GetDescriptorsLayout() & noexcept
+{
+  return m_descriptorsLayout;
+}
+
 DescriptorBuffer & Subpass::GetDescriptorBuffer() & noexcept
 {
   return m_writeDescriptorBuffer;
@@ -100,11 +109,13 @@ void Subpass::SetRenderProcess(PipelineProcessPtr process)
 void Subpass::SetInvalid()
 {
   SetDirtyCommands();
+  m_descriptorsLayout.SetInvalid();
   m_pipeline.SetInvalid();
 }
 
 void Subpass::Invalidate()
 {
+  m_descriptorsLayout.Invalidate();
   m_pipeline.Invalidate();
   m_execDescriptorBuffer.Invalidate();
   m_writeDescriptorBuffer.Invalidate();

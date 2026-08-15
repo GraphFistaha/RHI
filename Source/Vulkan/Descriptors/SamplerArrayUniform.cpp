@@ -118,7 +118,7 @@ void SamplerArrayUniform::AssignImage(uint32_t index, ITexture * image)
 {
   m_boundTextures[index] = image ? dynamic_cast<IInternalTexture *>(image)
                                  : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetLayout().GetConfiguration().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+  GetLayout().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
 }
 
 

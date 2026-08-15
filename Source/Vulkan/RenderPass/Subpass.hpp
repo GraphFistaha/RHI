@@ -41,6 +41,8 @@ public:
   SubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
+  const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
+  DescriptorBufferLayout & GetDescriptorsLayout() & noexcept;
   DescriptorBuffer & GetDescriptorBuffer() & noexcept;
 
 
@@ -61,11 +63,11 @@ private:
   SubpassConfiguration m_pipeline;
   std::shared_ptr<PipelineProcess> m_process;
   std::atomic_bool m_enabled = true;
-  VkRenderPass m_cachedRenderPass = VK_NULL_HANDLE;
   std::atomic_bool m_dirtyCommands;
 
   details::CommandBuffer m_execBuffer;
   details::CommandBuffer m_writeBuffer;
+  DescriptorBufferLayout m_descriptorsLayout;
   DescriptorBuffer m_execDescriptorBuffer;
   DescriptorBuffer m_writeDescriptorBuffer;
 
