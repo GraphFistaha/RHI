@@ -3,6 +3,7 @@
 #include <format>
 
 #include <Attachments/SurfacedAttachment.hpp>
+#include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -45,8 +46,8 @@ void Framebuffer::Invalidate()
     std::vector<VkImageUsageFlags> attachmentsUsage;
     attachmentsUsage.resize(m_attachments.size(), 0);
     m_renderPass.ForEachSubpass(
-      [&attachmentsUsage](Subpass & subpass)
-      { subpass.GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
+      [&attachmentsUsage](SubpassConfiguration& subpass)
+      { subpass.GetInternal().GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
 
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
     newAttachmentsDescription.reserve(m_attachments.size());
@@ -196,7 +197,7 @@ void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
 ISubpassConfiguration * Framebuffer::CreatePipeline()
 {
   if (auto subpass = m_renderPass.CreateSubpass())
-    return &subpass->GetConfiguration();
+    return subpass;
   return nullptr;
 }
 
@@ -230,7 +231,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   for (auto * attachment : m_attachments)
     if (attachment)
       attachment->Resize(VkExtent2D(width, height));
-  m_renderPass.ForEachSubpass([](Subpass & sp) { sp.SetDirtyCommands(); });
+  m_renderPass.ForEachSubpass([](SubpassConfiguration& sp) { sp.GetInternal().SetDirtyCommands(); });
   m_attachmentsChanged = true;
 }
 

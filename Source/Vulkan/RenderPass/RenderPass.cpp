@@ -14,10 +14,9 @@ RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   , OwnedBy<Framebuffer>(framebuffer)
 // , m_submitter(ctx, )
 {
-  auto [family, _] = ctx.GetGpuConnection().GetQueue(QueueType::Graphics);
   // —оздает начальный subpass. ” RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастс€ и в целом все сломаетс€.
-  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, family);
+  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0);
   // disable subpass to not build pipeline
   //initialSubpass.SetEnabled(false);
 }
@@ -27,7 +26,7 @@ RenderPass::~RenderPass()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
-Subpass * RenderPass::CreateSubpass()
+SubpassConfiguration * RenderPass::CreateSubpass()
 {
   if (m_createSubpassCallsCounter++ == 0)
   {
@@ -35,16 +34,16 @@ Subpass * RenderPass::CreateSubpass()
     return &m_subpasses.front();
   }
 
-  auto [family, _] = GetContext().GetGpuConnection().GetQueue(QueueType::Graphics);
   auto && subpass = m_subpasses.emplace_back(GetContext(), *this,
-                                             static_cast<uint32_t>(m_subpasses.size()), family);
+                                             static_cast<uint32_t>(m_subpasses.size()));
   m_invalidRenderPass = true;
   return &subpass;
 }
 
-void RenderPass::DeleteSubpass(Subpass * subpass)
+void RenderPass::DeleteSubpass(SubpassConfiguration * subpass)
 {
-  size_t c = std::erase_if(m_subpasses, [subpass](const Subpass & sp) { return &sp == subpass; });
+  size_t c = std::erase_if(m_subpasses,
+                           [subpass](const SubpassConfiguration & sp) { return &sp == subpass; });
   if (c > 0)
     m_invalidRenderPass = true;
 }
@@ -60,7 +59,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   // here transfer layouts  for subpasses
   for (auto && subpass : m_subpasses)
   {
-    subpass.SynchroniseResources(commands);
+    subpass.GetInternal().SynchroniseResources(commands);
   }
 
   VkRenderPassBeginInfo renderPassInfo{};
@@ -90,7 +89,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
     size_t i = 0;
     for (auto && subpass : m_subpasses)
     {
-      subpass.RecordCommands(commands);
+      subpass.GetInternal().RecordCommands(commands);
       if (i + 1 != m_subpasses.size())
         commands.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       ++i;
@@ -113,7 +112,7 @@ void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   for (auto && subpass : m_subpasses)
   {
-    subpass.CollectResources(resources);
+    subpass.GetInternal().CollectResources(resources);
   }
 }
 
@@ -121,7 +120,7 @@ void RenderPass::SynchroniseResources(details::CommandBuffer & commands) const
 {
   for (auto && subpass : m_subpasses)
   {
-    subpass.SynchroniseResources(commands);
+    subpass.GetInternal().SynchroniseResources(commands);
   }
 }
 
@@ -144,7 +143,7 @@ const VkAttachmentDescription & RenderPass::GetAttachmentDescription(uint32_t id
   return m_cachedAttachments[idx];
 }
 
-void RenderPass::ForEachSubpass(std::function<void(Subpass &)> && func)
+void RenderPass::ForEachSubpass(std::function<void(SubpassConfiguration &)> && func)
 {
   std::for_each(m_subpasses.begin(), m_subpasses.end(), std::move(func));
 }
@@ -158,7 +157,7 @@ void RenderPass::Invalidate()
     for (auto && attachment : m_cachedAttachments)
       m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
-      m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
+      m_builder.AddSubpass(subpass.GetInternal().GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
                      static_cast<void *>(m_renderPass), static_cast<void *>(new_renderpass));

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/PipelineBuilder.hpp>
@@ -12,6 +11,10 @@ namespace RHI::vulkan
 struct Context;
 struct RenderPass;
 struct Subpass;
+namespace details
+{
+struct CommandBuffer;
+}
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -19,12 +22,12 @@ namespace RHI::vulkan
 
 struct SubpassConfiguration final : public ISubpassConfiguration,
                                     public OwnedBy<Context>,
-                                    public OwnedBy<Subpass>
+                                    public OwnedBy<RenderPass>
 {
-  explicit SubpassConfiguration(Context & ctx, Subpass & owner, uint32_t subpassIndex);
+  explicit SubpassConfiguration(Context & ctx, RenderPass & owner, uint32_t subpassIndex);
   virtual ~SubpassConfiguration() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(Subpass, GetSubpass);
+  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // ISubpassConfiguration interface
   virtual void AttachShader(ShaderType type, const SpirV & spirv) override;
@@ -63,9 +66,12 @@ public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
+  Subpass & GetInternal() & noexcept;
+  const Subpass & GetInternal() const & noexcept;
 
 private:
   uint32_t m_subpassIndex;
+  std::unique_ptr<Subpass> m_internalSubpass;
 
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
   VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;

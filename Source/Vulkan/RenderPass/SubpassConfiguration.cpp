@@ -1,5 +1,6 @@
 #include "SubpassConfiguration.hpp"
 
+#include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Descriptors/InputAttachmentUniform.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
@@ -10,10 +11,12 @@
 namespace RHI::vulkan
 {
 
-SubpassConfiguration::SubpassConfiguration(Context & ctx, Subpass & owner, uint32_t subpassIndex)
+SubpassConfiguration::SubpassConfiguration(Context & ctx, RenderPass & owner, uint32_t subpassIndex)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<Subpass>(owner)
+  , OwnedBy<RenderPass>(owner)
   , m_subpassIndex(subpassIndex)
+  , m_internalSubpass(new Subpass(ctx, *this, subpassIndex,
+                                  ctx.GetGpuConnection().GetQueue(QueueType::Graphics).first))
 {
 }
 
@@ -33,7 +36,7 @@ void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
 void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
                                           LayoutIndex inputIndex /* = LayoutIndex()*/)
 {
-  GetSubpass().GetLayout().BindAttachment(slot, binding);
+  m_internalSubpass->GetLayout().BindAttachment(slot, binding);
   //  only colored attachment should have colorBlendState
   if (slot & ShaderAttachmentSlot::Color)
   {
@@ -48,19 +51,20 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
       throw std::runtime_error(
         "Input attachments require valid layout index. Don't forget to declare this uniform in fragment shader");
     }
-    GetSubpass().GetDescriptorBuffer().GetLayout().DeclareInputAttachmentUniform(
+    m_internalSubpass->GetDescriptorBuffer().GetLayout().DeclareInputAttachmentUniform(
       inputIndex, RHI::ShaderType::Fragment); // input attachments are fragment-shader-only feature
-    InputAttachmentUniform uniform(GetContext(), GetSubpass().GetDescriptorBuffer().GetLayout(),
+    InputAttachmentUniform uniform(GetContext(),
+                                   m_internalSubpass->GetDescriptorBuffer().GetLayout(),
                                    inputIndex);
-    GetSubpass().OnDescriptorChanged(uniform.CreateUpdateTask());
+    m_internalSubpass->OnDescriptorChanged(uniform.CreateUpdateTask());
   }
-  GetSubpass().GetRenderPass().SetInvalid();
+  GetRenderPass().SetInvalid();
 }
 
 void SubpassConfiguration::BindResolver(uint32_t binding, uint32_t resolve_for)
 {
-  GetSubpass().GetLayout().BindResolver(binding, resolve_for);
-  GetSubpass().GetRenderPass().SetInvalid();
+  m_internalSubpass->GetLayout().BindResolver(binding, resolve_for);
+  GetRenderPass().SetInvalid();
 }
 
 void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
@@ -83,7 +87,8 @@ IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(LayoutIndex inde
                                                                 ShaderType shaderStage)
 {
   IBufferUniformDescriptor * result = nullptr;
-  GetSubpass().GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, 1, &result);
+  m_internalSubpass->GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, 1,
+                                                                       &result);
   return result;
 }
 
@@ -91,7 +96,8 @@ ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex ind
                                                                  ShaderType shaderStage)
 {
   ISamplerUniformDescriptor * result = nullptr;
-  GetSubpass().GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
+  m_internalSubpass->GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, 1,
+                                                                        &result);
   return result;
 }
 
@@ -99,14 +105,16 @@ void SubpassConfiguration::DeclareUniformsArray(LayoutIndex index, ShaderType sh
                                                 uint32_t size,
                                                 IBufferUniformDescriptor * outArray[])
 {
-    GetSubpass().GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size, outArray);
+  m_internalSubpass->GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size,
+                                                                       outArray);
 }
 
 void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
                                                 ISamplerUniformDescriptor * outArray[])
 {
-    GetSubpass().GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
+  m_internalSubpass->GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, size,
+                                                                        outArray);
 }
 
 
@@ -133,7 +141,7 @@ void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
   m_pipelineBuilder.SetDepthTestEnabled(enabled);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
-  GetSubpass().SetInvalid();
+  m_internalSubpass->SetInvalid();
 }
 
 void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
@@ -145,14 +153,14 @@ void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
 
 void SubpassConfiguration::SetRenderProcess(PipelineProcessPtr process)
 {
-  GetSubpass().SetRenderProcess(std::move(process));
+  m_internalSubpass->SetRenderProcess(std::move(process));
 }
 
 void SubpassConfiguration::Invalidate()
 {
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
-    auto && layoutHandles = GetSubpass().GetDescriptorsLayout().GetHandles();
+    auto && layoutHandles = m_internalSubpass->GetDescriptorsLayout().GetHandles();
     auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
                                                    layoutHandles.data(),
                                                    static_cast<uint32_t>(layoutHandles.size()),
@@ -169,18 +177,17 @@ void SubpassConfiguration::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    m_pipelineBuilder.SetSamplesCount(
-      GetSubpass().GetRenderPass().GetFramebuffer().CalcSamplesCount());
+    m_pipelineBuilder.SetSamplesCount(GetRenderPass().GetFramebuffer().CalcSamplesCount());
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
-                                               GetSubpass().GetRenderPass().GetHandle(),
-                                               m_subpassIndex, m_pipelineLayout);
+                                               GetRenderPass().GetHandle(), m_subpassIndex,
+                                               m_pipelineLayout);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline({}) has been rebuilt - {}",
                      static_cast<void *>(m_pipeline), static_cast<void *>(new_pipeline));
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
     m_invalidPipeline.notify_one();
-    GetSubpass().SetDirtyCommands();
+    m_internalSubpass->SetDirtyCommands();
   }
 }
 
@@ -207,6 +214,16 @@ void SubpassConfiguration::BindToCommandBuffer(details::CommandBuffer & commands
 {
   assert(!!m_pipeline);
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
+}
+
+Subpass & SubpassConfiguration::GetInternal() & noexcept
+{
+  return *m_internalSubpass;
+}
+
+const Subpass & SubpassConfiguration::GetInternal() const & noexcept
+{
+  return *m_internalSubpass;
 }
 
 } // namespace RHI::vulkan

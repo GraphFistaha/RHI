@@ -3,15 +3,16 @@
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/BufferGPU.hpp>
 #include <RenderPass/RenderPass.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
-Subpass::Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex, uint32_t familyIndex)
+Subpass::Subpass(Context & ctx, SubpassConfiguration & owner, uint32_t subpassIndex,
+                 uint32_t familyIndex)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<RenderPass>(ownerPass)
-  , m_pipeline(ctx, *this, subpassIndex)
+  , OwnedBy<SubpassConfiguration>(owner)
   , m_execBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_writeBuffer(ctx, familyIndex, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_descriptorsLayout(ctx, *this)
@@ -24,23 +25,20 @@ Subpass::~Subpass()
 {
 }
 
-SubpassConfiguration & Subpass::GetConfiguration() & noexcept
-{
-  return m_pipeline;
-}
-
 void Subpass::RecordCommands(details::CommandBuffer & commands)
 {
-  GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
+  GetPipeline().GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   if (m_dirtyCommands)
   {
     m_writeBuffer.Reset();
-    m_writeBuffer.BeginWriting(GetRenderPass().GetHandle(), m_pipeline.GetSubpassIndex());
-    m_pipeline.BindToCommandBuffer(m_writeBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-    m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer, m_pipeline.GetPipelineLayoutHandle(),
+    m_writeBuffer.BeginWriting(GetPipeline().GetRenderPass().GetHandle(),
+                               GetPipeline().GetSubpassIndex());
+    GetPipeline().BindToCommandBuffer(m_writeBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer,
+                                                GetPipeline().GetPipelineLayoutHandle(),
                                                 VK_PIPELINE_BIND_POINT_GRAPHICS);
     if (m_process)
-      m_process->RecordCommands(m_writeBuffer, m_pipeline);
+      m_process->RecordCommands(m_writeBuffer, GetPipeline());
 
     m_writeBuffer.EndWriting();
     std::swap(m_writeBuffer, m_execBuffer);
@@ -110,13 +108,13 @@ void Subpass::SetInvalid()
 {
   SetDirtyCommands();
   m_descriptorsLayout.SetInvalid();
-  m_pipeline.SetInvalid();
+  GetPipeline().SetInvalid();
 }
 
 void Subpass::Invalidate()
 {
   m_descriptorsLayout.Invalidate();
-  m_pipeline.Invalidate();
+  GetPipeline().Invalidate();
   m_execDescriptorBuffer.Invalidate();
   m_writeDescriptorBuffer.Invalidate();
 }

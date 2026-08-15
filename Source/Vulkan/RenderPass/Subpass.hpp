@@ -3,10 +3,10 @@
 #include <mutex>
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Descriptors/DescriptorsBuffer.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RenderPass/PipelineProcess.hpp>
-#include <RenderPass/SubpassConfiguration.hpp>
 #include <RenderPass/SubpassLayout.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.h>
@@ -14,21 +14,21 @@
 namespace RHI::vulkan
 {
 struct Context;
-struct RenderPass;
+struct SubpassConfiguration;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 struct Subpass : public OwnedBy<Context>,
-                 public OwnedBy<RenderPass>,
+                 public OwnedBy<SubpassConfiguration>,
                  public ICommandWriter
 {
   using UsedAttachments = std::unordered_map<uint32_t, RHI::ShaderAttachmentSlot>;
-  explicit Subpass(Context & ctx, RenderPass & ownerPass, uint32_t subpassIndex,
+  explicit Subpass(Context & ctx, SubpassConfiguration & owner, uint32_t subpassIndex,
                    uint32_t familyIndex);
   virtual ~Subpass() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
+  MAKE_ALIAS_FOR_GET_OWNER(SubpassConfiguration, GetPipeline);
 
 public: //ICommandWriter
   virtual void RecordCommands(details::CommandBuffer & commands) override;
@@ -38,7 +38,6 @@ public: // IResourceUser
   void SynchroniseResources(details::CommandBuffer & commands) const;
 
 public:
-  SubpassConfiguration & GetConfiguration() & noexcept;
   const SubpassLayout & GetLayout() const & noexcept;
   SubpassLayout & GetLayout() & noexcept;
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
@@ -60,7 +59,6 @@ public:
   }
 
 private:
-  SubpassConfiguration m_pipeline;
   std::shared_ptr<PipelineProcess> m_process;
   std::atomic_bool m_enabled = true;
   std::atomic_bool m_dirtyCommands;

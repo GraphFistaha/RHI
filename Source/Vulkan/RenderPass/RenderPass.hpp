@@ -5,8 +5,9 @@
 #include <shared_mutex>
 
 #include <CommandsExecution/DoubleBufferedSubmitter.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/Subpass.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
 #include <RHI.hpp>
 #include <Utils/RenderPassBuilder.hpp>
 #include <vulkan/vulkan.hpp>
@@ -31,13 +32,13 @@ struct RenderPass : public IInvalidable,
   MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
 public:
-  Subpass * CreateSubpass();
-  void DeleteSubpass(Subpass * subpass);
+  SubpassConfiguration * CreateSubpass();
+  void DeleteSubpass(SubpassConfiguration* subpass);
 
   void SetAttachments(uint32_t buffersCount,
                       const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
-  void ForEachSubpass(std::function<void(Subpass &)> && func);
+  void ForEachSubpass(std::function<void(SubpassConfiguration&)> && func);
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
@@ -66,7 +67,7 @@ private:
   std::atomic_bool m_isReadyForRendering = false;
 
   uint32_t m_buffersCount = 0;
-  std::list<Subpass> m_subpasses;
+  std::list<SubpassConfiguration> m_subpasses;
   uint32_t m_createSubpassCallsCounter = 0;
 };
 
