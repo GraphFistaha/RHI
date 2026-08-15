@@ -7,7 +7,7 @@
 #include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/SubpassConfiguration.hpp>
+#include <RenderPass/Pipeline.hpp>
 #include <RHI.hpp>
 #include <Utils/RenderPassBuilder.hpp>
 #include <vulkan/vulkan.hpp>
@@ -32,13 +32,13 @@ struct RenderPass : public IInvalidable,
   MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
 public:
-  SubpassConfiguration * CreateSubpass();
-  void DeleteSubpass(SubpassConfiguration* subpass);
+  Pipeline * CreateSubpass();
+  void DeleteSubpass(Pipeline* subpass);
 
   void SetAttachments(uint32_t buffersCount,
                       const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
-  void ForEachSubpass(std::function<void(SubpassConfiguration&)> && func);
+  void ForEachSubpass(std::function<void(Pipeline&)> && func);
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
@@ -67,7 +67,7 @@ private:
   std::atomic_bool m_isReadyForRendering = false;
 
   uint32_t m_buffersCount = 0;
-  std::list<SubpassConfiguration> m_subpasses;
+  std::list<Pipeline> m_subpasses;
   uint32_t m_createSubpassCallsCounter = 0;
 };
 

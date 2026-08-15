@@ -45,7 +45,7 @@ void Framebuffer::Invalidate()
     std::vector<VkImageUsageFlags> attachmentsUsage;
     attachmentsUsage.resize(m_attachments.size(), 0);
     m_renderPass.ForEachSubpass(
-      [&attachmentsUsage](SubpassConfiguration& subpass)
+      [&attachmentsUsage](Pipeline& subpass)
       { subpass.GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
 
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
@@ -193,7 +193,7 @@ void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
   }
 }
 
-ISubpassConfiguration * Framebuffer::CreatePipeline()
+IPipeline * Framebuffer::CreatePipeline()
 {
   if (auto subpass = m_renderPass.CreateSubpass())
     return subpass;
@@ -230,7 +230,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   for (auto * attachment : m_attachments)
     if (attachment)
       attachment->Resize(VkExtent2D(width, height));
-  m_renderPass.ForEachSubpass([](SubpassConfiguration& sp) { sp.SetDirtyCommands(); });
+  m_renderPass.ForEachSubpass([](Pipeline& sp) { sp.SetDirtyCommands(); });
   m_attachmentsChanged = true;
 }
 

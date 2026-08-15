@@ -249,9 +249,9 @@ using PipelineProcessPtr = std::shared_ptr<IPipelineProcess>;
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
 /// After invalidate you can bind it to CommandBuffer and draw.
-struct ISubpassConfiguration : public IInvalidable
+struct IPipeline : public IInvalidable
 {
-  virtual ~ISubpassConfiguration() = default;
+  virtual ~IPipeline() = default;
   // General static settings
   /// @brief attach shader to pipeline
   virtual void AttachShader(ShaderType type, const SpirV & spirv) = 0;
@@ -296,7 +296,7 @@ struct IFramebuffer
   virtual RHI::TexelIndex GetExtent() const = 0;
 
   virtual void ClearAttachments() noexcept = 0;
-  virtual ISubpassConfiguration * CreatePipeline() = 0;
+  virtual IPipeline * CreatePipeline() = 0;
 };
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.

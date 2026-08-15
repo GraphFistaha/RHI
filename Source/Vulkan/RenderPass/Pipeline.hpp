@@ -23,18 +23,18 @@ struct CommandBuffer;
 
 namespace RHI::vulkan
 {
-//Rename Pipeline
-struct SubpassConfiguration final : public ISubpassConfiguration,
+
+struct Pipeline final : public IPipeline,
                                     public OwnedBy<Context>,
                                     public OwnedBy<RenderPass>,
                                     public ICommandWriter
 {
-  explicit SubpassConfiguration(Context & ctx, RenderPass & owner, uint32_t subpassIndex, uint32_t familyQueue);
-  virtual ~SubpassConfiguration() override;
+  explicit Pipeline(Context & ctx, RenderPass & owner, uint32_t subpassIndex, uint32_t familyQueue);
+  virtual ~Pipeline() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
-public: // ISubpassConfiguration interface
+public: // IPipeline interface
   virtual void AttachShader(ShaderType type, const SpirV & spirv) override;
   virtual void BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
                               LayoutIndex inputIndex = LayoutIndex()) override;

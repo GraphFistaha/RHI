@@ -26,7 +26,7 @@ RenderPass::~RenderPass()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
-SubpassConfiguration * RenderPass::CreateSubpass()
+Pipeline * RenderPass::CreateSubpass()
 {
   if (m_createSubpassCallsCounter++ == 0)
   {
@@ -41,10 +41,10 @@ SubpassConfiguration * RenderPass::CreateSubpass()
   return &subpass;
 }
 
-void RenderPass::DeleteSubpass(SubpassConfiguration * subpass)
+void RenderPass::DeleteSubpass(Pipeline * subpass)
 {
   size_t c = std::erase_if(m_subpasses,
-                           [subpass](const SubpassConfiguration & sp) { return &sp == subpass; });
+                           [subpass](const Pipeline & sp) { return &sp == subpass; });
   if (c > 0)
     m_invalidRenderPass = true;
 }
@@ -144,7 +144,7 @@ const VkAttachmentDescription & RenderPass::GetAttachmentDescription(uint32_t id
   return m_cachedAttachments[idx];
 }
 
-void RenderPass::ForEachSubpass(std::function<void(SubpassConfiguration &)> && func)
+void RenderPass::ForEachSubpass(std::function<void(Pipeline &)> && func)
 {
   std::for_each(m_subpasses.begin(), m_subpasses.end(), std::move(func));
 }

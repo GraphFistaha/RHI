@@ -2,7 +2,7 @@
 
 #include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
-#include <RenderPass/SubpassConfiguration.hpp>
+#include <RenderPass/Pipeline.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 

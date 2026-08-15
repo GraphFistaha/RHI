@@ -33,8 +33,8 @@ PRIVATE
 	"RenderPass/RenderPass.hpp"
 	"RenderPass/RenderTarget.cpp"
 	"RenderPass/RenderTarget.hpp"
-	"RenderPass/SubpassConfiguration.cpp"
-	"RenderPass/SubpassConfiguration.hpp"
+	"RenderPass/Pipeline.cpp"
+	"RenderPass/Pipeline.hpp"
 	"RenderPass/PipelineProcess.hpp"
 	"RenderPass/PipelineProcess.cpp"
 

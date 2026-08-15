@@ -4,7 +4,7 @@
 #include <cassert>
 #include <numeric>
 
-#include <RenderPass/SubpassConfiguration.hpp>
+#include <RenderPass/Pipeline.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan::details
@@ -50,9 +50,9 @@ VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
 namespace RHI::vulkan
 {
 
-DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx, SubpassConfiguration & owner)
+DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx, Pipeline & owner)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<SubpassConfiguration>(owner)
+  , OwnedBy<Pipeline>(owner)
 {
 }
 

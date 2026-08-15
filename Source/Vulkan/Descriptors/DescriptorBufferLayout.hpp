@@ -16,7 +16,7 @@
 namespace RHI::vulkan
 {
 struct Context;
-struct SubpassConfiguration;
+struct Pipeline;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -29,12 +29,12 @@ struct DescriptorMetaInfo
 };
 
 struct DescriptorBufferLayout final : public OwnedBy<Context>,
-                                      public OwnedBy<SubpassConfiguration>
+                                      public OwnedBy<Pipeline>
 {
-  explicit DescriptorBufferLayout(Context & ctx, SubpassConfiguration& owner);
+  explicit DescriptorBufferLayout(Context & ctx, Pipeline& owner);
   ~DescriptorBufferLayout();
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(SubpassConfiguration, GetSubpass);
+  MAKE_ALIAS_FOR_GET_OWNER(Pipeline, GetSubpass);
 
   void DeclareBufferUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                   IBufferUniformDescriptor * outArray[]);

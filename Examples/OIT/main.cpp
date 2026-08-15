@@ -37,7 +37,7 @@ void ProcessInput(RHI::test_examples::Window & window, RHI::test_examples::Camer
     camera.MoveCamera(camera.GetRightVector());
 }
 
-void SetupCubeInputAttributes(RHI::ISubpassConfiguration * pipeline)
+void SetupCubeInputAttributes(RHI::IPipeline * pipeline)
 {
   // set matrix binding
   pipeline->AddInputBinding(0, sizeof(glm::mat4), RHI::InputBindingType::InstanceData);

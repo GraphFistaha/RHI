@@ -1,4 +1,4 @@
-#include "SubpassConfiguration.hpp"
+#include "Pipeline.hpp"
 
 #include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Descriptors/InputAttachmentUniform.hpp>
@@ -11,7 +11,7 @@
 namespace RHI::vulkan
 {
 
-SubpassConfiguration::SubpassConfiguration(Context & ctx, RenderPass & owner, uint32_t subpassIndex,
+Pipeline::Pipeline(Context & ctx, RenderPass & owner, uint32_t subpassIndex,
                                            uint32_t familyQueue)
   : OwnedBy<Context>(ctx)
   , OwnedBy<RenderPass>(owner)
@@ -24,20 +24,20 @@ SubpassConfiguration::SubpassConfiguration(Context & ctx, RenderPass & owner, ui
 {
 }
 
-SubpassConfiguration::~SubpassConfiguration()
+Pipeline::~Pipeline()
 {
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
 }
 
-void SubpassConfiguration::AttachShader(ShaderType type, const SpirV & spirv)
+void Pipeline::AttachShader(ShaderType type, const SpirV & spirv)
 {
   m_pipelineBuilder.AttachShader(type, spirv);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
 
-void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
+void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
                                           LayoutIndex inputIndex /* = LayoutIndex()*/)
 {
   GetLayout().BindAttachment(slot, binding);
@@ -63,20 +63,20 @@ void SubpassConfiguration::BindAttachment(uint32_t binding, ShaderAttachmentSlot
   GetRenderPass().SetInvalid();
 }
 
-void SubpassConfiguration::BindResolver(uint32_t binding, uint32_t resolve_for)
+void Pipeline::BindResolver(uint32_t binding, uint32_t resolve_for)
 {
   GetLayout().BindResolver(binding, resolve_for);
   GetRenderPass().SetInvalid();
 }
 
-void SubpassConfiguration::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
+void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
 {
   m_pipelineBuilder.AddInputBinding(slot, stride, type);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
 
-void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
+void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
                                              uint32_t elemsCount,
                                              InputAttributeElementType elemsType)
 {
@@ -85,7 +85,7 @@ void SubpassConfiguration::AddInputAttribute(uint32_t binding, uint32_t location
   m_invalidPipeline.notify_one();
 }
 
-IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(LayoutIndex index,
+IBufferUniformDescriptor * Pipeline::DeclareUniform(LayoutIndex index,
                                                                 ShaderType shaderStage)
 {
   IBufferUniformDescriptor * result = nullptr;
@@ -93,7 +93,7 @@ IBufferUniformDescriptor * SubpassConfiguration::DeclareUniform(LayoutIndex inde
   return result;
 }
 
-ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex index,
+ISamplerUniformDescriptor * Pipeline::DeclareSampler(LayoutIndex index,
                                                                  ShaderType shaderStage)
 {
   ISamplerUniformDescriptor * result = nullptr;
@@ -101,14 +101,14 @@ ISamplerUniformDescriptor * SubpassConfiguration::DeclareSampler(LayoutIndex ind
   return result;
 }
 
-void SubpassConfiguration::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage,
+void Pipeline::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
                                                 IBufferUniformDescriptor * outArray[])
 {
   GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size, outArray);
 }
 
-void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
+void Pipeline::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
                                                 uint32_t size,
                                                 ISamplerUniformDescriptor * outArray[])
 {
@@ -116,7 +116,7 @@ void SubpassConfiguration::DeclareSamplersArray(LayoutIndex index, ShaderType sh
 }
 
 
-void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderStage)
+void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
 {
   VkPushConstantRange newPushConstantRange{};
   newPushConstantRange.offset = 0;
@@ -127,14 +127,14 @@ void SubpassConfiguration::DefinePushConstant(uint32_t size, ShaderType shaderSt
   m_invalidPipelineLayout = true;
 }
 
-void SubpassConfiguration::SetMeshTopology(MeshTopology topology) noexcept
+void Pipeline::SetMeshTopology(MeshTopology topology) noexcept
 {
   m_pipelineBuilder.SetMeshTopology(topology);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
 
-void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
+void Pipeline::EnableDepthTest(bool enabled) noexcept
 {
   m_pipelineBuilder.SetDepthTestEnabled(enabled);
   m_invalidPipeline = true;
@@ -142,14 +142,14 @@ void SubpassConfiguration::EnableDepthTest(bool enabled) noexcept
   SetInvalid();
 }
 
-void SubpassConfiguration::SetDepthFunc(CompareOperation op) noexcept
+void Pipeline::SetDepthFunc(CompareOperation op) noexcept
 {
   m_pipelineBuilder.SetDepthTestCompareOperator(op);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
 
-void SubpassConfiguration::SetRenderProcess(PipelineProcessPtr process)
+void Pipeline::SetRenderProcess(PipelineProcessPtr process)
 {
   m_process = FastDynamicCast<PipelineProcess>(process);
   if (m_process)
@@ -157,7 +157,7 @@ void SubpassConfiguration::SetRenderProcess(PipelineProcessPtr process)
   SetDirtyCommands();
 }
 
-void SubpassConfiguration::RecordCommands(details::CommandBuffer & commands)
+void Pipeline::RecordCommands(details::CommandBuffer & commands)
 {
   GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
   if (m_dirtyCommands)
@@ -178,7 +178,7 @@ void SubpassConfiguration::RecordCommands(details::CommandBuffer & commands)
   commands.AddCommands(m_execBuffer.GetHandle());
 }
 
-void SubpassConfiguration::CollectResources(std::vector<ResourcePtr> & resources) const
+void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   // collect descriptors and uniforms
   m_descriptorsLayout.CollectResources(resources);
@@ -187,7 +187,7 @@ void SubpassConfiguration::CollectResources(std::vector<ResourcePtr> & resources
     m_process->CollectResources(resources);
 }
 
-void SubpassConfiguration::SynchroniseResources(details::CommandBuffer & commands) const
+void Pipeline::SynchroniseResources(details::CommandBuffer & commands) const
 {
   // collect descriptors and uniforms
   m_descriptorsLayout.SynchroniseResources(commands);
@@ -196,7 +196,7 @@ void SubpassConfiguration::SynchroniseResources(details::CommandBuffer & command
     m_process->SynchroniseResources(commands);
 }
 
-void SubpassConfiguration::Invalidate()
+void Pipeline::Invalidate()
 {
   m_descriptorsLayout.Invalidate();
   m_execDescriptorBuffer.Invalidate();
@@ -234,7 +234,7 @@ void SubpassConfiguration::Invalidate()
   }
 }
 
-void SubpassConfiguration::SetInvalid()
+void Pipeline::SetInvalid()
 {
   SetDirtyCommands();
   m_descriptorsLayout.SetInvalid();
@@ -243,7 +243,7 @@ void SubpassConfiguration::SetInvalid()
   m_invalidPipelineLayout = true;
 }
 
-bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
+bool Pipeline::WaitForPipelineIsValid() const noexcept
 {
   bool result = false;
   for (int i = 0; i < 1000; ++i)
@@ -254,46 +254,46 @@ bool SubpassConfiguration::WaitForPipelineIsValid() const noexcept
   return false;
 }
 
-void SubpassConfiguration::BindToCommandBuffer(details::CommandBuffer & commands,
+void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands,
                                                VkPipelineBindPoint bindPoint)
 {
   assert(!!m_pipeline);
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
 }
 
-void SubpassConfiguration::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
+void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
 {
   m_execDescriptorBuffer.UpdateDescriptor(task);
   m_writeDescriptorBuffer.UpdateDescriptor(task);
   SetDirtyCommands();
 }
 
-void SubpassConfiguration::SetDirtyCommands() noexcept
+void Pipeline::SetDirtyCommands() noexcept
 {
   m_dirtyCommands = true;
 }
 
-const SubpassLayout & SubpassConfiguration::GetLayout() const & noexcept
+const SubpassLayout & Pipeline::GetLayout() const & noexcept
 {
   return m_layout;
 }
 
-SubpassLayout & SubpassConfiguration::GetLayout() & noexcept
+SubpassLayout & Pipeline::GetLayout() & noexcept
 {
   return m_layout;
 }
 
-const DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() const & noexcept
+const DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() const & noexcept
 {
   return m_descriptorsLayout;
 }
 
-DescriptorBufferLayout & SubpassConfiguration::GetDescriptorsLayout() & noexcept
+DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() & noexcept
 {
   return m_descriptorsLayout;
 }
 
-DescriptorBuffer & SubpassConfiguration::GetDescriptorBuffer() & noexcept
+DescriptorBuffer & Pipeline::GetDescriptorBuffer() & noexcept
 {
   return m_writeDescriptorBuffer;
 }

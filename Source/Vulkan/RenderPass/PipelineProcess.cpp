@@ -20,7 +20,7 @@ PipelineProcess::~PipelineProcess()
 }
 
 void PipelineProcess::RecordCommands(details::CommandBuffer & commands,
-                                     const SubpassConfiguration & pipeline)
+                                     const Pipeline & pipeline)
 {
   for (auto && task : m_commands)
   {
@@ -39,7 +39,7 @@ void PipelineProcess::DrawVertices(std::uint32_t vertexCount, std::uint32_t inst
 {
   if (!m_editable)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdDraw, vertexCount, instanceCount, firstVertex, firstInstance);
   };
@@ -52,7 +52,7 @@ void PipelineProcess::DrawIndexedVertices(std::uint32_t indexCount, std::uint32_
 {
   if (!m_editable)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdDrawIndexed, indexCount, instanceCount, firstIndex, vertexOffset,
                          firstInstance);
@@ -64,7 +64,7 @@ void PipelineProcess::SetViewport(float width, float height)
 {
   if (!m_editable)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     VkViewport vp{0.0f, 0.0f, width, height, 0.0f, 1.0f};
     commands.PushCommand(vkCmdSetViewport, 0, 1, &vp);
@@ -76,7 +76,7 @@ void PipelineProcess::SetScissor(int32_t x, int32_t y, std::uint32_t width, std:
 {
   if (!m_editable)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     VkRect2D scissor{};
     scissor.extent = {width, height};
@@ -94,7 +94,7 @@ void PipelineProcess::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffe
   auto * internalBuffer = FastDynamicCast<IInternalBuffer>(buffer);
   if (!internalBuffer)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     VkDeviceSize vkOffset = offset;
     VkBuffer buf = internalBuffer->GetHandle();
@@ -112,7 +112,7 @@ void PipelineProcess::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::
   auto * internalBuffer = FastDynamicCast<IInternalBuffer>(buffer);
   if (!internalBuffer)
     return;
-  auto task = [=](details::CommandBuffer & commands, const SubpassConfiguration & pipeline)
+  auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdBindIndexBuffer, internalBuffer->GetHandle(), VkDeviceSize{offset},
                          utils::CastInterfaceEnum2Vulkan<VkIndexType>(type));
@@ -130,7 +130,7 @@ void PipelineProcess::PushConstant(const void * data, size_t size)
   std::vector<uint8_t> capturedData(size, 0);
   std::memcpy(capturedData.data(), data, size);
   auto task = [data = std::move(capturedData)](details::CommandBuffer & commands,
-                                               const SubpassConfiguration & pipeline)
+                                               const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdPushConstants, pipeline.GetPipelineLayoutHandle(),
                          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,

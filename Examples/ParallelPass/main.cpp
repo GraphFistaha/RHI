@@ -34,7 +34,7 @@ private:
   RHI::IContext * m_context = nullptr;
   RHI::IFramebuffer * m_fbo = nullptr;
   /// subpass which can be executed in parallel
-  RHI::ISubpassConfiguration * m_pipeline = nullptr;
+  RHI::IPipeline * m_pipeline = nullptr;
 
   /// some data for frame
   RHI::IBufferGPU * m_vertexBuffer = nullptr;
