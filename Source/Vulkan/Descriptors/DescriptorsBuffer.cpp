@@ -9,7 +9,6 @@
 #include <Descriptors/InputAttachmentUniform.hpp>
 #include <Descriptors/SamplerUniform.hpp>
 #include <Memory/BufferGPU.hpp>
-#include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 

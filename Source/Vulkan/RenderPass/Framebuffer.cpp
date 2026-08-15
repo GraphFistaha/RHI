@@ -3,7 +3,6 @@
 #include <format>
 
 #include <Attachments/SurfacedAttachment.hpp>
-#include <RenderPass/Subpass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -47,7 +46,7 @@ void Framebuffer::Invalidate()
     attachmentsUsage.resize(m_attachments.size(), 0);
     m_renderPass.ForEachSubpass(
       [&attachmentsUsage](SubpassConfiguration& subpass)
-      { subpass.GetInternal().GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
+      { subpass.GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
 
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
     newAttachmentsDescription.reserve(m_attachments.size());
@@ -231,7 +230,7 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   for (auto * attachment : m_attachments)
     if (attachment)
       attachment->Resize(VkExtent2D(width, height));
-  m_renderPass.ForEachSubpass([](SubpassConfiguration& sp) { sp.GetInternal().SetDirtyCommands(); });
+  m_renderPass.ForEachSubpass([](SubpassConfiguration& sp) { sp.SetDirtyCommands(); });
   m_attachmentsChanged = true;
 }
 

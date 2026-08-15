@@ -3,7 +3,7 @@
 #include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
 #include <Private/FastDynamicCast.hpp>
-#include <RenderPass/Subpass.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 

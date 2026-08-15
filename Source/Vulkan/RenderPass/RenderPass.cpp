@@ -3,7 +3,6 @@
 #include <CommandsExecution/Submitter.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderTarget.hpp>
-#include <RenderPass/Subpass.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan
@@ -14,9 +13,10 @@ RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   , OwnedBy<Framebuffer>(framebuffer)
 // , m_submitter(ctx, )
 {
+  auto [family, _] = ctx.GetGpuConnection().GetQueue(QueueType::Graphics);
   // —оздает начальный subpass. ” RenderPass всегда должен быть subpass,
   // иначе VkRenderPass не создастс€ и в целом все сломаетс€.
-  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0);
+  auto && initialSubpass = m_subpasses.emplace_back(GetContext(), *this, 0, family);
   // disable subpass to not build pipeline
   //initialSubpass.SetEnabled(false);
 }
@@ -34,8 +34,9 @@ SubpassConfiguration * RenderPass::CreateSubpass()
     return &m_subpasses.front();
   }
 
+  auto [family, _] = GetContext().GetGpuConnection().GetQueue(QueueType::Graphics);
   auto && subpass = m_subpasses.emplace_back(GetContext(), *this,
-                                             static_cast<uint32_t>(m_subpasses.size()));
+                                             static_cast<uint32_t>(m_subpasses.size()), family);
   m_invalidRenderPass = true;
   return &subpass;
 }
@@ -59,7 +60,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   // here transfer layouts  for subpasses
   for (auto && subpass : m_subpasses)
   {
-    subpass.GetInternal().SynchroniseResources(commands);
+    subpass.SynchroniseResources(commands);
   }
 
   VkRenderPassBeginInfo renderPassInfo{};
@@ -89,7 +90,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
     size_t i = 0;
     for (auto && subpass : m_subpasses)
     {
-      subpass.GetInternal().RecordCommands(commands);
+      subpass.RecordCommands(commands);
       if (i + 1 != m_subpasses.size())
         commands.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       ++i;
@@ -112,7 +113,7 @@ void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   for (auto && subpass : m_subpasses)
   {
-    subpass.GetInternal().CollectResources(resources);
+    subpass.CollectResources(resources);
   }
 }
 
@@ -120,7 +121,7 @@ void RenderPass::SynchroniseResources(details::CommandBuffer & commands) const
 {
   for (auto && subpass : m_subpasses)
   {
-    subpass.GetInternal().SynchroniseResources(commands);
+    subpass.SynchroniseResources(commands);
   }
 }
 
@@ -157,7 +158,7 @@ void RenderPass::Invalidate()
     for (auto && attachment : m_cachedAttachments)
       m_builder.AddAttachment(attachment);
     for (auto && subpass : m_subpasses)
-      m_builder.AddSubpass(subpass.GetInternal().GetLayout().BuildDescription());
+      m_builder.AddSubpass(subpass.GetLayout().BuildDescription());
     auto new_renderpass = m_builder.Make(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
                      static_cast<void *>(m_renderPass), static_cast<void *>(new_renderpass));

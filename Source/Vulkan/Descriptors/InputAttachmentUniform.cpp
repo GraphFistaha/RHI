@@ -3,7 +3,7 @@
 #include <Descriptors/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
 #include <Private/FastDynamicCast.hpp>
-#include <RenderPass/Subpass.hpp>
+#include <RenderPass/SubpassConfiguration.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -26,7 +26,7 @@ UpdateDescriptorTask InputAttachmentUniform::CreateUpdateTask() const noexcept
     writeInfo.dstArrayElement = arrayIdx;
     writeInfo.dstBinding = binding;
     writeInfo.dstSet = sets[setIdx];
-    writeInfo.descriptorCount = 1;
+    writeInfo.descriptorCount = 0;
     //writeInfo.pImageInfo[0].
     vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
   };

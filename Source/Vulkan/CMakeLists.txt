@@ -27,8 +27,6 @@ PRIVATE
 	
 	"RenderPass/Framebuffer.cpp"
 	"RenderPass/Framebuffer.hpp"
-	"RenderPass/Subpass.cpp"
-	"RenderPass/Subpass.hpp"
 	"RenderPass/SubpassLayout.cpp"
 	"RenderPass/SubpassLayout.hpp"
 	"RenderPass/RenderPass.cpp"
