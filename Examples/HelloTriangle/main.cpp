@@ -45,18 +45,19 @@ int main()
   };
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto trianglePipeline = framebuffer->CreatePipeline();
-  trianglePipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
-  trianglePipeline->BindResolver(1, 0);
-  // set shaders
-  trianglePipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
-  trianglePipeline->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle.frag")));
-  // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
-  trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
-  trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
-  trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
-                                      RHI::InputAttributeElementType::FLOAT);
-
+  auto trianglePipeline = ctx->CreatePipeline();
+  {
+    trianglePipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+    trianglePipeline->BindResolver(1, 0);
+    // set shaders
+    trianglePipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
+    trianglePipeline->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle.frag")));
+    // set vertex attributes (5 float attributes per vertex - pos.xy and color.rgb)
+    trianglePipeline->AddInputBinding(0, 5 * sizeof(float), RHI::InputBindingType::VertexData);
+    trianglePipeline->AddInputAttribute(0, 0, 0, 2, RHI::InputAttributeElementType::FLOAT);
+    trianglePipeline->AddInputAttribute(0, 1, 2 * sizeof(float), 3,
+                                        RHI::InputAttributeElementType::FLOAT);
+  }
   // create vertex buffer
   auto * vertexBuffer =
     ctx->CreateBuffer(VerticesCount * 5 * sizeof(float), RHI::BufferGPUUsage::VertexBuffer, true);
@@ -76,19 +77,19 @@ int main()
 
   RHI::PipelineProcessPtr renderProcess = ctx->CreateProcess();
   {
-      // get size of window
-      auto [width, height] = window.GetSize();
-      // set viewport
-      renderProcess->SetViewport(static_cast<float>(width), static_cast<float>(height));
-      // set scissor
-      renderProcess->SetScissor(0, 0, static_cast<uint32_t>(width),
-          static_cast<uint32_t>(height));
-      // draw triangle
-      renderProcess->BindVertexBuffer(0, vertexBuffer, 0);
-      renderProcess->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
-      renderProcess->DrawIndexedVertices(IndicesCount, 1);
+    // get size of window
+    auto [width, height] = window.GetSize();
+    // set viewport
+    renderProcess->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    // set scissor
+    renderProcess->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    // draw triangle
+    renderProcess->BindVertexBuffer(0, vertexBuffer, 0);
+    renderProcess->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
+    renderProcess->DrawIndexedVertices(IndicesCount, 1);
   }
-  trianglePipeline->SetRenderProcess(std::move(renderProcess));
+
+  framebuffer->SetSubpass(0, trianglePipeline, renderProcess);
 
   float t = 0.0;
   window.MainLoop(

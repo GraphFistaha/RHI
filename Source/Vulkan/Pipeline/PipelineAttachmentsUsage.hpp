@@ -1,21 +1,21 @@
 #pragma once
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
-struct SubpassLayout final
+/// @brief Collects statistics about attachments used in VkSubpass and how they are used
+struct PipelineAttachmentsUsage final
 {
-  explicit SubpassLayout(VkPipelineBindPoint bindPoint);
+  PipelineAttachmentsUsage() = default;
 
   bool UseDepthStencil() const noexcept;
   void BindAttachment(ShaderAttachmentSlot slot, uint32_t idx);
   void BindResolver(uint32_t idx, uint32_t resolve_idx);
-  VkSubpassDescription BuildDescription() const noexcept;
+  VkSubpassDescription BuildDescription(VkPipelineBindPoint bindPoint) const noexcept;
   void CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> result) const;
 
 private:
-  VkPipelineBindPoint m_bindPoint;
   std::vector<VkAttachmentReference> m_colorAttachments;
   std::vector<VkAttachmentReference> m_inputAttachments;
   std::vector<uint32_t> m_preservedAttachments;

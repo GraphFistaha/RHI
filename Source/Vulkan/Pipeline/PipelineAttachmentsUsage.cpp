@@ -1,23 +1,18 @@
-#include "SubpassLayout.hpp"
+#include "PipelineAttachmentsUsage.hpp"
 
-bool operator==(const VkAttachmentReference & ref1, const VkAttachmentReference & ref2) noexcept
+static bool operator==(const VkAttachmentReference & ref1, const VkAttachmentReference & ref2) noexcept
 {
   return std::memcmp(&ref1, &ref2, sizeof(VkAttachmentReference)) == 0;
 }
 
 namespace RHI::vulkan
 {
-SubpassLayout::SubpassLayout(VkPipelineBindPoint bindPoint)
-  : m_bindPoint(bindPoint)
-{
-}
-
-bool SubpassLayout::UseDepthStencil() const noexcept
+bool PipelineAttachmentsUsage::UseDepthStencil() const noexcept
 {
   return m_depthStencilAttachment.attachment != VK_ATTACHMENT_UNUSED;
 }
 
-void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
+void PipelineAttachmentsUsage::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
 {
   auto assignOrInsert =
     [](std::vector<VkAttachmentReference> & atts, const VkAttachmentReference & ref)
@@ -54,15 +49,16 @@ void SubpassLayout::BindAttachment(ShaderAttachmentSlot slot, uint32_t idx)
   }
 }
 
-void SubpassLayout::BindResolver(uint32_t idx, uint32_t resolve_idx)
+void PipelineAttachmentsUsage::BindResolver(uint32_t idx, uint32_t resolve_idx)
 {
   m_resolveAttachments[resolve_idx].attachment = idx;
 }
 
-VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
+VkSubpassDescription PipelineAttachmentsUsage::BuildDescription(
+  VkPipelineBindPoint bindPoint) const noexcept
 {
   VkSubpassDescription subpassDescription{};
-  subpassDescription.pipelineBindPoint = m_bindPoint;
+  subpassDescription.pipelineBindPoint = bindPoint;
   subpassDescription.colorAttachmentCount = static_cast<uint32_t>(m_colorAttachments.size());
   subpassDescription.pColorAttachments = m_colorAttachments.data();
   subpassDescription.inputAttachmentCount = static_cast<uint32_t>(m_inputAttachments.size());
@@ -76,7 +72,8 @@ VkSubpassDescription SubpassLayout::BuildDescription() const noexcept
   return subpassDescription;
 }
 
-void SubpassLayout::CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> result) const
+void PipelineAttachmentsUsage::CollectAttachmentsUsageInfo(
+  std::span<VkImageUsageFlags> result) const
 {
   for (auto && ref : m_colorAttachments)
   {

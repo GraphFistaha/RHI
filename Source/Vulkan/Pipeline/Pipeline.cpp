@@ -1,9 +1,9 @@
 #include "Pipeline.hpp"
 
-#include <Descriptors/DescriptorBufferLayout.hpp>
-#include <Descriptors/InputAttachmentUniform.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
+#include <Pipeline/InputAttachmentUniform.hpp>
+#include <Pipeline/PipelineProcess.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <RenderPass/PipelineProcess.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
@@ -11,13 +11,10 @@
 namespace RHI::vulkan
 {
 
-Pipeline::Pipeline(Context & ctx, RenderPass & owner, uint32_t subpassIndex,
-                                           uint32_t familyQueue)
+Pipeline::Pipeline(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<RenderPass>(owner)
-  , m_subpassIndex(subpassIndex)
-  , m_execBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_writeBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  //, m_execBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  //, m_writeBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_descriptorsLayout(ctx, *this)
   , m_execDescriptorBuffer(ctx, m_descriptorsLayout)
   , m_writeDescriptorBuffer(ctx, m_descriptorsLayout)
@@ -38,9 +35,9 @@ void Pipeline::AttachShader(ShaderType type, const SpirV & spirv)
 }
 
 void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
-                                          LayoutIndex inputIndex /* = LayoutIndex()*/)
+                              LayoutIndex inputIndex /* = LayoutIndex()*/)
 {
-  GetLayout().BindAttachment(slot, binding);
+  m_attachmentsStat.BindAttachment(slot, binding);
   //  only colored attachment should have colorBlendState
   if (slot & ShaderAttachmentSlot::Color)
   {
@@ -60,13 +57,13 @@ void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
     InputAttachmentUniform uniform(GetContext(), GetDescriptorBuffer().GetLayout(), inputIndex);
     OnDescriptorChanged(uniform.CreateUpdateTask());
   }
-  GetRenderPass().SetInvalid();
+  //GetRenderPass().SetInvalid(); //TODO: don't need it?
 }
 
 void Pipeline::BindResolver(uint32_t binding, uint32_t resolve_for)
 {
-  GetLayout().BindResolver(binding, resolve_for);
-  GetRenderPass().SetInvalid();
+  m_attachmentsStat.BindResolver(binding, resolve_for);
+  //GetRenderPass().SetInvalid(); //TODO: don't need it?
 }
 
 void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
@@ -77,40 +74,35 @@ void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType 
 }
 
 void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t offset,
-                                             uint32_t elemsCount,
-                                             InputAttributeElementType elemsType)
+                                 uint32_t elemsCount, InputAttributeElementType elemsType)
 {
   m_pipelineBuilder.AddInputAttribute(binding, location, offset, elemsCount, elemsType);
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
 }
 
-IBufferUniformDescriptor * Pipeline::DeclareUniform(LayoutIndex index,
-                                                                ShaderType shaderStage)
+IBufferUniformDescriptor * Pipeline::DeclareUniform(LayoutIndex index, ShaderType shaderStage)
 {
   IBufferUniformDescriptor * result = nullptr;
   GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
-ISamplerUniformDescriptor * Pipeline::DeclareSampler(LayoutIndex index,
-                                                                 ShaderType shaderStage)
+ISamplerUniformDescriptor * Pipeline::DeclareSampler(LayoutIndex index, ShaderType shaderStage)
 {
   ISamplerUniformDescriptor * result = nullptr;
   GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
-void Pipeline::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage,
-                                                uint32_t size,
-                                                IBufferUniformDescriptor * outArray[])
+void Pipeline::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    IBufferUniformDescriptor * outArray[])
 {
   GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size, outArray);
 }
 
-void Pipeline::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage,
-                                                uint32_t size,
-                                                ISamplerUniformDescriptor * outArray[])
+void Pipeline::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
+                                    ISamplerUniformDescriptor * outArray[])
 {
   GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
 }
@@ -149,54 +141,51 @@ void Pipeline::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline.notify_one();
 }
 
-void Pipeline::SetRenderProcess(PipelineProcessPtr process)
+//void Pipeline::SetRenderProcess(PipelineProcessPtr process)
+//{
+//  m_process = FastDynamicCast<PipelineProcess>(process);
+//  if (m_process)
+//    m_process->CommitProcess();
+//  SetDirtyCommands();
+//}
+
+void Pipeline::RecordCommands(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint)
 {
-  m_process = FastDynamicCast<PipelineProcess>(process);
-  if (m_process)
-    m_process->CommitProcess();
-  SetDirtyCommands();
-}
+  //renderPass.WaitForRenderPassIsValid(); // wait for render pass is valid
+  //if (m_dirtyCommands)
+  //{
+  //  m_writeBuffer.Reset();
+  //  m_writeBuffer.BeginWriting(renderPass.GetHandle(), subpassIndex);
+  assert(!!m_pipeline);
+  commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
+  m_writeDescriptorBuffer.BindToCommandBuffer(commands, GetPipelineLayoutHandle(), bindPoint);
 
-void Pipeline::RecordCommands(details::CommandBuffer & commands)
-{
-  GetRenderPass().WaitForRenderPassIsValid(); // wait for render pass is valid
-  if (m_dirtyCommands)
-  {
-    m_writeBuffer.Reset();
-    m_writeBuffer.BeginWriting(GetRenderPass().GetHandle(), GetSubpassIndex());
-    BindToCommandBuffer(m_writeBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-    m_writeDescriptorBuffer.BindToCommandBuffer(m_writeBuffer, GetPipelineLayoutHandle(),
-                                                VK_PIPELINE_BIND_POINT_GRAPHICS);
-    if (m_process)
-      m_process->RecordCommands(m_writeBuffer, *this);
+  //  m_writeBuffer.EndWriting();
+  //  std::swap(m_writeBuffer, m_execBuffer);
+  //  m_dirtyCommands = false;
+  //}
 
-    m_writeBuffer.EndWriting();
-    std::swap(m_writeBuffer, m_execBuffer);
-    m_dirtyCommands = false;
-  }
-
-  commands.AddCommands(m_execBuffer.GetHandle());
+  //commands.AddCommands(m_execBuffer.GetHandle());
 }
 
 void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   // collect descriptors and uniforms
   m_descriptorsLayout.CollectResources(resources);
-  // collect resources from draw commands (vertex/index buffers)
-  if (m_process)
-    m_process->CollectResources(resources);
 }
 
 void Pipeline::SynchroniseResources(details::CommandBuffer & commands) const
 {
   // collect descriptors and uniforms
   m_descriptorsLayout.SynchroniseResources(commands);
-  // collect resources from draw commands (vertex/index buffers)
-  if (m_process)
-    m_process->SynchroniseResources(commands);
 }
 
-void Pipeline::Invalidate()
+const PipelineAttachmentsUsage & Pipeline::GetAttachmentUsageInfo() const & noexcept
+{
+  return m_attachmentsStat;
+}
+
+void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassIndex)
 {
   m_descriptorsLayout.Invalidate();
   m_execDescriptorBuffer.Invalidate();
@@ -220,67 +209,35 @@ void Pipeline::Invalidate()
 
   if (m_invalidPipeline || !m_pipeline)
   {
-    m_pipelineBuilder.SetSamplesCount(GetRenderPass().GetFramebuffer().CalcSamplesCount());
+    m_pipelineBuilder.SetSamplesCount(renderPass.GetFramebuffer().CalcSamplesCount());
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
-                                               GetRenderPass().GetHandle(), m_subpassIndex,
+                                               renderPass.GetHandle(), subpassIndex,
                                                m_pipelineLayout);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipeline, nullptr);
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipeline({}) has been rebuilt - {}",
+    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
+                     "Graphic VkPipeline({}) has been rebuilt - {}",
                      static_cast<void *>(m_pipeline), static_cast<void *>(new_pipeline));
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
     m_invalidPipeline.notify_one();
-    SetDirtyCommands();
+    //SetDirtyCommands();
   }
 }
 
 void Pipeline::SetInvalid()
 {
-  SetDirtyCommands();
+  //SetDirtyCommands();
   m_descriptorsLayout.SetInvalid();
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
   m_invalidPipelineLayout = true;
 }
 
-bool Pipeline::WaitForPipelineIsValid() const noexcept
-{
-  bool result = false;
-  for (int i = 0; i < 1000; ++i)
-  {
-    if (m_invalidPipeline == false)
-      return true;
-  }
-  return false;
-}
-
-void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands,
-                                               VkPipelineBindPoint bindPoint)
-{
-  assert(!!m_pipeline);
-  commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
-}
-
 void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
 {
   m_execDescriptorBuffer.UpdateDescriptor(task);
   m_writeDescriptorBuffer.UpdateDescriptor(task);
-  SetDirtyCommands();
-}
-
-void Pipeline::SetDirtyCommands() noexcept
-{
-  m_dirtyCommands = true;
-}
-
-const SubpassLayout & Pipeline::GetLayout() const & noexcept
-{
-  return m_layout;
-}
-
-SubpassLayout & Pipeline::GetLayout() & noexcept
-{
-  return m_layout;
+  //SetDirtyCommands();
 }
 
 const DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() const & noexcept

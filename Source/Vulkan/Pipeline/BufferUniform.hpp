@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Descriptors/BaseDescriptor.hpp>
+#include <Pipeline/BaseDescriptor.hpp>
 #include <Memory/BufferInterface.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>

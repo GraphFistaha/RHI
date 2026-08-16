@@ -4,12 +4,10 @@
 #include <list>
 #include <shared_mutex>
 
-#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
+#include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/Pipeline.hpp>
 #include <RHI.hpp>
-#include <Utils/RenderPassBuilder.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan
@@ -17,6 +15,8 @@ namespace RHI::vulkan
 struct Context;
 struct RenderTarget;
 struct Framebuffer;
+struct Pipeline;
+struct PipelineProcess;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -32,43 +32,45 @@ struct RenderPass : public IInvalidable,
   MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
 public:
-  Pipeline * CreateSubpass();
-  void DeleteSubpass(Pipeline* subpass);
+  void SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process);
+  void ClearSubpasses();
 
   void SetAttachments(uint32_t buffersCount,
                       const std::vector<VkAttachmentDescription> & attachments) noexcept;
   const VkAttachmentDescription & GetAttachmentDescription(uint32_t idx) const & noexcept;
-  void ForEachSubpass(std::function<void(Pipeline&)> && func);
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;
 
-public:
+public: // internal public API
   VkRenderPass GetHandle() const noexcept { return m_renderPass; }
-  void WaitForRenderPassIsValid() const noexcept;
-  void UpdateRenderPassValidFlag() noexcept;
 
   void RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget);
+  void CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> usage) const;
 
 public: // IResourceUser
   void CollectResources(std::vector<ResourcePtr> & resources) const;
   void SynchroniseResources(details::CommandBuffer & commands) const;
 
 private:
+  using Subpass = std::pair<std::shared_ptr<Pipeline>, std::shared_ptr<PipelineProcess>>;
   std::vector<VkAttachmentDescription> m_cachedAttachments;
 
   /// There is a lot of thread-readers, so it's must be synchronized access
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
   bool m_invalidRenderPass = false;
-  utils::RenderPassBuilder m_builder;
+  details::CommandBuffer m_writeBuffer;
+  details::CommandBuffer m_execBuffer;
 
   /// Flag to notify that subpasses can begin pass
   std::atomic_bool m_isReadyForRendering = false;
 
   uint32_t m_buffersCount = 0;
-  std::list<Pipeline> m_subpasses;
-  uint32_t m_createSubpassCallsCounter = 0;
+  std::vector<Subpass> m_subpasses;
+  bool m_dirtyCommands = false;
+
+  std::unique_ptr<Pipeline> m_dummyPipeline; ///< fummy pipeline is used when no subpasses was added
 };
 
 

@@ -2,6 +2,7 @@
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/BufferGPU.hpp>
+#include <Pipeline/Pipeline.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <Private/Overload.hpp>
 #include <utils/CastHelper.hpp>
@@ -19,8 +20,7 @@ PipelineProcess::~PipelineProcess()
 {
 }
 
-void PipelineProcess::RecordCommands(details::CommandBuffer & commands,
-                                     const Pipeline & pipeline)
+void PipelineProcess::RecordCommands(details::CommandBuffer & commands, const Pipeline & pipeline)
 {
   for (auto && task : m_commands)
   {
@@ -29,16 +29,9 @@ void PipelineProcess::RecordCommands(details::CommandBuffer & commands,
   }
 }
 
-void PipelineProcess::CommitProcess()
-{
-  m_editable = false;
-}
-
 void PipelineProcess::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
                                    std::uint32_t firstVertex, std::uint32_t firstInstance)
 {
-  if (!m_editable)
-    return;
   auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdDraw, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -50,8 +43,6 @@ void PipelineProcess::DrawIndexedVertices(std::uint32_t indexCount, std::uint32_
                                           std::uint32_t firstIndex, int32_t vertexOffset,
                                           std::uint32_t firstInstance)
 {
-  if (!m_editable)
-    return;
   auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdDrawIndexed, indexCount, instanceCount, firstIndex, vertexOffset,
@@ -62,8 +53,6 @@ void PipelineProcess::DrawIndexedVertices(std::uint32_t indexCount, std::uint32_
 
 void PipelineProcess::SetViewport(float width, float height)
 {
-  if (!m_editable)
-    return;
   auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     VkViewport vp{0.0f, 0.0f, width, height, 0.0f, 1.0f};
@@ -74,8 +63,6 @@ void PipelineProcess::SetViewport(float width, float height)
 
 void PipelineProcess::SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_t height)
 {
-  if (!m_editable)
-    return;
   auto task = [=](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     VkRect2D scissor{};
@@ -89,8 +76,6 @@ void PipelineProcess::SetScissor(int32_t x, int32_t y, std::uint32_t width, std:
 void PipelineProcess::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffer,
                                        std::uint32_t offset)
 {
-  if (!m_editable)
-    return;
   auto * internalBuffer = FastDynamicCast<IInternalBuffer>(buffer);
   if (!internalBuffer)
     return;
@@ -107,8 +92,6 @@ void PipelineProcess::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffe
 
 void PipelineProcess::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::uint32_t offset)
 {
-  if (!m_editable)
-    return;
   auto * internalBuffer = FastDynamicCast<IInternalBuffer>(buffer);
   if (!internalBuffer)
     return;
@@ -125,12 +108,10 @@ void PipelineProcess::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::
 
 void PipelineProcess::PushConstant(const void * data, size_t size)
 {
-  if (!m_editable)
-    return;
   std::vector<uint8_t> capturedData(size, 0);
   std::memcpy(capturedData.data(), data, size);
-  auto task = [data = std::move(capturedData)](details::CommandBuffer & commands,
-                                               const Pipeline & pipeline)
+  auto task =
+    [data = std::move(capturedData)](details::CommandBuffer & commands, const Pipeline & pipeline)
   {
     commands.PushCommand(vkCmdPushConstants, pipeline.GetPipelineLayoutHandle(),
                          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,

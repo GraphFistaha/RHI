@@ -4,7 +4,7 @@
 #include <cassert>
 #include <numeric>
 
-#include <RenderPass/Pipeline.hpp>
+#include <Pipeline/Pipeline.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan::details

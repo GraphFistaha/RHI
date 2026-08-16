@@ -6,10 +6,11 @@
 #include <Attachments/SurfacedAttachment.hpp>
 #include <Memory/BufferGPU.hpp>
 #include <Memory/Texture.hpp>
+#include <Pipeline/Pipeline.hpp>
+#include <Pipeline/PipelineProcess.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <Private/Overload.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <RenderPass/PipelineProcess.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>
@@ -89,6 +90,11 @@ IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTra
 {
   Surface surface(m_device, surfaceTraits);
   return m_attachments.Emplace<SurfacedAttachment>(*this, std::move(surface), buffering);
+}
+
+PipelinePtr Context::CreatePipeline()
+{
+  return std::make_shared<Pipeline>(*this);
 }
 
 PipelineProcessPtr Context::CreateProcess()

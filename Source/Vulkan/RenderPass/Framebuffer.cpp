@@ -37,6 +37,7 @@ size_t Framebuffer::GetImagesCount() const noexcept
 void Framebuffer::Invalidate()
 {
   bool targetsChanged = false;
+  //rebuild attachments
   if (m_attachmentsChanged)
   {
     if (m_attachments.empty())
@@ -44,9 +45,7 @@ void Framebuffer::Invalidate()
 
     std::vector<VkImageUsageFlags> attachmentsUsage;
     attachmentsUsage.resize(m_attachments.size(), 0);
-    m_renderPass.ForEachSubpass(
-      [&attachmentsUsage](Pipeline& subpass)
-      { subpass.GetLayout().CollectAttachmentsUsageInfo(attachmentsUsage); });
+    m_renderPass.CollectAttachmentsUsageInfo(attachmentsUsage);
 
     std::vector<VkAttachmentDescription> newAttachmentsDescription;
     newAttachmentsDescription.reserve(m_attachments.size());
@@ -77,9 +76,10 @@ void Framebuffer::Invalidate()
     targetsChanged = true;
   }
 
-  //build render pass
+  //rebuild render pass
   m_renderPass.Invalidate();
 
+  //rebuild RenderTarget(VkFramebuffer)
   if (targetsChanged)
   {
     uint32_t buffersCount = m_attachments[0]->GetBuffering();
@@ -193,11 +193,9 @@ void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
   }
 }
 
-IPipeline * Framebuffer::CreatePipeline()
+void Framebuffer::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
 {
-  if (auto subpass = m_renderPass.CreateSubpass())
-    return subpass;
-  return nullptr;
+  m_renderPass.SetSubpass(index, std::move(pipeline), std::move(process));
 }
 
 void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
@@ -230,7 +228,8 @@ void Framebuffer::Resize(uint32_t width, uint32_t height)
   for (auto * attachment : m_attachments)
     if (attachment)
       attachment->Resize(VkExtent2D(width, height));
-  m_renderPass.ForEachSubpass([](Pipeline& sp) { sp.SetDirtyCommands(); });
+  //TODO: return
+  //m_renderPass.ForEachSubpass([](SubpassLayout & sp) { sp.SetDirtyCommands(); });
   m_attachmentsChanged = true;
 }
 

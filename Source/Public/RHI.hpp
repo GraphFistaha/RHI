@@ -249,7 +249,7 @@ using PipelineProcessPtr = std::shared_ptr<IPipelineProcess>;
 /// It has two modes: editing and drawing. In editing mode you can change any settings (attach shaders, uniforms, set viewport, etc).
 /// After editing you must call Invalidate(), it rebuilds internal objects and applyies new configuration.
 /// After invalidate you can bind it to CommandBuffer and draw.
-struct IPipeline : public IInvalidable
+struct IPipeline
 {
   virtual ~IPipeline() = default;
   // General static settings
@@ -281,11 +281,8 @@ struct IPipeline : public IInvalidable
 
   virtual void EnableDepthTest(bool enabled) noexcept = 0;
   virtual void SetDepthFunc(CompareOperation op) noexcept = 0;
-  /// @brief Get subpass index
-  virtual uint32_t GetSubpassIndex() const = 0;
-  /// @brief set rendering process - a function with scene commands
-  virtual void SetRenderProcess(PipelineProcessPtr process) = 0;
 };
+using PipelinePtr = std::shared_ptr<IPipeline>;
 
 /// @brief RenderPass is object that can render frames.
 struct IFramebuffer
@@ -294,9 +291,11 @@ struct IFramebuffer
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
   virtual RHI::TexelIndex GetExtent() const = 0;
-
   virtual void ClearAttachments() noexcept = 0;
-  virtual IPipeline * CreatePipeline() = 0;
+
+  virtual void SetSubpass(
+    uint32_t index, PipelinePtr pipeline,
+    PipelineProcessPtr process /*TODO: std::initializer_list<int> subpassDeps*/) = 0;
 };
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
@@ -359,6 +358,7 @@ struct IContext
   virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
                                   std::span<const IAwaitable *> commandsToWait = {}) = 0;
 
+  virtual PipelinePtr CreatePipeline() = 0;
   virtual PipelineProcessPtr CreateProcess() = 0;
   virtual IFramebuffer * CreateFramebuffer() = 0;
   virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;

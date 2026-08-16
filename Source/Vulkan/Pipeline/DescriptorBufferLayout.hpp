@@ -4,9 +4,9 @@
 #include <span>
 
 #include <CommandsExecution/CommandBuffer.hpp>
-#include <Descriptors/BufferUniform.hpp>
-#include <Descriptors/SamplerArrayUniform.hpp>
-#include <Descriptors/SamplerUniform.hpp>
+#include <Pipeline/BufferUniform.hpp>
+#include <Pipeline/SamplerArrayUniform.hpp>
+#include <Pipeline/SamplerUniform.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>

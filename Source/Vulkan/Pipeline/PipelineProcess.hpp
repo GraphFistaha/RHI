@@ -8,14 +8,14 @@
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/Pipeline.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
 struct Context;
-}
+struct Pipeline;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
@@ -58,17 +58,13 @@ public: // Commands
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(details::CommandBuffer& commands) const override;
+  virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
 
 public:
   void RecordCommands(details::CommandBuffer & commands, const Pipeline & pipeline);
-  /// @brief make process not editable
-  void CommitProcess();
 
 private:
   using DrawCommand = std::function<void(details::CommandBuffer &, const Pipeline &)>;
-  /// @brief when pipeline has just created it's editable, but when you bind it to pipeline - it's not
-  std::atomic_bool m_editable = true;
   std::vector<DrawCommand> m_commands;
   std::vector<ResourceUsageInfo> m_resourceSyncInfos;
 };

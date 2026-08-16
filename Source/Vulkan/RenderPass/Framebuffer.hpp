@@ -24,7 +24,8 @@ struct Framebuffer : public IFramebuffer,
 
 public: // IFramebuffer interface
   ///
-  virtual IPipeline * CreatePipeline() override;
+  virtual void SetSubpass(uint32_t index, PipelinePtr pipeline,
+                          PipelineProcessPtr process) override;
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation

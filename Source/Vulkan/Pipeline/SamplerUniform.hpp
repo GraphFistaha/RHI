@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Descriptors/BaseDescriptor.hpp>
+#include <Pipeline/BaseDescriptor.hpp>
 #include <Memory/TextureInterface.hpp>
 #include <RHI.hpp>
 #include <Utils/SamplerBuilder.hpp>

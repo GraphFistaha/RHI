@@ -4,10 +4,10 @@
 #include <array>
 #include <numeric>
 
-#include <Descriptors/BufferUniform.hpp>
-#include <Descriptors/DescriptorBufferLayout.hpp>
-#include <Descriptors/InputAttachmentUniform.hpp>
-#include <Descriptors/SamplerUniform.hpp>
+#include <Pipeline/BufferUniform.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
+#include <Pipeline/InputAttachmentUniform.hpp>
+#include <Pipeline/SamplerUniform.hpp>
 #include <Memory/BufferGPU.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>

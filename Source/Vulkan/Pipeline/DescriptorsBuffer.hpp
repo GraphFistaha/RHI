@@ -8,7 +8,7 @@
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/DescriptorSetLayoutBuilder.hpp>
-#include <Descriptors/UpdateDescriptorTask.hpp>
+#include <Pipeline/UpdateDescriptorTask.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan

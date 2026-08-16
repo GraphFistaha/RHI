@@ -1,8 +1,8 @@
 #include "SamplerArrayUniform.hpp"
 
-#include <Descriptors/DescriptorBufferLayout.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
-#include <RenderPass/Pipeline.hpp>
+#include <Pipeline/Pipeline.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
