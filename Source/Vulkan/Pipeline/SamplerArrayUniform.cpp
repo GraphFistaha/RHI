@@ -1,7 +1,7 @@
 #include "SamplerArrayUniform.hpp"
 
-#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/Pipeline.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
@@ -52,26 +52,25 @@ VkSampler SamplerArrayUniform::GetHandle() const noexcept
 
 UpdateDescriptorTask SamplerArrayUniform::CreateUpdateTask() const noexcept
 {
-  assert(m_sampler);
-  std::vector<VkDescriptorImageInfo> infos;
-  for (auto * texture : m_boundTextures)
+  return [this](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
   {
-    assert(texture != nullptr);
-    auto && imageInfo = infos.emplace_back();
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = texture->GetImageView();
-    imageInfo.sampler = m_sampler;
-  }
-  return [infos, binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
-          setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
-  {
+    assert(m_sampler);
+    std::vector<VkDescriptorImageInfo> infos;
+    for (auto * texture : m_boundTextures)
+    {
+      assert(texture != nullptr);
+      auto && imageInfo = infos.emplace_back();
+      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      imageInfo.imageView = texture->GetImageView();
+      imageInfo.sampler = m_sampler;
+    }
     VkWriteDescriptorSet writeInfo{};
     writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeInfo.descriptorType = type;
-    writeInfo.dstArrayElement = arrayIdx;
-    writeInfo.dstBinding = binding;
+    writeInfo.descriptorType = GetDescriptorType();
+    writeInfo.dstArrayElement = GetArrayIndex();
+    writeInfo.dstBinding = GetBinding();
     writeInfo.descriptorCount = static_cast<uint32_t>(infos.size());
-    writeInfo.dstSet = sets[setIdx];
+    writeInfo.dstSet = sets[GetSet()];
     writeInfo.pImageInfo = infos.data();
     vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
   };

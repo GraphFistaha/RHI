@@ -1,9 +1,9 @@
 #include "SamplerUniform.hpp"
 
-#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
-#include <Private/FastDynamicCast.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/Pipeline.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -96,22 +96,21 @@ void SamplerUniform::AssignImage(ITexture * image)
 
 UpdateDescriptorTask SamplerUniform::CreateUpdateTask() const noexcept
 {
-  assert(m_sampler);
-  assert(m_boundTexture);
-  VkDescriptorImageInfo imageInfo{};
-  imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_boundTexture->GetImageView();
-  imageInfo.sampler = m_sampler;
-  return [imageInfo, binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
-          setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  return [this](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
   {
+    assert(m_sampler);
+    assert(m_boundTexture);
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = m_boundTexture->GetImageView();
+    imageInfo.sampler = m_sampler;
     VkWriteDescriptorSet writeInfo{};
     writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeInfo.descriptorType = type;
-    writeInfo.dstArrayElement = arrayIdx;
-    writeInfo.dstBinding = binding;
+    writeInfo.descriptorType = GetDescriptorType();
+    writeInfo.dstArrayElement = GetArrayIndex();
+    writeInfo.dstBinding = GetBinding();
     writeInfo.descriptorCount = 1;
-    writeInfo.dstSet = sets[setIdx];
+    writeInfo.dstSet = sets[GetSet()];
     writeInfo.pImageInfo = &imageInfo;
     vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
   };
