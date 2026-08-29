@@ -26,13 +26,13 @@ int main()
   framebuffer1->AddAttachment(0, surface1);
   framebuffer2->AddAttachment(0, surface2);
 
-  auto subpass1 = framebuffer1->CreatePipeline();
+  auto pipeline1 = ctx->CreatePipeline();
   {
-    subpass1->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+    pipeline1->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     // set shaders
-    subpass1->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
-    subpass1->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
-    subpass1->SetMeshTopology(RHI::MeshTopology::Triangle);
+    pipeline1->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
+    pipeline1->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
+    pipeline1->SetMeshTopology(RHI::MeshTopology::Triangle);
     auto process = ctx->CreateProcess();
     {
       auto [width, height] = window1.GetSize();
@@ -40,16 +40,16 @@ int main()
       process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
       process->DrawVertices(3, 1);
     }
-    subpass1->SetRenderProcess(process);
+    framebuffer1->SetSubpass(0, pipeline1, process);
   }
 
-  auto subpass2 = framebuffer2->CreatePipeline();
+  auto pipeline2 = ctx->CreatePipeline();
   {
-    subpass2->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
+    pipeline2->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     // set shaders
-    subpass2->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("quad.vert")));
-    subpass2->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
-    subpass2->SetMeshTopology(RHI::MeshTopology::TriangleStrip);
+    pipeline2->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("quad.vert")));
+    pipeline2->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
+    pipeline2->SetMeshTopology(RHI::MeshTopology::TriangleStrip);
     auto process = ctx->CreateProcess();
     {
       auto [width, height] = window2.GetSize();
@@ -57,7 +57,7 @@ int main()
       process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
       process->DrawVertices(4, 1);
     }
-    subpass2->SetRenderProcess(process);
+    framebuffer2->SetSubpass(0, pipeline2, process);
   }
 
   float t = 0.0;

@@ -38,7 +38,7 @@ int main()
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, colorAttachment);
 
-  auto * trianglePipeline = framebuffer->CreatePipeline();
+  auto trianglePipeline = ctx->CreatePipeline();
   trianglePipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   trianglePipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("uniform.vert")));
   trianglePipeline->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("uniform.frag")));
@@ -83,7 +83,7 @@ int main()
     process->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
     process->DrawIndexedVertices(IndicesCount, 1);
   }
-  trianglePipeline->SetRenderProcess(std::move(process));
+  framebuffer->SetSubpass(0,trianglePipeline, std::move(process));
 
   float x = 0.0f;
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);

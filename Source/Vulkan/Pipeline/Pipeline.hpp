@@ -87,8 +87,7 @@ private:
   bool m_invalidPipelineLayout = false;
 
   DescriptorBufferLayout m_descriptorsLayout;
-  DescriptorBuffer m_execDescriptorBuffer;
-  DescriptorBuffer m_writeDescriptorBuffer;
+  DescriptorBuffer m_descriptorBuffer;
 
   PipelineAttachmentsUsage m_attachmentsStat;
 };

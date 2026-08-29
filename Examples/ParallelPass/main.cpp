@@ -34,7 +34,7 @@ private:
   RHI::IContext * m_context = nullptr;
   RHI::IFramebuffer * m_fbo = nullptr;
   /// subpass which can be executed in parallel
-  RHI::IPipeline * m_pipeline = nullptr;
+  RHI::PipelinePtr m_pipeline = nullptr;
 
   /// some data for frame
   RHI::IBufferGPU * m_vertexBuffer = nullptr;
@@ -105,7 +105,7 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
   , m_fbo(&framebuffer)
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  m_pipeline = framebuffer.CreatePipeline();
+  m_pipeline = ctx.CreatePipeline();
   m_pipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   // set shaders
   m_pipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
@@ -135,7 +135,7 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
     process->BindIndexBuffer(m_indexBuffer, RHI::IndexType::UINT32);
     process->DrawIndexedVertices(IndicesCount, 1);
   }
-  m_pipeline->SetRenderProcess(process);
+  m_fbo->SetSubpass(0, m_pipeline, process);
 }
 
 Renderer::~Renderer()

@@ -29,7 +29,7 @@ RenderPass::~RenderPass()
 
 void RenderPass::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
 {
-  while (index > m_subpasses.size())
+  while (index >= m_subpasses.size())
     m_subpasses.push_back({nullptr, nullptr});
   // if pipeline has changed - we should rebuild renderPass
   // if process has changed - we should rewrite commands
@@ -72,8 +72,8 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   }
 
   commands.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
-                       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
+                       VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+  
   GetFramebuffer().ForEachAttachment(
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {

@@ -44,7 +44,7 @@ int main()
   };
 
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
-  auto * trianglePipeline = framebuffer->CreatePipeline();
+  auto trianglePipeline = ctx->CreatePipeline();
   trianglePipeline->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
   trianglePipeline->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("textures.vert")));
   trianglePipeline->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("textures.frag")));
@@ -89,7 +89,7 @@ int main()
       }
     } 
   }
-  trianglePipeline->SetRenderProcess(process);
+  framebuffer->SetSubpass(0, trianglePipeline, process);
 
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(

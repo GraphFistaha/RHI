@@ -13,11 +13,8 @@ namespace RHI::vulkan
 
 Pipeline::Pipeline(Context & ctx)
   : OwnedBy<Context>(ctx)
-  //, m_execBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  //, m_writeBuffer(ctx, familyQueue, VK_COMMAND_BUFFER_LEVEL_SECONDARY)
   , m_descriptorsLayout(ctx, *this)
-  , m_execDescriptorBuffer(ctx, m_descriptorsLayout)
-  , m_writeDescriptorBuffer(ctx, m_descriptorsLayout)
+  , m_descriptorBuffer(ctx, m_descriptorsLayout)
 {
 }
 
@@ -57,13 +54,11 @@ void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
     InputAttachmentUniform uniform(GetContext(), GetDescriptorBuffer().GetLayout(), inputIndex);
     OnDescriptorChanged(uniform.CreateUpdateTask());
   }
-  //GetRenderPass().SetInvalid(); //TODO: don't need it?
 }
 
 void Pipeline::BindResolver(uint32_t binding, uint32_t resolve_for)
 {
   m_attachmentsStat.BindResolver(binding, resolve_for);
-  //GetRenderPass().SetInvalid(); //TODO: don't need it?
 }
 
 void Pipeline::AddInputBinding(uint32_t slot, uint32_t stride, InputBindingType type)
@@ -141,31 +136,11 @@ void Pipeline::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline.notify_one();
 }
 
-//void Pipeline::SetRenderProcess(PipelineProcessPtr process)
-//{
-//  m_process = FastDynamicCast<PipelineProcess>(process);
-//  if (m_process)
-//    m_process->CommitProcess();
-//  SetDirtyCommands();
-//}
-
 void Pipeline::RecordCommands(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint)
 {
-  //renderPass.WaitForRenderPassIsValid(); // wait for render pass is valid
-  //if (m_dirtyCommands)
-  //{
-  //  m_writeBuffer.Reset();
-  //  m_writeBuffer.BeginWriting(renderPass.GetHandle(), subpassIndex);
   assert(!!m_pipeline);
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
-  m_writeDescriptorBuffer.BindToCommandBuffer(commands, GetPipelineLayoutHandle(), bindPoint);
-
-  //  m_writeBuffer.EndWriting();
-  //  std::swap(m_writeBuffer, m_execBuffer);
-  //  m_dirtyCommands = false;
-  //}
-
-  //commands.AddCommands(m_execBuffer.GetHandle());
+  m_descriptorBuffer.BindToCommandBuffer(commands, GetPipelineLayoutHandle(), bindPoint);
 }
 
 void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
@@ -188,8 +163,7 @@ const PipelineAttachmentsUsage & Pipeline::GetAttachmentUsageInfo() const & noex
 void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassIndex)
 {
   m_descriptorsLayout.Invalidate();
-  m_execDescriptorBuffer.Invalidate();
-  m_writeDescriptorBuffer.Invalidate();
+  m_descriptorBuffer.Invalidate();
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
     auto && layoutHandles = GetDescriptorsLayout().GetHandles();
@@ -226,7 +200,6 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
 
 void Pipeline::SetInvalid()
 {
-  //SetDirtyCommands();
   m_descriptorsLayout.SetInvalid();
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
@@ -235,8 +208,7 @@ void Pipeline::SetInvalid()
 
 void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
 {
-  m_execDescriptorBuffer.UpdateDescriptor(task);
-  m_writeDescriptorBuffer.UpdateDescriptor(task);
+  m_descriptorBuffer.UpdateDescriptor(task);
   //SetDirtyCommands();
 }
 
@@ -252,7 +224,7 @@ DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() & noexcept
 
 DescriptorBuffer & Pipeline::GetDescriptorBuffer() & noexcept
 {
-  return m_writeDescriptorBuffer;
+  return m_descriptorBuffer;
 }
 
 } // namespace RHI::vulkan
