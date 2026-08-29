@@ -76,7 +76,6 @@ public: // public internal API
   DescriptorBuffer & GetDescriptorBuffer() & noexcept;
 
 private:
-  std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
   VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
   VkPipeline m_pipeline = VK_NULL_HANDLE;
 

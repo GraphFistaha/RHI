@@ -105,12 +105,7 @@ void Pipeline::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, u
 
 void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
 {
-  VkPushConstantRange newPushConstantRange{};
-  newPushConstantRange.offset = 0;
-  newPushConstantRange.size = size;
-  newPushConstantRange.stageFlags =
-    utils::CastInterfaceEnum2Vulkan<VkShaderStageFlagBits>(shaderStage);
-  m_pushConstantRange.emplace(newPushConstantRange);
+  m_pipelineLayoutBuilder.DeclarePushConstant(size, shaderStage);
   m_invalidPipelineLayout = true;
 }
 
@@ -167,12 +162,8 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
     auto && layoutHandles = GetDescriptorsLayout().GetHandles();
-    auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
-                                                   layoutHandles.data(),
-                                                   static_cast<uint32_t>(layoutHandles.size()),
-                                                   m_pushConstantRange.has_value()
-                                                     ? &m_pushConstantRange.value()
-                                                     : nullptr);
+    auto new_layout =
+      m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(), layoutHandles);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout({}) has been rebuilt - {}",
                      static_cast<void *>(m_pipelineLayout), static_cast<void *>(new_layout));
@@ -194,7 +185,6 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
     m_pipeline = new_pipeline;
     m_invalidPipeline = false;
     m_invalidPipeline.notify_one();
-    //SetDirtyCommands();
   }
 }
 
@@ -209,7 +199,6 @@ void Pipeline::SetInvalid()
 void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
 {
   m_descriptorBuffer.UpdateDescriptor(task);
-  //SetDirtyCommands();
 }
 
 const DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() const & noexcept
