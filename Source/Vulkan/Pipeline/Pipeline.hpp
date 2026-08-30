@@ -71,7 +71,6 @@ public:
 public: // public internal API
   VkPipeline GetPipelineHandle() const noexcept { return m_pipeline; }
   VkPipelineLayout GetPipelineLayoutHandle() const noexcept { return m_pipelineLayout; }
-  void OnDescriptorChanged(UpdateDescriptorTask task) noexcept;
   const DescriptorBufferLayout & GetDescriptorsLayout() const & noexcept;
   DescriptorBufferLayout & GetDescriptorsLayout() & noexcept;
   DescriptorBuffer & GetDescriptorBuffer() & noexcept;

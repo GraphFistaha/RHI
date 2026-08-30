@@ -9,7 +9,7 @@
 namespace RHI::vulkan
 {
 
-SamplerArrayUniform::SamplerArrayUniform(Context & ctx, Pipeline& pipeline, size_t size,
+SamplerArrayUniform::SamplerArrayUniform(Context & ctx, Pipeline & pipeline, size_t size,
                                          VkDescriptorType type, LayoutIndex index,
                                          uint32_t arrayIndex)
   : BaseDescriptor(ctx, pipeline, type, index, arrayIndex)
@@ -50,9 +50,9 @@ VkSampler SamplerArrayUniform::GetHandle() const noexcept
   return m_sampler;
 }
 
-UpdateDescriptorTask SamplerArrayUniform::CreateUpdateTask() const noexcept
+void SamplerArrayUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const
 {
-  return [this](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  if (m_shouldUpdate)
   {
     assert(m_sampler);
     std::vector<VkDescriptorImageInfo> infos;
@@ -72,8 +72,9 @@ UpdateDescriptorTask SamplerArrayUniform::CreateUpdateTask() const noexcept
     writeInfo.descriptorCount = static_cast<uint32_t>(infos.size());
     writeInfo.dstSet = sets[GetSet()];
     writeInfo.pImageInfo = infos.data();
-    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
-  };
+    vkUpdateDescriptorSets(GetContext().GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
+    m_shouldUpdate = false;
+  }
 }
 
 void SamplerArrayUniform::CollectResources(std::vector<ResourcePtr> & resources) const
@@ -117,7 +118,7 @@ void SamplerArrayUniform::AssignImage(uint32_t index, ITexture * image)
 {
   m_boundTextures[index] = image ? dynamic_cast<IInternalTexture *>(image)
                                  : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetPipeline().OnDescriptorChanged(CreateUpdateTask());
+  m_shouldUpdate = true;
 }
 
 

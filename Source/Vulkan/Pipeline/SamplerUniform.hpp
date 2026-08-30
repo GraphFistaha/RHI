@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Pipeline/BaseDescriptor.hpp>
 #include <Memory/TextureInterface.hpp>
+#include <Pipeline/BaseDescriptor.hpp>
 #include <RHI.hpp>
 #include <Utils/SamplerBuilder.hpp>
 #include <vulkan/vulkan.hpp>
@@ -12,7 +12,7 @@ namespace RHI::vulkan
 struct SamplerUniform final : public ISamplerUniformDescriptor,
                               public details::BaseDescriptor
 {
-  explicit SamplerUniform(Context & ctx, Pipeline& pipeline, VkDescriptorType type,
+  explicit SamplerUniform(Context & ctx, Pipeline & pipeline, VkDescriptorType type,
                           LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~SamplerUniform() override;
   SamplerUniform(SamplerUniform && rhs) noexcept;
@@ -28,7 +28,7 @@ public: // ISamplerUniformDescriptor interface
   virtual void AssignImage(ITexture * image) override;
 
 public:
-  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
+  virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const override;
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
@@ -51,6 +51,7 @@ public: // public internal API
   using BaseDescriptor::GetDescriptorType;
 
 private:
+  mutable std::atomic_bool m_shouldUpdate = false;
   IInternalTexture * m_boundTexture = nullptr;
   VkSampler m_sampler = VK_NULL_HANDLE;
   utils::SamplerBuilder m_builder;

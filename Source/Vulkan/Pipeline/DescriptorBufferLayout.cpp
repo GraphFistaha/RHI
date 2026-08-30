@@ -62,6 +62,26 @@ DescriptorBufferLayout::~DescriptorBufferLayout()
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
 }
 
+void DescriptorBufferLayout::Invalidate()
+{
+  if (m_layoutsHash == 0)
+  {
+    assert(m_builders.size() == m_layouts.size());
+
+    for (size_t i = 0, c = m_builders.size(); i < c; ++i)
+    {
+      VkDescriptorSetLayout newLayout =
+        m_builders[i].Make(GetContext().GetGpuConnection().GetDevice());
+      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layouts[i], nullptr);
+      GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
+                       "VkDescriptorSetLayout({}) has been rebuilt - {}",
+                       static_cast<void *>(m_layouts[i]), static_cast<void *>(newLayout));
+      m_layouts[i] = newLayout;
+      RHI::utils::HashCombine(m_layoutsHash, newLayout);
+    }
+  }
+}
+
 std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorBufferLayout::
   AllocDescriptorSets() const
 {
@@ -90,16 +110,10 @@ void DescriptorBufferLayout::DeclareDescriptorsArray(const LayoutIndex & index,
   const uint32_t setIdx = index.set;
   while (m_layouts.size() <= setIdx)
     m_layouts.push_back(VK_NULL_HANDLE);
-  VkDescriptorSetLayout newLayout = VK_NULL_HANDLE;
-  {
-    utils::DescriptorSetLayoutBuilder builder;
-    builder.DeclareDescriptorsArray(index.binding, type, shaderStage, size);
-    newLayout = builder.Make(GetContext().GetGpuConnection().GetDevice());
-  }
-  GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorSetLayout has been created - {}",
-                   static_cast<void *>(newLayout));
-  m_layouts[setIdx] = newLayout;
-  RHI::utils::HashCombine(m_layoutsHash, newLayout);
+  while (m_builders.size() <= setIdx)
+    m_builders.emplace_back();
+  m_builders[setIdx].DeclareDescriptorsArray(index.binding, type, shaderStage, size);
+  m_layoutsHash = 0;
 
   auto it = std::ranges::find_if(m_poolSizes, [type](const VkDescriptorPoolSize & poolSize)
                                  { return poolSize.type == type; });

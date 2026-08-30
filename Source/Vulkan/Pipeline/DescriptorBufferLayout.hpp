@@ -34,10 +34,13 @@ public:
   void DeclareDescriptorsArray(const LayoutIndex & index, VkDescriptorType type,
                                ShaderType shaderStage, uint32_t size);
 
+  void Invalidate();
+
 private:
   size_t m_layoutsHash = 0;
+  std::vector<utils::DescriptorSetLayoutBuilder> m_builders; // for each set
   std::vector<VkDescriptorSetLayout> m_layouts;
-  std::vector<VkDescriptorPoolSize> m_poolSizes;
+  std::vector<VkDescriptorPoolSize> m_poolSizes; // for each VkDescriptorType
 };
 
 } // namespace RHI::vulkan

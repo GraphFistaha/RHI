@@ -1,7 +1,5 @@
 #pragma once
 
-#include <variant>
-
 #include <Memory/ResourceUser.hpp>
 #include <Pipeline/UpdateDescriptorTask.hpp>
 #include <Private/OwnedBy.hpp>
@@ -63,8 +61,8 @@ struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
   uint32_t GetBinding() const noexcept { return m_index.binding; }
   uint32_t GetSet() const noexcept { return m_index.set; }
-  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept = 0;
   virtual void Invalidate() = 0;
+  virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const = 0;
 
 protected:
   VkDescriptorType m_type;

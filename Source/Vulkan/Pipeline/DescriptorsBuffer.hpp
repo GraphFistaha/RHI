@@ -28,19 +28,12 @@ struct DescriptorBuffer final : public RHI::OwnedBy<Context>
 
   void Invalidate(const DescriptorBufferLayout & layout);
 
-  void UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcept;
-
-  void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineLayout pipelineLayout,
-                           VkPipelineBindPoint bindPoint) const;
+  std::span<const VkDescriptorSet> GetSets() const noexcept;
 
 private:
   size_t m_cachedLayoutsHash = 0;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;
   std::vector<VkDescriptorSet> m_sets;
-
-  //TODO: make it lock-free
-  mutable std::mutex m_updateDescriptorsLock;
-  mutable std::vector<UpdateDescriptorTask> m_updateTasks;
 };
 
 } // namespace RHI::vulkan

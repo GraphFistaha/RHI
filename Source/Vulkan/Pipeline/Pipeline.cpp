@@ -57,7 +57,6 @@ void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
       .DeclareDescriptorsArray(inputIndex, type, RHI::ShaderType::Fragment,
                                1); // input attachments are fragment-shader-only feature
     auto uniform = std::make_unique<InputAttachmentUniform>(GetContext(), *this, inputIndex);
-    OnDescriptorChanged(uniform->CreateUpdateTask());
     m_descriptors.push_back(std::move(uniform));
   }
 }
@@ -150,11 +149,19 @@ void Pipeline::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline.notify_one();
 }
 
-void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint) const
+void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands,
+                                   VkPipelineBindPoint bindPoint) const
 {
   assert(!!m_pipeline);
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
-  m_descriptorBuffer.BindToCommandBuffer(commands, GetPipelineLayoutHandle(), bindPoint);
+  auto && sets = m_descriptorBuffer.GetSets();
+  if (!sets.empty())
+  {
+    for (auto && descriptor : m_descriptors)
+      descriptor->UpdateDescriptorSet(sets);
+    commands.PushCommand(vkCmdBindDescriptorSets, bindPoint, m_pipelineLayout, 0,
+                         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+  }
 }
 
 void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
@@ -180,6 +187,7 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
 {
   for (auto && uniformPtr : m_descriptors)
     uniformPtr->Invalidate();
+  m_descriptorsLayout.Invalidate();
   m_descriptorBuffer.Invalidate(GetDescriptorsLayout());
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
@@ -214,11 +222,6 @@ void Pipeline::SetInvalid()
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
   m_invalidPipelineLayout = true;
-}
-
-void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
-{
-  m_descriptorBuffer.UpdateDescriptor(std::move(task));
 }
 
 const DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() const & noexcept

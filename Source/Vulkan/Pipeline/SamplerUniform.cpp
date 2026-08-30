@@ -10,7 +10,7 @@
 namespace RHI::vulkan
 {
 
-SamplerUniform::SamplerUniform(Context & ctx, Pipeline& pipeline, VkDescriptorType type,
+SamplerUniform::SamplerUniform(Context & ctx, Pipeline & pipeline, VkDescriptorType type,
                                LayoutIndex index, uint32_t arrayIndex)
   : BaseDescriptor(ctx, pipeline, type, index, arrayIndex)
   , ISamplerUniformDescriptor()
@@ -91,12 +91,12 @@ void SamplerUniform::AssignImage(ITexture * image)
 {
   m_boundTexture = image ? FastDynamicCast<IInternalTexture>(image)
                          : FastDynamicCast<IInternalTexture>(GetContext().GetNullTexture());
-  GetPipeline().OnDescriptorChanged(CreateUpdateTask());
+  m_shouldUpdate = true;
 }
 
-UpdateDescriptorTask SamplerUniform::CreateUpdateTask() const noexcept
+void SamplerUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const
 {
-  return [this](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  if (m_shouldUpdate)
   {
     assert(m_sampler);
     assert(m_boundTexture);
@@ -112,8 +112,9 @@ UpdateDescriptorTask SamplerUniform::CreateUpdateTask() const noexcept
     writeInfo.descriptorCount = 1;
     writeInfo.dstSet = sets[GetSet()];
     writeInfo.pImageInfo = &imageInfo;
-    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
-  };
+    vkUpdateDescriptorSets(GetContext().GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
+    m_shouldUpdate = false;
+  }
 }
 
 void SamplerUniform::SetWrapping(RHI::TextureWrapping uWrap, RHI::TextureWrapping vWrap,

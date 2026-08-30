@@ -48,7 +48,6 @@ DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
 {
   std::swap(m_pool, rhs.m_pool);
   std::swap(m_sets, rhs.m_sets);
-  std::swap(m_updateTasks, rhs.m_updateTasks);
 }
 
 DescriptorBuffer & DescriptorBuffer::operator=(DescriptorBuffer && rhs) noexcept
@@ -58,7 +57,6 @@ DescriptorBuffer & DescriptorBuffer::operator=(DescriptorBuffer && rhs) noexcept
     OwnedBy<Context>::operator=(std::move(rhs));
     std::swap(m_pool, rhs.m_pool);
     std::swap(m_sets, rhs.m_sets);
-    std::swap(m_updateTasks, rhs.m_updateTasks);
   }
   return *this;
 }
@@ -78,29 +76,9 @@ void DescriptorBuffer::Invalidate(const DescriptorBufferLayout & layout)
   }
 }
 
-void DescriptorBuffer::UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcept
+std::span<const VkDescriptorSet> DescriptorBuffer::GetSets() const noexcept
 {
-  std::lock_guard lk{m_updateDescriptorsLock};
-  m_updateTasks.emplace_back(std::move(updateFunc));
-}
-
-
-void DescriptorBuffer::BindToCommandBuffer(details::CommandBuffer & commands,
-                                           VkPipelineLayout pipelineLayout,
-                                           VkPipelineBindPoint bindPoint) const
-{
-  if (m_sets.empty())
-    return;
-
-  assert(!m_sets.empty());
-  {
-    std::lock_guard lk{m_updateDescriptorsLock};
-    for (auto && task : m_updateTasks)
-      task(GetContext(), m_sets);
-    m_updateTasks.clear();
-  }
-  commands.PushCommand(vkCmdBindDescriptorSets, bindPoint, pipelineLayout, 0,
-                       static_cast<uint32_t>(m_sets.size()), m_sets.data(), 0, nullptr);
+  return m_sets;
 }
 
 } // namespace RHI::vulkan

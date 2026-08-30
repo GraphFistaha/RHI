@@ -10,11 +10,11 @@ namespace RHI::vulkan
 
 struct InputAttachmentUniform final : public details::BaseDescriptor
 {
-  explicit InputAttachmentUniform(Context & ctx, Pipeline& pipeline, LayoutIndex index);
+  explicit InputAttachmentUniform(Context & ctx, Pipeline & pipeline, LayoutIndex index);
   virtual ~InputAttachmentUniform() override = default;
 
 
-  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
+  virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const override;
 
 public: // IResourceUser
   virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;

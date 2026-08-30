@@ -19,7 +19,7 @@ struct BufferUniform final : public IBufferUniformDescriptor,
   BufferUniform & operator=(BufferUniform && rhs) noexcept;
 
 public:
-  virtual UpdateDescriptorTask CreateUpdateTask() const noexcept override;
+  virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const override;
 
 
 public: // IBufferUniformDescriptor interface
@@ -48,6 +48,7 @@ public: // public internal API
   using BaseDescriptor::GetDescriptorType;
 
 private:
+  mutable std::atomic_bool m_shouldUpdate = false;
   IInternalBuffer * m_buffer = nullptr;
   size_t m_offset = 0;
 };

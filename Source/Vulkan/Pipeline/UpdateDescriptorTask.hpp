@@ -6,5 +6,13 @@
 namespace RHI::vulkan
 {
 struct Context;
-using UpdateDescriptorTask = std::function<void(const Context &, std::span<const VkDescriptorSet>)>;
+} // namespace RHI::vulkan
+
+namespace RHI::vulkan
+{
+struct UpdateDescriptorTask final
+{
+private:
+  VkWriteDescriptorSet m_write;
+};
 } // namespace RHI::vulkan

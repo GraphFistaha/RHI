@@ -34,26 +34,25 @@ BufferUniform & BufferUniform::operator=(BufferUniform && rhs) noexcept
   return *this;
 }
 
-UpdateDescriptorTask BufferUniform::CreateUpdateTask() const noexcept
+void BufferUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const
 {
-  VkDescriptorBufferInfo bufferInfo{};
-  bufferInfo.buffer = m_buffer->GetHandle();
-  bufferInfo.range = m_buffer->GetSize();
-  bufferInfo.offset = m_offset;
-  return
-    [bufferInfo, binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
-     setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
+  if (m_shouldUpdate)
   {
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_buffer->GetHandle();
+    bufferInfo.range = m_buffer->GetSize();
+    bufferInfo.offset = m_offset;
     VkWriteDescriptorSet writeInfo{};
     writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeInfo.descriptorType = type;
-    writeInfo.dstArrayElement = arrayIdx;
-    writeInfo.dstBinding = binding;
+    writeInfo.descriptorType = GetDescriptorType();
+    writeInfo.dstArrayElement = GetArrayIndex();
+    writeInfo.dstBinding = GetBinding();
     writeInfo.descriptorCount = 1;
-    writeInfo.dstSet = sets[setIdx];
+    writeInfo.dstSet = sets[GetSet()];
     writeInfo.pBufferInfo = &bufferInfo;
-    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
-  };
+    vkUpdateDescriptorSets(GetContext().GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
+    m_shouldUpdate = false;
+  }
 }
 
 void BufferUniform::AssignBuffer(IBufferGPU * buffer, size_t offset)
@@ -61,7 +60,7 @@ void BufferUniform::AssignBuffer(IBufferGPU * buffer, size_t offset)
   Invalidate();
   m_buffer = FastDynamicCast<IInternalBuffer>(buffer);
   m_offset = offset;
-  GetPipeline().OnDescriptorChanged(CreateUpdateTask());
+  m_shouldUpdate = true;
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept

@@ -15,21 +15,17 @@ InputAttachmentUniform::InputAttachmentUniform(Context & ctx, Pipeline & pipelin
 {
 }
 
-UpdateDescriptorTask InputAttachmentUniform::CreateUpdateTask() const noexcept
+void InputAttachmentUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const
 {
-  return [binding = GetBinding(), arrayIdx = GetArrayIndex(), type = GetDescriptorType(),
-          setIdx = GetSet()](const Context & ctx, std::span<const VkDescriptorSet> sets) mutable
-  {
-    VkWriteDescriptorSet writeInfo{};
-    writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeInfo.descriptorType = type;
-    writeInfo.dstArrayElement = arrayIdx;
-    writeInfo.dstBinding = binding;
-    writeInfo.dstSet = sets[setIdx];
-    writeInfo.descriptorCount = 0;
-    //writeInfo.pImageInfo[0].
-    vkUpdateDescriptorSets(ctx.GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
-  };
+  VkWriteDescriptorSet writeInfo{};
+  writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeInfo.descriptorType = GetDescriptorType();
+  writeInfo.dstArrayElement = GetArrayIndex();
+  writeInfo.dstBinding = GetBinding();
+  writeInfo.dstSet = sets[GetSet()];
+  writeInfo.descriptorCount = 0;
+  //writeInfo.pImageInfo[0].
+  vkUpdateDescriptorSets(GetContext().GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
 }
 
 void InputAttachmentUniform::CollectResources(std::vector<ResourcePtr> & resources) const
