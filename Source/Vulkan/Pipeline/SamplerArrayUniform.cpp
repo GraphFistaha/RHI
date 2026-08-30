@@ -9,10 +9,10 @@
 namespace RHI::vulkan
 {
 
-SamplerArrayUniform::SamplerArrayUniform(Context & ctx, DescriptorBufferLayout & owner, size_t size,
+SamplerArrayUniform::SamplerArrayUniform(Context & ctx, Pipeline& pipeline, size_t size,
                                          VkDescriptorType type, LayoutIndex index,
                                          uint32_t arrayIndex)
-  : BaseDescriptor(ctx, owner, type, index, arrayIndex)
+  : BaseDescriptor(ctx, pipeline, type, index, arrayIndex)
 {
   m_builder.Reset();
   m_boundTextures.resize(size, dynamic_cast<IInternalTexture *>(ctx.GetNullTexture()));
@@ -117,7 +117,7 @@ void SamplerArrayUniform::AssignImage(uint32_t index, ITexture * image)
 {
   m_boundTextures[index] = image ? dynamic_cast<IInternalTexture *>(image)
                                  : dynamic_cast<IInternalTexture *>(GetContext().GetNullTexture());
-  GetLayout().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+  GetPipeline().OnDescriptorChanged(CreateUpdateTask());
 }
 
 

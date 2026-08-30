@@ -50,9 +50,8 @@ VkDescriptorSet CreateDescriptorSet(const Context & ctx, VkDescriptorPool pool,
 namespace RHI::vulkan
 {
 
-DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx, Pipeline & owner)
+DescriptorBufferLayout::DescriptorBufferLayout(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<Pipeline>(owner)
 {
 }
 
@@ -60,30 +59,6 @@ DescriptorBufferLayout::~DescriptorBufferLayout()
 {
   for (auto layout : m_layouts)
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
-}
-
-void DescriptorBufferLayout::CollectResources(std::vector<ResourcePtr> & resources) const
-{
-  for (auto && uniform : m_bufferUniformDescriptors)
-    uniform.CollectResources(resources);
-
-  for (auto && sampler : m_samplerDescriptors)
-    sampler.CollectResources(resources);
-
-  for (auto && sampler : m_samplerArrayDescriptors)
-    sampler.CollectResources(resources);
-}
-
-void DescriptorBufferLayout::SynchroniseResources(details::CommandBuffer & commands) const
-{
-  for (auto && uniform : m_bufferUniformDescriptors)
-    uniform.SynchroniseResources(commands);
-
-  for (auto && sampler : m_samplerDescriptors)
-    sampler.SynchroniseResources(commands);
-
-  for (auto && sampler : m_samplerArrayDescriptors)
-    sampler.SynchroniseResources(commands);
 }
 
 void DescriptorBufferLayout::SetInvalid()
@@ -110,108 +85,17 @@ void DescriptorBufferLayout::Invalidate()
       m_layouts[i] = newLayout;
     }
   }
-
-  for (auto && uniform : m_bufferUniformDescriptors)
-    uniform.Invalidate();
-
-  for (auto && uniform : m_samplerDescriptors)
-    uniform.Invalidate();
-
-  for (auto && uniform : m_samplerArrayDescriptors)
-    uniform.Invalidate();
-}
-
-void DescriptorBufferLayout::DeclareBufferUniformsArray(LayoutIndex index, ShaderType shaderStage,
-                                                        uint32_t size,
-                                                        IBufferUniformDescriptor * outArray[])
-{
-  constexpr VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  DeclareDescriptorsArray(index, type, shaderStage, size);
-
-  for (uint32_t i = 0; i < size; ++i)
-  {
-    auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
-    BufferUniform uniform(GetContext(), *this, type, index, i);
-    auto && newDescriptor =
-      m_bufferUniformDescriptors.emplace_back(GetContext(), *this, type, index, i);
-    it->second.push_back(&newDescriptor);
-    outArray[i] = &newDescriptor;
-  }
-}
-
-void DescriptorBufferLayout::DeclareSamplerUniformsArray(LayoutIndex index, ShaderType shaderStage,
-                                                         uint32_t size,
-                                                         ISamplerUniformDescriptor * outArray[])
-{
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  DeclareDescriptorsArray(index, type, shaderStage, size);
-
-  for (uint32_t i = 0; i < size; ++i)
-  {
-    auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
-    auto && newDescriptor = m_samplerDescriptors.emplace_back(GetContext(), *this, type, index, i);
-    it->second.push_back(&newDescriptor);
-    outArray[i] = &newDescriptor;
-  }
-}
-
-void DescriptorBufferLayout::DeclareSamplerArrayUniformsArray(
-  LayoutIndex index, ShaderType shaderStage, uint32_t size,
-  ISamplerArrayUniformDescriptor * outArray[])
-{
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  DeclareDescriptorsArray(index, type, shaderStage, size);
-
-  for (uint32_t i = 0; i < size; ++i)
-  {
-    auto && [it, inserted] = m_indexedDescriptors.insert({index, {}});
-    auto && newDescriptor =
-      m_samplerArrayDescriptors.emplace_back(GetContext(), *this, 0, type, index, i);
-    it->second.push_back(&newDescriptor);
-    outArray[i] = &newDescriptor;
-  }
-}
-
-void DescriptorBufferLayout::DeclareInputAttachmentUniform(LayoutIndex index,
-                                                           ShaderType shaderStage)
-{
-  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-  DeclareDescriptorsArray(index, type, shaderStage, 1);
 }
 
 std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorBufferLayout::
   AllocDescriptorSets() const
 {
-  std::vector<VkDescriptorPoolSize> poolSizes;
-  poolSizes.reserve(m_setsInfo.size());
-  for (auto && [type, metaInfos] : m_setsInfo)
-  {
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = type;
-    poolSize.descriptorCount = std::accumulate(metaInfos.begin(), metaInfos.end(), 0,
-                                               [](uint32_t acc, const DescriptorMetaInfo & info)
-                                               { return acc + info.arraySize; });
-    poolSizes.push_back(poolSize);
-  }
-  auto pool = details::CreateDescriptorPool(GetContext(), poolSizes);
+  auto pool = details::CreateDescriptorPool(GetContext(), m_poolSizes);
   std::vector<VkDescriptorSet> sets;
   sets.reserve(m_layouts.size());
   for (auto && layout : m_layouts)
     sets.push_back(details::CreateDescriptorSet(GetContext(), pool, layout));
   return {pool, std::move(sets)};
-}
-
-uint32_t DescriptorBufferLayout::GetCountOfOneTypeDescriptors(VkDescriptorType type) const
-{
-  uint32_t result = 0;
-  auto it = m_setsInfo.find(type);
-  if (it != m_setsInfo.end())
-  {
-    result = std::accumulate(it->second.begin(), it->second.end(), 0,
-                             [](uint32_t acc, const DescriptorMetaInfo & info)
-                             { return acc + info.arraySize; });
-  }
-  return result;
 }
 
 const std::vector<VkDescriptorSetLayout> & DescriptorBufferLayout::GetHandles() const & noexcept
@@ -230,7 +114,12 @@ void DescriptorBufferLayout::DeclareDescriptorsArray(const LayoutIndex & index,
     m_builders.emplace_back();
 
   m_builders[setIdx].DeclareDescriptorsArray(index.binding, type, shaderStage, size);
-  m_setsInfo[type].emplace_back(index, size);
+  auto it = std::ranges::find_if(m_poolSizes, [type](const VkDescriptorPoolSize & poolSize)
+                                 { return poolSize.type == type; });
+  if (it == m_poolSizes.end())
+    m_poolSizes.push_back(VkDescriptorPoolSize{type, size});
+  else
+    it->descriptorCount += size;
 }
 
 } // namespace RHI::vulkan

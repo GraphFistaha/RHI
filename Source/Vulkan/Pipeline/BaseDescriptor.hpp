@@ -2,17 +2,17 @@
 
 #include <variant>
 
-#include <Pipeline/UpdateDescriptorTask.hpp>
 #include <Memory/ResourceUser.hpp>
+#include <Pipeline/UpdateDescriptorTask.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 
 namespace RHI::vulkan
 {
 struct Context;
-struct DescriptorBufferLayout;
+struct Pipeline;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan::details
@@ -21,13 +21,13 @@ struct CommandBuffer;
 
 
 struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
-                        public OwnedBy<DescriptorBufferLayout>,
+                        public OwnedBy<Pipeline>,
                         public IResourceUser
 {
-  explicit BaseDescriptor(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+  explicit BaseDescriptor(Context & ctx, Pipeline & pipeline, VkDescriptorType type,
                           LayoutIndex index, uint32_t arrayIndex = 0)
     : OwnedBy<Context>(ctx)
-    , OwnedBy<DescriptorBufferLayout>(owner)
+    , OwnedBy<Pipeline>(pipeline)
     , m_type(type)
     , m_arrayIndex(arrayIndex)
     , m_index(index)
@@ -35,11 +35,11 @@ struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
   }
   virtual ~BaseDescriptor() override = default;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(DescriptorBufferLayout, GetLayout);
+  MAKE_ALIAS_FOR_GET_OWNER(Pipeline, GetPipeline);
 
   BaseDescriptor(BaseDescriptor && rhs) noexcept
     : OwnedBy<Context>(std::move(rhs))
-    , OwnedBy<DescriptorBufferLayout>(std::move(rhs))
+    , OwnedBy<Pipeline>(std::move(rhs))
   {
     std::swap(m_type, rhs.m_type);
     std::swap(m_arrayIndex, rhs.m_arrayIndex);
@@ -51,7 +51,7 @@ struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
     if (this != &rhs)
     {
       OwnedBy<Context>::operator=(std::move(rhs));
-      OwnedBy<DescriptorBufferLayout>::operator=(std::move(rhs));
+      OwnedBy<Pipeline>::operator=(std::move(rhs));
       std::swap(m_type, rhs.m_type);
       std::swap(m_arrayIndex, rhs.m_arrayIndex);
       std::swap(m_index, rhs.m_index);
@@ -64,6 +64,7 @@ struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
   uint32_t GetBinding() const noexcept { return m_index.binding; }
   uint32_t GetSet() const noexcept { return m_index.set; }
   virtual UpdateDescriptorTask CreateUpdateTask() const noexcept = 0;
+  virtual void Invalidate() = 0;
 
 protected:
   VkDescriptorType m_type;

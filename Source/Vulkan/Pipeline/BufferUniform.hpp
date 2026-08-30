@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Pipeline/BaseDescriptor.hpp>
 #include <Memory/BufferInterface.hpp>
+#include <Pipeline/BaseDescriptor.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 
 namespace RHI::vulkan
@@ -12,7 +12,7 @@ namespace RHI::vulkan
 struct BufferUniform final : public IBufferUniformDescriptor,
                              public details::BaseDescriptor
 {
-  explicit BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+  explicit BufferUniform(Context & ctx, Pipeline & pipeline, VkDescriptorType type,
                          LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~BufferUniform() override = default;
   BufferUniform(BufferUniform && rhs) noexcept;
@@ -39,7 +39,7 @@ public: // IResourceUser
   virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
 
 public: // IInvalidable interface
-  void Invalidate();
+  virtual void Invalidate() override;
   void SetInvalid();
 
 public: // public internal API

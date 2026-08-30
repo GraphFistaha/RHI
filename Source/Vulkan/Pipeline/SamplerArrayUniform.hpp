@@ -12,7 +12,7 @@ namespace RHI::vulkan
 struct SamplerArrayUniform final : public ISamplerArrayUniformDescriptor,
                                    public details::BaseDescriptor
 {
-  explicit SamplerArrayUniform(Context & ctx, DescriptorBufferLayout & owner, size_t size,
+  explicit SamplerArrayUniform(Context & ctx, Pipeline& pipeline, size_t size,
                                VkDescriptorType type, LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~SamplerArrayUniform() override;
   SamplerArrayUniform(SamplerArrayUniform && rhs) noexcept;
@@ -44,7 +44,7 @@ public: // ISamplerArrayUniformDescriptor interface
   virtual void AssignImage(uint32_t index, ITexture * image) override;
 
 public: // IInvalidable interface
-  void Invalidate();
+  virtual void Invalidate() override;
   void SetInvalid();
 
 public: // public internal API

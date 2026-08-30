@@ -12,7 +12,7 @@ namespace RHI::vulkan
 struct SamplerUniform final : public ISamplerUniformDescriptor,
                               public details::BaseDescriptor
 {
-  explicit SamplerUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+  explicit SamplerUniform(Context & ctx, Pipeline& pipeline, VkDescriptorType type,
                           LayoutIndex index, uint32_t arrayIndex = 0);
   virtual ~SamplerUniform() override;
   SamplerUniform(SamplerUniform && rhs) noexcept;
@@ -43,7 +43,7 @@ public: // IUniformDescriptor interface
   }
 
 public: // IInvalidable interface
-  void Invalidate();
+  virtual void Invalidate() override;
   void SetInvalid();
 
 public: // public internal API

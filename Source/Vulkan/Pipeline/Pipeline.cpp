@@ -1,8 +1,11 @@
 #include "Pipeline.hpp"
 
+#include <Pipeline/BufferUniform.hpp>
 #include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/InputAttachmentUniform.hpp>
 #include <Pipeline/PipelineProcess.hpp>
+#include <Pipeline/SamplerArrayUniform.hpp>
+#include <Pipeline/SamplerUniform.hpp>
 #include <RenderPass/Framebuffer.hpp>
 #include <RenderPass/RenderPass.hpp>
 #include <Utils/CastHelper.hpp>
@@ -13,7 +16,7 @@ namespace RHI::vulkan
 
 Pipeline::Pipeline(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_descriptorsLayout(ctx, *this)
+  , m_descriptorsLayout(ctx)
   , m_descriptorBuffer(ctx, m_descriptorsLayout)
 {
 }
@@ -49,10 +52,13 @@ void Pipeline::BindAttachment(uint32_t binding, ShaderAttachmentSlot slot,
       throw std::runtime_error(
         "Input attachments require valid layout index. Don't forget to declare this uniform in fragment shader");
     }
-    GetDescriptorBuffer().GetLayout().DeclareInputAttachmentUniform(
-      inputIndex, RHI::ShaderType::Fragment); // input attachments are fragment-shader-only feature
-    InputAttachmentUniform uniform(GetContext(), GetDescriptorBuffer().GetLayout(), inputIndex);
-    OnDescriptorChanged(uniform.CreateUpdateTask());
+    const VkDescriptorType type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    GetDescriptorsLayout()
+      .DeclareDescriptorsArray(inputIndex, type, RHI::ShaderType::Fragment,
+                               1); // input attachments are fragment-shader-only feature
+    auto uniform = std::make_unique<InputAttachmentUniform>(GetContext(), *this, inputIndex);
+    OnDescriptorChanged(uniform->CreateUpdateTask());
+    m_descriptors.push_back(std::move(uniform));
   }
 }
 
@@ -79,29 +85,42 @@ void Pipeline::AddInputAttribute(uint32_t binding, uint32_t location, uint32_t o
 IBufferUniformDescriptor * Pipeline::DeclareUniform(LayoutIndex index, ShaderType shaderStage)
 {
   IBufferUniformDescriptor * result = nullptr;
-  GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, 1, &result);
+  DeclareUniformsArray(index, shaderStage, 1, &result);
   return result;
 }
 
 ISamplerUniformDescriptor * Pipeline::DeclareSampler(LayoutIndex index, ShaderType shaderStage)
 {
   ISamplerUniformDescriptor * result = nullptr;
-  GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, 1, &result);
+  DeclareSamplersArray(index, shaderStage, 1, &result);
   return result;
 }
 
 void Pipeline::DeclareUniformsArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                     IBufferUniformDescriptor * outArray[])
 {
-  GetDescriptorsLayout().DeclareBufferUniformsArray(index, shaderStage, size, outArray);
+  constexpr VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  GetDescriptorsLayout().DeclareDescriptorsArray(index, type, shaderStage, size);
+  for (uint32_t i = 0; i < size; ++i)
+  {
+    auto && newDescriptor = std::make_unique<BufferUniform>(GetContext(), *this, type, index, i);
+    outArray[i] = newDescriptor.get();
+    m_descriptors.emplace_back(std::move(newDescriptor));
+  }
 }
 
 void Pipeline::DeclareSamplersArray(LayoutIndex index, ShaderType shaderStage, uint32_t size,
                                     ISamplerUniformDescriptor * outArray[])
 {
-  GetDescriptorsLayout().DeclareSamplerUniformsArray(index, shaderStage, size, outArray);
+  const VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  GetDescriptorsLayout().DeclareDescriptorsArray(index, type, shaderStage, size);
+  for (uint32_t i = 0; i < size; ++i)
+  {
+    auto descriptor = std::make_unique<SamplerUniform>(GetContext(), *this, type, index, i);
+    outArray[i] = descriptor.get();
+    m_descriptors.push_back(std::move(descriptor));
+  }
 }
-
 
 void Pipeline::DefinePushConstant(uint32_t size, ShaderType shaderStage)
 {
@@ -141,13 +160,15 @@ void Pipeline::RecordCommands(details::CommandBuffer & commands, VkPipelineBindP
 void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   // collect descriptors and uniforms
-  m_descriptorsLayout.CollectResources(resources);
+  for (auto && uniformPtr : m_descriptors)
+    uniformPtr->CollectResources(resources);
 }
 
 void Pipeline::SynchroniseResources(details::CommandBuffer & commands) const
 {
   // collect descriptors and uniforms
-  m_descriptorsLayout.SynchroniseResources(commands);
+  for (auto && uniformPtr : m_descriptors)
+    uniformPtr->SynchroniseResources(commands);
 }
 
 const PipelineAttachmentsUsage & Pipeline::GetAttachmentUsageInfo() const & noexcept
@@ -157,6 +178,8 @@ const PipelineAttachmentsUsage & Pipeline::GetAttachmentUsageInfo() const & noex
 
 void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassIndex)
 {
+  for (auto && uniformPtr : m_descriptors)
+    uniformPtr->Invalidate();
   m_descriptorsLayout.Invalidate();
   m_descriptorBuffer.Invalidate();
   if (m_invalidPipelineLayout || !m_pipelineLayout)

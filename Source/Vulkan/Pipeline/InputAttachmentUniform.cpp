@@ -1,17 +1,17 @@
 #include "InputAttachmentUniform.hpp"
 
-#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
-#include <Private/FastDynamicCast.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/Pipeline.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
-InputAttachmentUniform::InputAttachmentUniform(Context & ctx, DescriptorBufferLayout & owner,
+InputAttachmentUniform::InputAttachmentUniform(Context & ctx, Pipeline & pipeline,
                                                LayoutIndex index)
-  : BaseDescriptor(ctx, owner, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, index, 0)
+  : BaseDescriptor(ctx, pipeline, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, index, 0)
 {
 }
 

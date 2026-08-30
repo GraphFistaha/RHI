@@ -1,17 +1,17 @@
 #include "BufferUniform.hpp"
 
-#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Memory/Synchronizer.hpp>
-#include <Private/FastDynamicCast.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/Pipeline.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan
 {
-BufferUniform::BufferUniform(Context & ctx, DescriptorBufferLayout & owner, VkDescriptorType type,
+BufferUniform::BufferUniform(Context & ctx, Pipeline & pipeline, VkDescriptorType type,
                              LayoutIndex index, uint32_t arrayIndex)
-  : BaseDescriptor(ctx, owner, type, index, arrayIndex)
+  : BaseDescriptor(ctx, pipeline, type, index, arrayIndex)
   , IBufferUniformDescriptor()
 {
 }
@@ -61,7 +61,7 @@ void BufferUniform::AssignBuffer(IBufferGPU * buffer, size_t offset)
   Invalidate();
   m_buffer = FastDynamicCast<IInternalBuffer>(buffer);
   m_offset = offset;
-  GetLayout().GetSubpass().OnDescriptorChanged(CreateUpdateTask());
+  GetPipeline().OnDescriptorChanged(CreateUpdateTask());
 }
 
 bool BufferUniform::IsBufferAssigned() const noexcept

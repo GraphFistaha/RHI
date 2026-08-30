@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CommandsExecution/CommandBuffer.hpp>
+#include <Pipeline/BaseDescriptor.hpp>
 #include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/DescriptorsBuffer.hpp>
 #include <Pipeline/PipelineAttachmentsUsage.hpp>
@@ -89,6 +90,7 @@ private:
   DescriptorBuffer m_descriptorBuffer;
 
   PipelineAttachmentsUsage m_attachmentsStat;
+  std::vector<std::unique_ptr<details::BaseDescriptor>> m_descriptors;
 };
 
 } // namespace RHI::vulkan

@@ -10,7 +10,7 @@ namespace RHI::vulkan
 
 struct InputAttachmentUniform final : public details::BaseDescriptor
 {
-  explicit InputAttachmentUniform(Context & ctx, DescriptorBufferLayout & owner, LayoutIndex index);
+  explicit InputAttachmentUniform(Context & ctx, Pipeline& pipeline, LayoutIndex index);
   virtual ~InputAttachmentUniform() override = default;
 
 
@@ -21,7 +21,7 @@ public: // IResourceUser
   virtual void SynchroniseResources(details::CommandBuffer & commands) const override;
 
 public: // IInvalidable interface
-  void Invalidate();
+  virtual void Invalidate() override;
   void SetInvalid();
 };
 
