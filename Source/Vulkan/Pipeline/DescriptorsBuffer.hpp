@@ -5,48 +5,42 @@
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
-#include <Private/OwnedBy.hpp>
-#include <RHI.hpp>
-#include <Utils/DescriptorSetLayoutBuilder.hpp>
 #include <Pipeline/UpdateDescriptorTask.hpp>
-#include <vulkan/vulkan.hpp>
+#include <Private/OwnedBy.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
 struct Context;
 struct DescriptorBufferLayout;
-struct BufferUniform;
-struct SamplerUniform;
-struct SamplerArrayUniform;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
-struct DescriptorBuffer final : public RHI::OwnedBy<Context>,
-                                public OwnedBy<DescriptorBufferLayout>
+struct DescriptorBuffer final : public RHI::OwnedBy<Context>
 {
-  explicit DescriptorBuffer(Context & ctx, DescriptorBufferLayout & layout);
-  ~DescriptorBuffer();
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(DescriptorBufferLayout, GetLayout);
+  explicit DescriptorBuffer(Context & ctx);
+  virtual ~DescriptorBuffer() override;
   DescriptorBuffer(DescriptorBuffer && rhs) noexcept;
   DescriptorBuffer & operator=(DescriptorBuffer && rhs) noexcept;
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
-  void Invalidate();
+  void Invalidate(const DescriptorBufferLayout & layout);
 
   void UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcept;
 
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineLayout pipelineLayout,
-                           VkPipelineBindPoint bindPoint);
+                           VkPipelineBindPoint bindPoint) const;
 
 private:
-  std::mutex m_setsLock;
+  size_t m_cachedLayoutsHash = 0;
   VkDescriptorPool m_pool = VK_NULL_HANDLE;
   std::vector<VkDescriptorSet> m_sets;
-  std::vector<VkDescriptorSetLayout> m_cachedLayouts;
-  std::mutex m_updateDescriptorsLock;
-  std::vector<UpdateDescriptorTask> m_updateTasks;
+
+  //TODO: make it lock-free
+  mutable std::mutex m_updateDescriptorsLock;
+  mutable std::vector<UpdateDescriptorTask> m_updateTasks;
 };
 
 } // namespace RHI::vulkan

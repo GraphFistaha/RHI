@@ -25,6 +25,7 @@ PRIVATE
 	"Private/ObjectsTable.hpp"
 	"Private/FastDynamicCast.hpp"
 	"Private/Overload.hpp"
+	"Private/Hash.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})

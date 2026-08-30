@@ -23,6 +23,11 @@ VkPipelineLayout PipelineLayoutBuilder::Make(const VkDevice & device,
   return layout;
 }
 
+void PipelineLayoutBuilder::Reset()
+{
+  m_pushConstantRange = std::nullopt;
+}
+
 void PipelineLayoutBuilder::DeclarePushConstant(uint32_t size, ShaderType shaderStage)
 {
   VkPushConstantRange newPushConstantRange{};

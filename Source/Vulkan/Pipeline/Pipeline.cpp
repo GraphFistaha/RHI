@@ -17,7 +17,7 @@ namespace RHI::vulkan
 Pipeline::Pipeline(Context & ctx)
   : OwnedBy<Context>(ctx)
   , m_descriptorsLayout(ctx)
-  , m_descriptorBuffer(ctx, m_descriptorsLayout)
+  , m_descriptorBuffer(ctx)
 {
 }
 
@@ -150,7 +150,7 @@ void Pipeline::SetDepthFunc(CompareOperation op) noexcept
   m_invalidPipeline.notify_one();
 }
 
-void Pipeline::RecordCommands(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint)
+void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint) const
 {
   assert(!!m_pipeline);
   commands.PushCommand(vkCmdBindPipeline, bindPoint, m_pipeline);
@@ -180,13 +180,11 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
 {
   for (auto && uniformPtr : m_descriptors)
     uniformPtr->Invalidate();
-  m_descriptorsLayout.Invalidate();
-  m_descriptorBuffer.Invalidate();
+  m_descriptorBuffer.Invalidate(GetDescriptorsLayout());
   if (m_invalidPipelineLayout || !m_pipelineLayout)
   {
-    auto && layoutHandles = GetDescriptorsLayout().GetHandles();
-    auto new_layout =
-      m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(), layoutHandles);
+    auto new_layout = m_pipelineLayoutBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
+                                                   GetDescriptorsLayout().GetLayouts());
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pipelineLayout, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkPipelineLayout({}) has been rebuilt - {}",
                      static_cast<void *>(m_pipelineLayout), static_cast<void *>(new_layout));
@@ -213,7 +211,6 @@ void Pipeline::BuildAsGraphicPipeline(RenderPass & renderPass, uint32_t subpassI
 
 void Pipeline::SetInvalid()
 {
-  m_descriptorsLayout.SetInvalid();
   m_invalidPipeline = true;
   m_invalidPipeline.notify_one();
   m_invalidPipelineLayout = true;
@@ -221,7 +218,7 @@ void Pipeline::SetInvalid()
 
 void Pipeline::OnDescriptorChanged(UpdateDescriptorTask task) noexcept
 {
-  m_descriptorBuffer.UpdateDescriptor(task);
+  m_descriptorBuffer.UpdateDescriptor(std::move(task));
 }
 
 const DescriptorBufferLayout & Pipeline::GetDescriptorsLayout() const & noexcept

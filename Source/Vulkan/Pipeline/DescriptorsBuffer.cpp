@@ -4,11 +4,8 @@
 #include <array>
 #include <numeric>
 
-#include <Pipeline/BufferUniform.hpp>
-#include <Pipeline/DescriptorBufferLayout.hpp>
-#include <Pipeline/InputAttachmentUniform.hpp>
-#include <Pipeline/SamplerUniform.hpp>
 #include <Memory/BufferGPU.hpp>
+#include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -36,9 +33,8 @@ constexpr RHI::BufferGPUUsage DescriptorType2BufferUsage(VkDescriptorType type)
 namespace RHI::vulkan
 {
 
-DescriptorBuffer::DescriptorBuffer(Context & ctx, DescriptorBufferLayout & layout)
+DescriptorBuffer::DescriptorBuffer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<DescriptorBufferLayout>(layout)
 {
 }
 
@@ -49,11 +45,9 @@ DescriptorBuffer::~DescriptorBuffer()
 
 DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
   : OwnedBy<Context>(std::move(rhs))
-  , OwnedBy<DescriptorBufferLayout>(std::move(rhs))
 {
   std::swap(m_pool, rhs.m_pool);
   std::swap(m_sets, rhs.m_sets);
-  std::swap(m_cachedLayouts, rhs.m_cachedLayouts);
   std::swap(m_updateTasks, rhs.m_updateTasks);
 }
 
@@ -62,28 +56,25 @@ DescriptorBuffer & DescriptorBuffer::operator=(DescriptorBuffer && rhs) noexcept
   if (this != &rhs)
   {
     OwnedBy<Context>::operator=(std::move(rhs));
-    OwnedBy<DescriptorBufferLayout>::operator=(std::move(rhs));
     std::swap(m_pool, rhs.m_pool);
     std::swap(m_sets, rhs.m_sets);
-    std::swap(m_cachedLayouts, rhs.m_cachedLayouts);
     std::swap(m_updateTasks, rhs.m_updateTasks);
   }
   return *this;
 }
 
-void DescriptorBuffer::Invalidate()
+void DescriptorBuffer::Invalidate(const DescriptorBufferLayout & layout)
 {
-  if (m_cachedLayouts != GetLayout().GetHandles())
+  if (m_cachedLayoutsHash != layout.GetLayoutsHash())
   {
-    auto [newPool, newSets] = GetLayout().AllocDescriptorSets();
-    std::lock_guard lk{m_setsLock};
+    auto [newPool, newSets] = layout.AllocDescriptorSets();
     vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
                      "VkDescriptorPool({}) & Sets have been rebuilt - {}",
                      static_cast<void *>(m_pool), static_cast<void *>(newPool));
     m_pool = newPool;
     m_sets = std::move(newSets);
-    m_cachedLayouts = GetLayout().GetHandles();
+    m_cachedLayoutsHash = layout.GetLayoutsHash();
   }
 }
 
@@ -96,9 +87,8 @@ void DescriptorBuffer::UpdateDescriptor(UpdateDescriptorTask updateFunc) noexcep
 
 void DescriptorBuffer::BindToCommandBuffer(details::CommandBuffer & commands,
                                            VkPipelineLayout pipelineLayout,
-                                           VkPipelineBindPoint bindPoint)
+                                           VkPipelineBindPoint bindPoint) const
 {
-  std::lock_guard lk{m_setsLock};
   if (m_sets.empty())
     return;
 

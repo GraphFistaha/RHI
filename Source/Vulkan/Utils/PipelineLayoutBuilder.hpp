@@ -9,13 +9,13 @@ namespace RHI::vulkan::utils
 {
 struct PipelineLayoutBuilder final
 {
-  VkPipelineLayout Make(const VkDevice & device, std::span<const VkDescriptorSetLayout> layouts) const;
-  void Reset() { m_layouts.clear(); }
+  VkPipelineLayout Make(const VkDevice & device,
+                        std::span<const VkDescriptorSetLayout> layouts) const;
+  void Reset();
 
   void DeclarePushConstant(uint32_t size, ShaderType shaderStage);
 
 private:
   std::optional<VkPushConstantRange> m_pushConstantRange = std::nullopt;
-  std::vector<VkDescriptorSetLayout> m_layouts;
 };
 } // namespace RHI::vulkan::utils

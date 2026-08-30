@@ -5,12 +5,13 @@
 #include <numeric>
 
 #include <Pipeline/Pipeline.hpp>
+#include <Private/Hash.hpp>
 #include <VulkanContext.hpp>
 
 namespace RHI::vulkan::details
 {
 VkDescriptorPool CreateDescriptorPool(const Context & ctx,
-                                      const std::vector<VkDescriptorPoolSize> & poolSizes)
+                                      std::span<const VkDescriptorPoolSize> poolSizes)
 {
   VkDescriptorPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -61,32 +62,6 @@ DescriptorBufferLayout::~DescriptorBufferLayout()
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
 }
 
-void DescriptorBufferLayout::SetInvalid()
-{
-  for (auto layout : m_layouts)
-    GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
-  std::ranges::fill(m_layouts, nullptr);
-}
-
-void DescriptorBufferLayout::Invalidate()
-{
-  size_t setsCount = m_layouts.size();
-  assert(setsCount == m_builders.size());
-
-  for (size_t i = 0; i < setsCount; ++i)
-  {
-    if (!m_layouts[i])
-    {
-      auto newLayout = m_builders[i].Make(GetContext().GetGpuConnection().GetDevice());
-      GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layouts[i], nullptr);
-      GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
-                       "VkDescriptorSetLayout({}) has been rebuilt - {}",
-                       static_cast<void *>(m_layouts[i]), static_cast<void *>(newLayout));
-      m_layouts[i] = newLayout;
-    }
-  }
-}
-
 std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorBufferLayout::
   AllocDescriptorSets() const
 {
@@ -98,7 +73,12 @@ std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> DescriptorBufferLayout
   return {pool, std::move(sets)};
 }
 
-const std::vector<VkDescriptorSetLayout> & DescriptorBufferLayout::GetHandles() const & noexcept
+size_t DescriptorBufferLayout::GetLayoutsHash() const noexcept
+{
+  return m_layoutsHash;
+}
+
+std::span<const VkDescriptorSetLayout> DescriptorBufferLayout::GetLayouts() const noexcept
 {
   return m_layouts;
 }
@@ -110,10 +90,17 @@ void DescriptorBufferLayout::DeclareDescriptorsArray(const LayoutIndex & index,
   const uint32_t setIdx = index.set;
   while (m_layouts.size() <= setIdx)
     m_layouts.push_back(VK_NULL_HANDLE);
-  while (m_builders.size() <= setIdx)
-    m_builders.emplace_back();
+  VkDescriptorSetLayout newLayout = VK_NULL_HANDLE;
+  {
+    utils::DescriptorSetLayoutBuilder builder;
+    builder.DeclareDescriptorsArray(index.binding, type, shaderStage, size);
+    newLayout = builder.Make(GetContext().GetGpuConnection().GetDevice());
+  }
+  GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkDescriptorSetLayout has been created - {}",
+                   static_cast<void *>(newLayout));
+  m_layouts[setIdx] = newLayout;
+  RHI::utils::HashCombine(m_layoutsHash, newLayout);
 
-  m_builders[setIdx].DeclareDescriptorsArray(index.binding, type, shaderStage, size);
   auto it = std::ranges::find_if(m_poolSizes, [type](const VkDescriptorPoolSize & poolSize)
                                  { return poolSize.type == type; });
   if (it == m_poolSizes.end())

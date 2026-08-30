@@ -71,9 +71,10 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
     renderPassInfo.pClearValues = clearValues.data();
   }
 
-  commands.PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
-                       VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-  
+  commands
+    .PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
+                 VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+
   GetFramebuffer().ForEachAttachment(
     [it = m_cachedAttachments.begin()](IInternalAttachment * att) mutable
     {
@@ -89,7 +90,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   {
     for (size_t i = 0; auto && [pipeline, process] : m_subpasses)
     {
-      pipeline->RecordCommands(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
+      pipeline->BindToCommandBuffer(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
       process->RecordCommands(commands, *pipeline);
       if (i + 1 != m_subpasses.size())
         commands.PushCommand(vkCmdNextSubpass, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -98,7 +99,7 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   }
   else
   {
-    m_dummyPipeline->RecordCommands(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    m_dummyPipeline->BindToCommandBuffer(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
   }
 
   commands.PushCommand(vkCmdEndRenderPass);

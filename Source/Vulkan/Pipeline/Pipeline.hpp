@@ -57,7 +57,7 @@ public: // IPipeline interface
   virtual void SetDepthFunc(CompareOperation op) noexcept override;
 
 public: //ICommandWriter
-  void RecordCommands(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint);
+  void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint) const;
 
 public: // IResourceUser
   void CollectResources(std::vector<ResourcePtr> & resources) const;

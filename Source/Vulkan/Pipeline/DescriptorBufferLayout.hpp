@@ -26,19 +26,17 @@ struct DescriptorBufferLayout final : public OwnedBy<Context>
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
-  void SetInvalid();
-  void Invalidate();
   std::pair<VkDescriptorPool, std::vector<VkDescriptorSet>> AllocDescriptorSets() const;
 
-  const std::vector<VkDescriptorSetLayout> & GetHandles() const & noexcept;
+  size_t GetLayoutsHash() const noexcept;
+  std::span<const VkDescriptorSetLayout> GetLayouts() const noexcept;
 
-public:
   void DeclareDescriptorsArray(const LayoutIndex & index, VkDescriptorType type,
                                ShaderType shaderStage, uint32_t size);
 
 private:
+  size_t m_layoutsHash = 0;
   std::vector<VkDescriptorSetLayout> m_layouts;
-  std::vector<utils::DescriptorSetLayoutBuilder> m_builders;
   std::vector<VkDescriptorPoolSize> m_poolSizes;
 };
 
