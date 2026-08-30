@@ -1,6 +1,6 @@
 #pragma once
 
-#include <deque>
+#include <vector>
 #include <span>
 
 #include <CommandsExecution/CommandBuffer.hpp>
@@ -61,18 +61,12 @@ private:
                                ShaderType shaderStage, uint32_t size);
 
 private:
-  enum class ValidityFlag : uint8_t
-  {
-    Valid,
-    NotValid
-  };
-  using BufferUniforms = std::deque<BufferUniform>;
-  using SamplerUniforms = std::deque<SamplerUniform>;
-  using SamplerArrayUniforms = std::deque<SamplerArrayUniform>;
+  using BufferUniforms = std::vector<BufferUniform>;
+  using SamplerUniforms = std::vector<SamplerUniform>;
+  using SamplerArrayUniforms = std::vector<SamplerArrayUniform>;
 
   std::vector<VkDescriptorSetLayout> m_layouts;
   std::vector<utils::DescriptorSetLayoutBuilder> m_builders;
-  std::vector<ValidityFlag> m_invalidLayouts;
 
   BufferUniforms m_bufferUniformDescriptors;
   SamplerUniforms m_samplerDescriptors;

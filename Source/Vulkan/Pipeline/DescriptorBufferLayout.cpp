@@ -88,17 +88,19 @@ void DescriptorBufferLayout::SynchroniseResources(details::CommandBuffer & comma
 
 void DescriptorBufferLayout::SetInvalid()
 {
-  std::fill(m_invalidLayouts.begin(), m_invalidLayouts.end(), ValidityFlag::NotValid);
+  for (auto layout : m_layouts)
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(layout, nullptr);
+  std::ranges::fill(m_layouts, nullptr);
 }
 
 void DescriptorBufferLayout::Invalidate()
 {
   size_t setsCount = m_layouts.size();
-  assert(setsCount == m_invalidLayouts.size() && setsCount == m_builders.size());
+  assert(setsCount == m_builders.size());
 
   for (size_t i = 0; i < setsCount; ++i)
   {
-    if (m_invalidLayouts[i] == ValidityFlag::NotValid || !m_layouts[i])
+    if (!m_layouts[i])
     {
       auto newLayout = m_builders[i].Make(GetContext().GetGpuConnection().GetDevice());
       GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_layouts[i], nullptr);
@@ -106,7 +108,6 @@ void DescriptorBufferLayout::Invalidate()
                        "VkDescriptorSetLayout({}) has been rebuilt - {}",
                        static_cast<void *>(m_layouts[i]), static_cast<void *>(newLayout));
       m_layouts[i] = newLayout;
-      m_invalidLayouts[i] = ValidityFlag::Valid;
     }
   }
 
@@ -227,12 +228,9 @@ void DescriptorBufferLayout::DeclareDescriptorsArray(const LayoutIndex & index,
     m_layouts.push_back(VK_NULL_HANDLE);
   while (m_builders.size() <= setIdx)
     m_builders.emplace_back();
-  while (m_invalidLayouts.size() <= setIdx)
-    m_invalidLayouts.emplace_back(ValidityFlag::NotValid);
 
   m_builders[setIdx].DeclareDescriptorsArray(index.binding, type, shaderStage, size);
   m_setsInfo[type].emplace_back(index, size);
-  m_invalidLayouts[setIdx] = ValidityFlag::NotValid;
 }
 
 } // namespace RHI::vulkan
