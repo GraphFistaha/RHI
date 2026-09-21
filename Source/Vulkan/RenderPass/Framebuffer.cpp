@@ -3,6 +3,7 @@
 #include <format>
 
 #include <Attachments/SurfacedAttachment.hpp>
+#include <Private/Constants.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -129,12 +130,9 @@ RenderTarget * Framebuffer::BeginFrame()
   if (m_attachments.empty())
     return nullptr;
 
-  std::vector<VkImageView> renderingImages;
-  std::vector<VkSemaphore> semaphores;
-  std::vector<VkClearValue> clearValues;
-  renderingImages.reserve(m_attachments.size());
-  semaphores.reserve(m_attachments.size());
-  clearValues.reserve(m_attachments.size());
+  MultibufferVector<VkImageView> renderingImages;
+  MultibufferVector<VkSemaphore> semaphores;
+  MultibufferVector<VkClearValue> clearValues;
   bool success = true;
 
   for (auto * attachment : m_attachments)

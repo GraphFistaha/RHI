@@ -89,9 +89,9 @@ std::span<const VkSemaphore> RenderTarget::GetImageAvailableForRenderSemaphores(
   return m_imageAvailabilitySemaphores;
 }
 
-void RenderTarget::SetAttachments(std::vector<VkImageView> && views,
-                                  std::vector<VkClearValue> && clearValues,
-                                  std::vector<VkSemaphore> && imageSemaphores) noexcept
+void RenderTarget::SetAttachments(MultibufferVector<VkImageView> && views,
+                                  MultibufferVector<VkClearValue> && clearValues,
+                                  MultibufferVector<VkSemaphore> && imageSemaphores) noexcept
 {
   if (views != m_attachedImages)
     m_invalidFramebuffer = true;

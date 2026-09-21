@@ -26,6 +26,8 @@ PRIVATE
 	"Private/FastDynamicCast.hpp"
 	"Private/Overload.hpp"
 	"Private/Hash.hpp"
+	"Private/SmallVector.hpp"
+	"Private/Constants.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})

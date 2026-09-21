@@ -1,10 +1,11 @@
 #pragma once
 #include <list>
 
+#include <Private/Constants.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/FramebufferBuilder.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
@@ -34,8 +35,9 @@ public:
   std::span<const VkImageView> GetImageViews() const noexcept;
   std::span<const VkSemaphore> GetImageAvailableForRenderSemaphores() const noexcept;
 
-  void SetAttachments(std::vector<VkImageView> && views, std::vector<VkClearValue> && clearValues,
-                      std::vector<VkSemaphore> && semaphores) noexcept;
+  void SetAttachments(MultibufferVector<VkImageView> && views,
+                      MultibufferVector<VkClearValue> && clearValues,
+                      MultibufferVector<VkSemaphore> && semaphores) noexcept;
   void ClearAttachments() noexcept;
   size_t GetAttachmentsCount() const noexcept;
 
@@ -44,11 +46,11 @@ protected:
   /// cached size of all image attachments. ALl sizes of all images must be equal
   VkExtent3D m_extent;
   /// ImageViews
-  std::vector<VkImageView> m_attachedImages;
+  MultibufferVector<VkImageView> m_attachedImages;
   /// clear values for each attachment
-  std::vector<VkClearValue> m_clearValues;
+  MultibufferVector<VkClearValue> m_clearValues;
   /// wait for images are ready for rendering
-  std::vector<VkSemaphore> m_imageAvailabilitySemaphores;
+  MultibufferVector<VkSemaphore> m_imageAvailabilitySemaphores;
 
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
   bool m_invalidFramebuffer = false;
