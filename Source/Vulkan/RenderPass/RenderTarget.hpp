@@ -24,7 +24,7 @@ struct RenderTarget final : public OwnedBy<Context>
   RESTRICTED_COPY(RenderTarget);
 
 public:
-  void Invalidate();
+  void RebuildFramebuffer();
   void BindRenderPass(const VkRenderPass & renderPass) noexcept;
   void SetExtent(const VkExtent3D & extent) noexcept;
 
@@ -51,7 +51,6 @@ protected:
   std::vector<VkSemaphore> m_imageAvailabilitySemaphores;
 
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
-  utils::FramebufferBuilder m_builder;
   bool m_invalidFramebuffer = false;
 };
 

@@ -27,7 +27,6 @@ RenderTarget::RenderTarget(RenderTarget && rhs) noexcept
   std::swap(m_attachedImages, rhs.m_attachedImages);
   std::swap(m_extent, rhs.m_extent);
   std::swap(m_framebuffer, rhs.m_framebuffer);
-  std::swap(m_builder, rhs.m_builder);
   std::swap(m_invalidFramebuffer, rhs.m_invalidFramebuffer);
 }
 
@@ -40,23 +39,19 @@ RenderTarget & RenderTarget::operator=(RenderTarget && rhs) noexcept
     std::swap(m_attachedImages, rhs.m_attachedImages);
     std::swap(m_extent, rhs.m_extent);
     std::swap(m_framebuffer, rhs.m_framebuffer);
-    std::swap(m_builder, rhs.m_builder);
     std::swap(m_invalidFramebuffer, rhs.m_invalidFramebuffer);
   }
   return *this;
 }
 
-void RenderTarget::Invalidate()
+void RenderTarget::RebuildFramebuffer()
 {
   assert(m_boundRenderPass);
   if (m_invalidFramebuffer || !m_framebuffer)
   {
-    m_builder.Reset();
-    for (uint32_t i = 0; i < m_attachedImages.size(); ++i)
-      m_builder.BindAttachment(i, m_attachedImages[i]);
-
-    auto new_framebuffer =
-      m_builder.Make(GetContext().GetGpuConnection().GetDevice(), m_boundRenderPass, m_extent);
+    utils::FramebufferBuilder builder;
+    auto new_framebuffer = builder.Make(GetContext().GetGpuConnection().GetDevice(),
+                                        m_boundRenderPass, m_extent, m_attachedImages);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkFramebuffer({}) has been rebuilt - {}",
                      static_cast<void *>(m_framebuffer), static_cast<void *>(new_framebuffer));

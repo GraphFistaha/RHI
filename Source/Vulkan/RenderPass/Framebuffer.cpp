@@ -137,22 +137,23 @@ RenderTarget * Framebuffer::BeginFrame()
   clearValues.reserve(m_attachments.size());
   bool success = true;
 
-  auto processAttachment =
-    [&renderingImages, &semaphores, &clearValues, &success](IInternalAttachment * attachment)
+  for (auto * attachment : m_attachments)
   {
     if (attachment && success)
     {
       auto [imageView, imgAvailSemaphore] = attachment->AcquireForRendering();
       if (!imageView)
+      {
         success = false;
+        break;
+      }
       if (imgAvailSemaphore)
         semaphores.push_back(imgAvailSemaphore);
       renderingImages.push_back(imageView);
       clearValues.push_back(attachment->GetClearValue());
     }
-  };
+  }
 
-  std::for_each(m_attachments.begin(), m_attachments.end(), processAttachment);
   if (!success)
   {
     m_attachmentsChanged = true;
@@ -163,7 +164,7 @@ RenderTarget * Framebuffer::BeginFrame()
   //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
   m_targets[m_activeTarget].SetAttachments(std::move(renderingImages), std::move(clearValues),
                                            std::move(semaphores));
-  m_targets[m_activeTarget].Invalidate(); // rebuilds VkFramebuffer if need it
+  m_targets[m_activeTarget].RebuildFramebuffer(); // rebuilds VkFramebuffer if need it
   return &m_targets[m_activeTarget];
 }
 
