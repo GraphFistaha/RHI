@@ -15,11 +15,7 @@ namespace RHI::vulkan
 RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
   : OwnedBy<Context>(ctx)
   , OwnedBy<Framebuffer>(framebuffer)
-  , m_subpassGraph(new SubpassGraph())
-  , m_execBuffer(ctx, ctx.GetGpuConnection().GetQueue(QueueType::Graphics).first,
-                 VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-  , m_writeBuffer(ctx, ctx.GetGpuConnection().GetQueue(QueueType::Graphics).first,
-                  VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+  , m_subpassGraph()
   , m_dummyPipeline(new Pipeline(ctx))
 {
 }
@@ -54,7 +50,7 @@ void RenderPass::ClearSubpasses()
 void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget)
 {
   assert(m_renderPass);
-  assert(renderTarget.GetAttachmentsCount() == m_subpassGraph->GetCachedAttachments().size());
+  //assert(renderTarget.GetAttachmentsCount() == m_subpassGraph->GetCachedAttachments().size());
   m_activeRenderTarget = &renderTarget;
   VkFramebuffer buf = renderTarget.GetHandle();
   VkExtent3D extent = renderTarget.GetVkExtent();
@@ -141,31 +137,29 @@ void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
   }
 }
 
-void RenderPass::SetAttachments(uint32_t buffersCount,
-                                std::span<const VkAttachmentDescription> attachments) noexcept
-{
-  if (m_subpassGraph->SetAttachments(attachments))
-    m_invalidRenderPass = true;
-}
-
 void RenderPass::Invalidate()
 {
   bool rebuildSubpasses = false;
-  if (m_invalidRenderPass || !m_renderPass)
+  if (m_invalidRenderPass || !m_subpassGraph || !m_renderPass)
   {
-    std::vector<VkSubpassDescription> builtSubpasses;
-    std::vector<SubpassIndex> selfDependencedSubpasses;
-    builtSubpasses.reserve(m_subpasses.size());
-    selfDependencedSubpasses.reserve(m_subpasses.size());
-    for (uint32_t i = 0; auto && [pipeline, process] : m_subpasses)
+    std::unique_ptr<SubpassGraph> newGraph =
+      std::make_unique<SubpassGraph>(GetFramebuffer(), m_subpasses.size());
+
+    for (auto && [pipeline, process] : m_subpasses)
     {
-      builtSubpasses.push_back(
-        pipeline->GetAttachmentUsageInfo().BuildDescription(VK_PIPELINE_BIND_POINT_GRAPHICS));
+      auto subpassDescription =
+        pipeline->GetAttachmentUsageInfo().BuildDescription(VK_PIPELINE_BIND_POINT_GRAPHICS);
+      SubpassIndex index = newGraph->AddSubpass(subpassDescription);
       if (pipeline->RequireSynchronization() || process->RequireSynchronization())
-        selfDependencedSubpasses.push_back(static_cast<SubpassIndex>(i));
-      ++i;
+        newGraph->AddSelfDependency(index);
+      for (size_t i = 0; auto * att : GetFramebuffer().GetAttachments())
+      {
+        if (att && att->IsPresent())
+          newGraph->AddExternalDependency(att->GetSynchronizer().GetState(), index, i);
+        ++i;
+      }
     }
-    m_subpassGraph->BuildGraph(std::move(builtSubpasses), std::move(selfDependencedSubpasses));
+    m_subpassGraph = std::move(newGraph);
     auto new_renderpass =
       m_subpassGraph->MakeRenderPass(GetContext().GetGpuConnection().GetDevice());
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
@@ -191,7 +185,7 @@ void RenderPass::Invalidate()
 
 void RenderPass::SetInvalid()
 {
-  m_subpassGraph->ResetGraph();
+  m_subpassGraph.reset();
   m_invalidRenderPass = true;
   m_dirtyCommands = true;
 }

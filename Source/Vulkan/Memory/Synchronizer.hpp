@@ -16,7 +16,7 @@ struct Context;
 
 namespace RHI::vulkan
 {
-struct BarrierInfo final
+struct ResourceState final
 {
   VkPipelineStageFlags2 currentStage = VK_PIPELINE_STAGE_2_NONE;
   VkAccessFlagBits2 requiredAccess = VK_ACCESS_2_NONE;
@@ -38,19 +38,20 @@ struct Synchronizer final : public OwnedBy<Context>
 public:
   void ResetSynchronization();
 
+  // TODO: Rename to TransferState
   void RequireSynchronize(VkPipelineStageFlags2 currentStage, VkAccessFlagBits2 requiredAccess,
                           details::CommandBuffer & commands,
                           VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
-  VkImageLayout GetLayout() const noexcept;
+  const ResourceState & GetState() const & noexcept;
   /// @brief for external set of layout (f.e. in renderPass begin/end)
-  void ExternalSynchronization(const BarrierInfo & barrier) noexcept;
+  void ExternalSynchronization(const ResourceState & barrier) noexcept;
 
 private:
   VkImage m_image = VK_NULL_HANDLE;   ///< synchronizable image
   VkBuffer m_buffer = VK_NULL_HANDLE; ///< synchronizable buffer
 
   mutable std::mutex m_syncMutex;
-  BarrierInfo m_prevBarrier;
+  ResourceState m_prevBarrier;
 };
 } // namespace RHI::vulkan::details

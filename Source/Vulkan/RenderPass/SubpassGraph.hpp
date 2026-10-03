@@ -2,13 +2,16 @@
 #include <vector>
 
 #include <Memory/Synchronizer.hpp>
+#include <Private/OwnedBy.hpp>
+#include <Private/Table2D.hpp>
 #include <RHI.hpp>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
 {
 struct IInternalAttachment;
-}
+struct Framebuffer;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
@@ -25,37 +28,52 @@ enum class SubpassIndex : int32_t
   //...
 };
 
-struct SubpassGraph final
+struct SubpassGraph final : public OwnedBy<Framebuffer>
 {
-  /// @brief caches attachments to state
-  /// @return true if attachments really changed and state has changed too
-  bool SetAttachments(std::span<const VkAttachmentDescription> attachments);
+  explicit SubpassGraph(Framebuffer & framebuffer, size_t requiredSubpasses);
+  virtual ~SubpassGraph() override = default;
+  MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
 
-  /// @brief set subpasses info to state
-  /// @param subpasses - array of built subpass description
-  /// @param selfDependencies - indices in subpasses array. Declares subpasses which should have self-dependency
-  ///                           note: if your subpass uses vkCmdPipelineBarrier, you must add at least one self-dependency
-  void BuildGraph(std::vector<VkSubpassDescription> && subpasses,
-                  std::vector<SubpassIndex> && selfDependencies);
-  void ResetGraph();
+public:
+  /// @brief add subpass description to graph (the same as to add vertex to graph)
+  /// @param subpass - description of subpass
+  /// @return - index of subpass
+  SubpassIndex AddSubpass(const VkSubpassDescription & subpass);
+
+  /// @brief you must add external dependency when attachment is changed outside of RenderPass.
+  /// For example: when you call vkAcquireNextImageKHR you should synchronize render pass with that external operation
+  /// You do it with external dependency
+  /// @param externalState - the state of attachment after external operation completed
+  /// @param subpass - index of subpass that should wait for the external operation
+  /// @param attachmentIdx - attachment index has been changed
+  void AddExternalDependency(const ResourceState & externalState, SubpassIndex subpass,
+                             uint32_t attachmentIdx);
+
+  /// @brief You must add self-dependency when subpass must have PipelineBarriers
+  /// @param subpass - index of subpass which has Pipeline barriers
+  void AddSelfDependency(SubpassIndex subpass);
 
   VkRenderPass MakeRenderPass(const VkDevice & device) const;
 
   void SynchronizeAttachmentsDuringRenderPass(SubpassIndex subpassIndex,
-                                              std::span<IInternalAttachment *> attachments);
-  std::span<const VkAttachmentDescription> GetCachedAttachments() const noexcept;
+                                              std::span<IInternalAttachment *> attachments) const;
+
 
 private:
+  /// description of subpass. A vertex of the graph
   std::vector<VkSubpassDescription> m_subpassDescriptions;
-  std::vector<VkAttachmentDescription> m_attachments;
+  /// cached info about attachments
+  std::vector<VkAttachmentDescription> m_attachmentsDescription;
+  /// transfers from one subpass to another. The edge of vertex
   std::vector<VkSubpassDependency> m_dependenciesGraph;
-  std::vector<BarrierInfo> m_attachmentsUsageTable; // table subpassIdx*AttachmentIdx
+  /// a table with subpassCount rows and attachmentsCount columns
+  /// it describes barrier, the attachment should sync into, to enter in subpassIdx
+  RHI::utils::Table2D<ResourceState> m_attachmentsUsageTable;
+
+  std::vector<ResourceState> m_prevState; ///< prev state of each attachment
 
 private:
   size_t GetBarrierRowIndex(SubpassIndex idx) const noexcept;
-  std::span<const BarrierInfo> GetBarriersRow(SubpassIndex idx) const noexcept;
-  std::span<BarrierInfo> GetBarriersRow(SubpassIndex idx) noexcept;
-  void BuildSubpassGraph();
   void BuildDependencyGraph(std::span<SubpassIndex> selfDependencies);
 };
 } // namespace RHI::vulkan

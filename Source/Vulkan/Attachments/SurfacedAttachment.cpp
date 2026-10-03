@@ -69,17 +69,19 @@ void SurfacedAttachment::SetClearValue(float depth, uint32_t stencil)
 
 VkImageView SurfacedAttachment::GetImageView() const noexcept
 {
-  return m_imageViews[m_activeImage];
+  return m_activeImage == g_InvalidImageIndex ? VK_NULL_HANDLE : m_imageViews[m_activeImage];
 }
 
 VkImageLayout SurfacedAttachment::GetLayout() const noexcept
 {
-  return m_synchronizers[m_activeImage].GetLayout();
+  return m_activeImage == g_InvalidImageIndex
+         ? VK_IMAGE_LAYOUT_UNDEFINED
+         : m_synchronizers[m_activeImage].GetState().requiredLayout;
 }
 
 VkImage SurfacedAttachment::GetHandle() const noexcept
 {
-  return m_images[m_activeImage];
+  return m_activeImage == g_InvalidImageIndex ? VK_NULL_HANDLE : m_images[m_activeImage];
 }
 
 VkFormat SurfacedAttachment::GetInternalFormat() const noexcept
@@ -232,22 +234,6 @@ RHI::SamplesCount SurfacedAttachment::GetSamplesCount() const noexcept
   return g_samplesCount;
 }
 
-VkAttachmentDescription SurfacedAttachment::BuildDescription() const noexcept
-{
-  VkAttachmentDescription description{};
-  {
-    description.format = GetInternalFormat();
-    description.samples = utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(g_samplesCount);
-    description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    description.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-  }
-  return description;
-}
-
 void SurfacedAttachment::Resize(const VkExtent2D & new_extent) noexcept
 {
   // do nothing because resizing handled in AcquireForRend
@@ -256,7 +242,7 @@ void SurfacedAttachment::Resize(const VkExtent2D & new_extent) noexcept
 
 details::Synchronizer & SurfacedAttachment::GetSynchronizer() & noexcept
 {
-  return m_synchronizers[m_activeImage];
+  return m_activeImage == g_InvalidImageIndex ? m_synchronizers[0] : m_synchronizers[m_activeImage];
 }
 
 // ---------------------------- Private -----------------

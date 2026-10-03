@@ -8,32 +8,6 @@
 namespace
 {
 
-constexpr VkImageLayout MakeAttachmentInitialLayout(RHI::ImageFormat format)
-{
-  return VK_IMAGE_LAYOUT_UNDEFINED;
-}
-
-constexpr VkImageLayout MakeAttachmentFinalLayout(RHI::ImageFormat format)
-{
-  switch (format)
-  {
-    case RHI::ImageFormat::A8:
-    case RHI::ImageFormat::R8:
-    case RHI::ImageFormat::RG8:
-    case RHI::ImageFormat::RGB8:
-    case RHI::ImageFormat::RGBA8:
-    case RHI::ImageFormat::BGR8:
-    case RHI::ImageFormat::BGRA8:
-      return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case RHI::ImageFormat::DEPTH:
-      return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    case RHI::ImageFormat::DEPTH_STENCIL:
-      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    default:
-      return VK_IMAGE_LAYOUT_UNDEFINED;
-  }
-}
-
 constexpr VkImageAspectFlags CalcImageAspectByFormat(RHI::ImageFormat format)
 {
   switch (format)
@@ -55,28 +29,7 @@ constexpr VkImageAspectFlags CalcImageAspectByFormat(RHI::ImageFormat format)
   }
 }
 
-VkAttachmentDescription BuildAttachmentDescription(const RHI::TextureDescription & description,
-                                                   RHI::SamplesCount samplesCount) noexcept
-{
-  VkAttachmentDescription attachmentDescription{};
-  {
-    attachmentDescription.format =
-      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkFormat>(description.format);
-    attachmentDescription.samples =
-      RHI::vulkan::utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(samplesCount);
-    attachmentDescription.initialLayout = MakeAttachmentInitialLayout(description.format);
-    attachmentDescription.finalLayout = MakeAttachmentFinalLayout(description.format);
-    attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.storeOp = samplesCount == RHI::SamplesCount::One
-                                    ? VK_ATTACHMENT_STORE_OP_STORE
-                                    : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.stencilStoreOp = samplesCount == RHI::SamplesCount::One
-                                           ? VK_ATTACHMENT_STORE_OP_STORE
-                                           : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  }
-  return attachmentDescription;
-}
+
 } // namespace
 
 namespace RHI::vulkan
@@ -143,17 +96,19 @@ TextureDescription GenericAttachment::GetDescription() const noexcept
 
 VkImageView GenericAttachment::GetImageView() const noexcept
 {
-  return m_views[m_activeImage];
+  return m_activeImage == g_InvalidImageIndex ? VK_NULL_HANDLE : m_views[m_activeImage];
 }
 
 VkImageLayout GenericAttachment::GetLayout() const noexcept
 {
-  return m_synchronizers[m_activeImage].GetLayout();
+  return m_activeImage == g_InvalidImageIndex
+         ? VK_IMAGE_LAYOUT_UNDEFINED
+         : m_synchronizers[m_activeImage].GetState().requiredLayout;
 }
 
 VkImage GenericAttachment::GetHandle() const noexcept
 {
-  return m_images[m_activeImage].GetImage();
+  return m_activeImage == g_InvalidImageIndex ? VK_NULL_HANDLE : m_images[m_activeImage].GetImage();
 }
 
 VkFormat GenericAttachment::GetInternalFormat() const noexcept
@@ -189,7 +144,7 @@ VkImageViewType GenericAttachment::GetImageViewType() const noexcept
 
 details::Synchronizer & GenericAttachment::GetSynchronizer() & noexcept
 {
-  return m_synchronizers[m_activeImage];
+  return m_activeImage == g_InvalidImageIndex ? m_synchronizers[0] : m_synchronizers[m_activeImage];
 }
 
 //-------------------- IAttachment interface --------------------
@@ -259,12 +214,6 @@ uint32_t GenericAttachment::GetBuffering() const noexcept
 RHI::SamplesCount GenericAttachment::GetSamplesCount() const noexcept
 {
   return m_samplesCount;
-}
-
-VkAttachmentDescription GenericAttachment::BuildDescription() const noexcept
-{
-  assert(!m_changedMSAA && !m_changedSize && !m_changedImagesCount);
-  return BuildAttachmentDescription(m_description, m_samplesCount);
 }
 
 void GenericAttachment::Resize(const VkExtent2D & new_extent) noexcept

@@ -45,7 +45,7 @@ public: // IResourceUser
 
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
-  void Invalidate();
+  void Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp);
   /// begins rendering
   RenderTarget * BeginFrame();
   /// finish rendering
@@ -55,6 +55,7 @@ public: // RHI-only API
   std::span<IInternalAttachment *> GetAttachments() noexcept;
   IInternalAttachment * GetAttachment(uint32_t idx) const;
   RHI::SamplesCount CalcSamplesCount() const noexcept;
+  std::span<const VkAttachmentDescription> GetAttachementsDescription() const noexcept;
 
 protected:
   RenderPass m_renderPass;

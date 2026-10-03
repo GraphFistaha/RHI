@@ -1,7 +1,7 @@
 #pragma once
 
-#include <RHI.hpp>
 #include <Private/Types.hpp>
+#include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::vulkan::utils
@@ -135,6 +135,39 @@ constexpr inline VkVertexInputRate CastInterfaceEnum2Vulkan<
       return VK_VERTEX_INPUT_RATE_INSTANCE;
     default:
       throw std::runtime_error("Failed to cast InputBindingType to vulkan enum");
+  }
+}
+
+template<>
+constexpr inline VkAttachmentLoadOp CastInterfaceEnum2Vulkan<
+  VkAttachmentLoadOp, RHI::AttachmentsContentOperation>(AttachmentsContentOperation op)
+{
+  switch (op)
+  {
+    case RHI::AttachmentsContentOperation::Clear:
+      return VK_ATTACHMENT_LOAD_OP_CLEAR;
+    case RHI::AttachmentsContentOperation::Store:
+      return VK_ATTACHMENT_LOAD_OP_LOAD;
+    case RHI::AttachmentsContentOperation::DontCare:
+      return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    default:
+      return VK_ATTACHMENT_LOAD_OP_NONE;
+  }
+}
+
+template<>
+constexpr inline VkAttachmentStoreOp CastInterfaceEnum2Vulkan<
+  VkAttachmentStoreOp, RHI::AttachmentsContentOperation>(AttachmentsContentOperation op)
+{
+  switch (op)
+  {
+    case RHI::AttachmentsContentOperation::Store:
+      return VK_ATTACHMENT_STORE_OP_STORE;
+    case RHI::AttachmentsContentOperation::DontCare:
+      return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    case RHI::AttachmentsContentOperation::Clear:
+    default:
+      return VK_ATTACHMENT_STORE_OP_NONE;
   }
 }
 

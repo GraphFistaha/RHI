@@ -67,7 +67,7 @@ VkImageView Texture::GetImageView() const noexcept
 
 VkImageLayout Texture::GetLayout() const noexcept
 {
-  return m_synchronizer.GetLayout();
+  return m_synchronizer.GetState().requiredLayout;
 }
 
 VkImage Texture::GetHandle() const noexcept

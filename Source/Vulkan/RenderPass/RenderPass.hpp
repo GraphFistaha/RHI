@@ -32,9 +32,6 @@ public:
   void SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process);
   void ClearSubpasses();
 
-  void SetAttachments(uint32_t buffersCount,
-                      std::span<const VkAttachmentDescription> attachments) noexcept;
-
 public: // IInvalidable Interface
   virtual void Invalidate() override;
   virtual void SetInvalid() override;
@@ -51,18 +48,17 @@ public: // IResourceUser
 
 private:
   const RenderTarget * m_activeRenderTarget = nullptr;
-  std::unique_ptr<SubpassGraph> m_subpassGraph = nullptr;
   /// There is a lot of thread-readers, so it's must be synchronized access
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
   bool m_invalidRenderPass = false;
-  details::CommandBuffer m_writeBuffer;
-  details::CommandBuffer m_execBuffer;
 
   using Subpass = std::pair<std::shared_ptr<Pipeline>, std::shared_ptr<PipelineProcess>>;
   std::vector<Subpass> m_subpasses;
   bool m_dirtyCommands = false;
-
   std::unique_ptr<Pipeline> m_dummyPipeline; ///< fummy pipeline is used when no subpasses was added
+
+private: // subpass graph data
+  std::unique_ptr<SubpassGraph> m_subpassGraph = nullptr;
 };
 
 

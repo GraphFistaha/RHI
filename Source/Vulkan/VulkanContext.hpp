@@ -38,8 +38,10 @@ public: // IContext interface
   // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
   virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) override;
-  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
-                                  std::span<const IAwaitable *> commandsToWait = {}) override;
+  virtual IAwaitable * RenderPass(
+    IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait = {},
+    AttachmentsContentOperation beforePassOp = AttachmentsContentOperation::Clear,
+    AttachmentsContentOperation afterPassOp = AttachmentsContentOperation::DontCare) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;

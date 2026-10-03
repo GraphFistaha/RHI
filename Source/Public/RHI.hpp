@@ -196,6 +196,14 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
+/// @brief describes what is gonna happend with attachment's content in render pass
+enum class AttachmentsContentOperation : uint8_t
+{
+  DontCare, ///< content is not important
+  Store,    ///< content will be saved
+  Clear,    ///< content will be cleared
+};
+
 
 //----------------- Images ---------------------
 
@@ -288,6 +296,11 @@ using PipelinePtr = std::shared_ptr<IPipeline>;
 struct IFramebuffer
 {
   virtual ~IFramebuffer() = default;
+  /// @brief binds attachment to render pass
+  /// @param binding - index of binding
+  /// @param attachment - attachent's pointer
+  /// @param beforeRenderPassOp - what is gonna happend with attachment's content before render pass
+  /// @param afterRenderPassOp - what is gonna happend with attachment's content after render pass
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
   virtual RHI::TexelIndex GetExtent() const = 0;
@@ -355,8 +368,10 @@ struct IContext
 
   virtual void ClearResources() = 0;
   virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) = 0;
-  virtual IAwaitable * RenderPass(IFramebuffer * framebuffer,
-                                  std::span<const IAwaitable *> commandsToWait = {}) = 0;
+  virtual IAwaitable * RenderPass(
+    IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait = {},
+    AttachmentsContentOperation beforePassOp = AttachmentsContentOperation::Clear,
+    AttachmentsContentOperation afterPassOp = AttachmentsContentOperation::DontCare) = 0;
 
   virtual PipelinePtr CreatePipeline() = 0;
   virtual PipelineProcessPtr CreateProcess() = 0;

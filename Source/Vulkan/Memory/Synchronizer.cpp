@@ -175,7 +175,7 @@ void Synchronizer::RequireSynchronize(VkPipelineStageFlags2 currentStage,
                                       VkImageLayout requiredLayout /* = VK_IMAGE_LAYOUT_UNDEFINED*/)
 {
   assert(!m_image || requiredLayout != VK_IMAGE_LAYOUT_UNDEFINED);
-  BarrierInfo barrierInfo{};
+  ResourceState barrierInfo{};
   barrierInfo.currentStage = currentStage;
   barrierInfo.requiredAccess = requiredAccess;
   barrierInfo.requiredLayout = requiredLayout;
@@ -280,14 +280,13 @@ void Synchronizer::RequireSynchronize(VkPipelineStageFlags2 currentStage,
   m_prevBarrier = barrierInfo;
 }
 
-
-VkImageLayout Synchronizer::GetLayout() const noexcept
+const ResourceState & Synchronizer::GetState() const & noexcept
 {
   std::lock_guard lk{m_syncMutex};
-  return m_prevBarrier.requiredLayout;
+  return m_prevBarrier;
 }
 
-void Synchronizer::ExternalSynchronization(const BarrierInfo & barrier) noexcept
+void Synchronizer::ExternalSynchronization(const ResourceState & barrier) noexcept
 {
   std::lock_guard lk{m_syncMutex};
   m_prevBarrier = barrier;

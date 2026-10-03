@@ -14,6 +14,7 @@
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>
+#include <Utils/CastHelper.hpp>
 
 // --------------------- Static functions ------------------------------
 namespace RHI::vulkan
@@ -184,13 +185,16 @@ IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait 
   return result;
 }
 
-IAwaitable * Context::RenderPass(IFramebuffer * framebuffer,
-                                 std::span<const IAwaitable *> commandsToWait /* = {}*/)
+IAwaitable * Context::RenderPass(
+  IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait /* = {}*/,
+  AttachmentsContentOperation beforePassOp /* = AttachmentsContentOperation::Clear*/,
+  AttachmentsContentOperation afterPassOp /* = AttachmentsContentOperation::DontCare*/)
 {
   auto * fbo = FastDynamicCast<Framebuffer>(framebuffer);
   if (!fbo)
     return nullptr;
-  fbo->Invalidate();
+  fbo->Invalidate(utils::CastInterfaceEnum2Vulkan<VkAttachmentLoadOp>(beforePassOp),
+                  utils::CastInterfaceEnum2Vulkan<VkAttachmentStoreOp>(afterPassOp));
   SubmitTask * result = nullptr;
   m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
   std::vector<VkSemaphore> waitSemaphores;

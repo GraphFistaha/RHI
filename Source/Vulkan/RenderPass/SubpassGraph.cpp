@@ -6,9 +6,10 @@
 #include <span>
 
 #include <Attachments/Attachment.hpp>
+#include <RenderPass/Framebuffer.hpp>
 
 /// @brief Compare operator for VkAttachmentDescription
-static inline bool operator==(const VkAttachmentDescription & lhs,
+static bool operator==(const VkAttachmentDescription & lhs,
                               const VkAttachmentDescription & rhs) noexcept
 {
   return std::memcmp(&lhs, &rhs, sizeof(VkAttachmentDescription)) == 0;
@@ -16,82 +17,62 @@ static inline bool operator==(const VkAttachmentDescription & lhs,
 
 namespace
 {
-RHI::vulkan::BarrierInfo CalcAttachmentBarrier(const RHI::vulkan::BarrierInfo & prevBarrier,
-                                               VkImageLayout newLayout) noexcept
+RHI::vulkan::ResourceState CalcAttachmentBarrier(const RHI::vulkan::ResourceState & prevBarrier,
+                                                 VkImageLayout newLayout) noexcept
 {
   VkPipelineStageFlags2 stage = 0;
   VkAccessFlags2 access = 0;
 
   switch (newLayout)
   {
-    case VK_IMAGE_LAYOUT_UNDEFINED:
-      // Should not transition to undefined in a dependency
-      stage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-      access = 0;
-      break;
-
+    // Color-output
     case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-      access = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+      stage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+      access = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
       break;
 
+    // Depth-stencil output
     case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
     case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
     case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-      access = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-               VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+      stage = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+              VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+      access = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+               VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
       break;
 
+    // depth-stencil input
     case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
     case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
     case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-      access = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+      stage = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+              VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+      access = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
       break;
 
+    // input
     case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-      access = VK_ACCESS_SHADER_READ_BIT;
+      stage = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+              VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+      access = VK_ACCESS_2_SHADER_READ_BIT;
       break;
 
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-      access = VK_ACCESS_TRANSFER_READ_BIT;
-      break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-      stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-      access = VK_ACCESS_TRANSFER_WRITE_BIT;
+    case VK_IMAGE_LAYOUT_UNDEFINED:       // Should not transition to undefined in a dependency
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: // present output
+      stage = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+      access = VK_ACCESS_2_NONE; // Present doesn't write to the image
       break;
 
     case VK_IMAGE_LAYOUT_GENERAL:
-      // General layout could be used for many purposes, include common stages
-      stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-      access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-      break;
-
-    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
-      stage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-      access = 0; // Present doesn't write to the image
-      break;
-
-      //case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_READ_ONLY_OPTIMAL:
-      //    stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-      //    access = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-      //    break;
-
     default:
       // Conservative fallback for unknown layouts
-      stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-      access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+      // General layout could be used for many purposes, include common stages
+      stage = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+      access = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
       break;
   }
 
-  return RHI::vulkan::BarrierInfo{stage, access, newLayout};
+  return RHI::vulkan::ResourceState{stage, access, newLayout};
 }
 
 bool IsFramebufferSpaceStage(VkPipelineStageFlags stage) noexcept
@@ -102,51 +83,117 @@ bool IsFramebufferSpaceStage(VkPipelineStageFlags stage) noexcept
   return static_cast<bool>(stage & framebufferStages);
 }
 
-std::array<std::span<const VkAttachmentReference>, 3> ExtractSubpassAttachments(
+std::array<std::span<const VkAttachmentReference>, 4> ExtractSubpassAttachments(
   const VkSubpassDescription & description) noexcept
 {
-  return {std::span<const VkAttachmentReference>(description.pColorAttachments,
-                                                 description.colorAttachmentCount),
-          std::span<const VkAttachmentReference>(description.pDepthStencilAttachment,
-                                                 description.pDepthStencilAttachment ? 1 : 0),
-          std::span<const VkAttachmentReference>(description.pInputAttachments,
-                                                 description.inputAttachmentCount)};
+  using Span = std::span<const VkAttachmentReference>;
+  return {Span(description.pColorAttachments, description.colorAttachmentCount),
+          description.pDepthStencilAttachment ? Span(description.pDepthStencilAttachment, 1)
+                                              : Span(),
+          Span(description.pInputAttachments, description.inputAttachmentCount),
+          Span(description.pResolveAttachments, description.colorAttachmentCount)};
 }
 
 } // namespace
 
 namespace RHI::vulkan
 {
-
-bool SubpassGraph::SetAttachments(std::span<const VkAttachmentDescription> attachments)
+SubpassGraph::SubpassGraph(Framebuffer & framebuffer, size_t requiredSubpasses)
+  : OwnedBy<Framebuffer>(framebuffer)
+  // +2 because of the table contains info about initialRenderPass and finalRenderPass
+  , m_attachmentsUsageTable(requiredSubpasses + 2, framebuffer.GetAttachments().size())
 {
-  if (!std::ranges::equal(m_attachments, attachments))
+  auto descr = framebuffer.GetAttachementsDescription();
+  m_attachmentsDescription.assign(descr.begin(), descr.end());
+  auto && attachments = framebuffer.GetAttachments();
+
+  m_subpassDescriptions.reserve(requiredSubpasses);
+  auto firstRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::initialRenderPass)];
+  auto lastRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::finalRenderPass)];
+
+  // fill initial and final stages
+  for (size_t i = 0; i < m_attachmentsDescription.size(); ++i)
   {
-    m_attachments.assign(attachments.begin(), attachments.end());
-    m_attachmentsUsageTable.clear();
-    return true;
+    // initial barrier for each attachment
+    firstRow[i] = ResourceState{VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                m_attachmentsDescription[i].initialLayout};
+    // final barrier for each attachment
+    lastRow[i] = ResourceState{VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                               m_attachmentsDescription[i].finalLayout};
   }
-  return false;
+
+  m_prevState.assign(firstRow.begin(), firstRow.end());
 }
 
-void SubpassGraph::BuildGraph(std::vector<VkSubpassDescription> && subpasses,
-                              std::vector<SubpassIndex> && selfDependencies)
+SubpassIndex SubpassGraph::AddSubpass(const VkSubpassDescription & subpass)
 {
-  m_subpassDescriptions = std::move(subpasses);
-  BuildSubpassGraph();
-  BuildDependencyGraph(selfDependencies);
+  auto processAttachments = [this](std::span<const VkAttachmentReference> refs, SubpassIndex index)
+  {
+    auto row = m_attachmentsUsageTable[GetBarrierRowIndex(index)];
+    for (VkAttachmentReference ref : refs)
+    {
+      auto * attachment = GetFramebuffer().GetAttachment(ref.attachment);
+      row[ref.attachment] = CalcAttachmentBarrier(m_prevState[ref.attachment], ref.layout);
+      m_prevState[ref.attachment] = row[ref.attachment];
+    }
+  };
+
+  SubpassIndex index = static_cast<SubpassIndex>(m_subpassDescriptions.size());
+  m_subpassDescriptions.push_back(subpass);
+
+  { // calc row in m_attachmentsUsageTable
+    auto [colorAttachments, dsAttachments, inputAttachments, resolveAttachments] =
+      ExtractSubpassAttachments(subpass);
+    processAttachments(inputAttachments, index);
+    processAttachments(colorAttachments, index);
+    processAttachments(resolveAttachments, index);
+    processAttachments(dsAttachments, index);
+  }
+
+  return index;
+}
+
+void SubpassGraph::AddExternalDependency(const ResourceState & externalState, SubpassIndex subpass,
+                                         uint32_t attachmentIdx)
+{
+  VkSubpassDependency dependency{};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = static_cast<uint32_t>(subpass);
+  dependency.srcStageMask = externalState.currentStage;
+  dependency.srcAccessMask = externalState.requiredAccess;
+  auto requiredLayout =
+    m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
+  ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
+  dependency.dstStageMask = newBarrier.currentStage;
+  dependency.dstAccessMask = newBarrier.requiredAccess;
+  m_dependenciesGraph.push_back(dependency);
+}
+
+void SubpassGraph::AddSelfDependency(SubpassIndex subpass)
+{
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = static_cast<uint32_t>(subpass);
+    dependency.dstSubpass = static_cast<uint32_t>(subpass);
+    /*dependency.srcStageMask = externalState.currentStage;
+    dependency.srcAccessMask = externalState.requiredAccess;
+    auto requiredLayout =
+        m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
+    ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
+    dependency.dstStageMask = newBarrier.currentStage;
+    dependency.dstAccessMask = newBarrier.requiredAccess;
+    m_dependenciesGraph.push_back(dependency);*/
 }
 
 VkRenderPass SubpassGraph::MakeRenderPass(const VkDevice & device) const
 {
-  if (m_subpassDescriptions.empty() || m_attachments.empty())
+  if (m_subpassDescriptions.empty())
     return VK_NULL_HANDLE;
 
   VkRenderPass renderPass = VK_NULL_HANDLE;
   VkRenderPassCreateInfo renderPassCreateInfo{};
   renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
-  renderPassCreateInfo.pAttachments = m_attachments.data();
+  renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachmentsDescription.size());
+  renderPassCreateInfo.pAttachments = m_attachmentsDescription.data();
   renderPassCreateInfo.subpassCount = static_cast<uint32_t>(m_subpassDescriptions.size());
   renderPassCreateInfo.pSubpasses = m_subpassDescriptions.data();
   renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(m_dependenciesGraph.size());
@@ -159,18 +206,10 @@ VkRenderPass SubpassGraph::MakeRenderPass(const VkDevice & device) const
   return renderPass;
 }
 
-void SubpassGraph::ResetGraph()
-{
-  m_attachments.clear();
-  m_subpassDescriptions.clear();
-  m_dependenciesGraph.clear();
-  m_attachmentsUsageTable.clear();
-}
-
 void SubpassGraph::SynchronizeAttachmentsDuringRenderPass(
-  SubpassIndex subpassIndex, std::span<IInternalAttachment *> attachments)
+  SubpassIndex subpassIndex, std::span<IInternalAttachment *> attachments) const
 {
-  auto barriersRow = GetBarriersRow(subpassIndex);
+  auto barriersRow = m_attachmentsUsageTable[GetBarrierRowIndex(subpassIndex)];
   for (size_t i = 0; auto attachment : attachments)
   {
     if (attachment)
@@ -179,74 +218,17 @@ void SubpassGraph::SynchronizeAttachmentsDuringRenderPass(
   }
 }
 
-std::span<const VkAttachmentDescription> SubpassGraph::GetCachedAttachments() const noexcept
-{
-  return m_attachments;
-}
-
 size_t SubpassGraph::GetBarrierRowIndex(SubpassIndex idx) const noexcept
 {
-  return idx == SubpassIndex::finalRenderPass ? m_subpassDescriptions.size()
-                                              : static_cast<size_t>(idx) + 1;
-}
-
-std::span<const BarrierInfo> SubpassGraph::GetBarriersRow(SubpassIndex idx) const noexcept
-{
-  size_t attachmentsCount = m_attachments.size();
-  return std::span<const BarrierInfo>{m_attachmentsUsageTable.begin() +
-                                        GetBarrierRowIndex(idx) * attachmentsCount,
-                                      attachmentsCount};
-}
-
-std::span<BarrierInfo> SubpassGraph::GetBarriersRow(SubpassIndex idx) noexcept
-{
-  size_t attachmentsCount = m_attachments.size();
-  return std::span<BarrierInfo>{m_attachmentsUsageTable.begin() +
-                                  GetBarrierRowIndex(idx) * attachmentsCount,
-                                attachmentsCount};
-}
-
-void SubpassGraph::BuildSubpassGraph()
-{
-  auto && layoutsTable = m_attachmentsUsageTable;
-  size_t attachmentsCount = m_attachments.size();
-  size_t subpassesCount = m_subpassDescriptions.size();
-  layoutsTable.resize((subpassesCount + 2) * attachmentsCount, BarrierInfo());
-
-  auto firstRow = GetBarriersRow(SubpassIndex::initialRenderPass);
-  auto lastRow = GetBarriersRow(SubpassIndex::finalRenderPass);
-
-  // fill initial and final stages
-  for (size_t i = 0; i < attachmentsCount; ++i)
+  switch (idx)
   {
-    // initial barrier for attachment
-    firstRow[i] = BarrierInfo{VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                              m_attachments[i].initialLayout};
-    // final barrier for attachment
-    lastRow[i] = BarrierInfo{VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                             m_attachments[i].finalLayout};
+    case SubpassIndex::initialRenderPass:
+      return 0;
+    case SubpassIndex::finalRenderPass:
+      return m_subpassDescriptions.size() + 1;
+    default:
+      return static_cast<size_t>(idx) + 1;
   }
-
-  std::span<const BarrierInfo> prevRow = firstRow;
-
-  // fill subpass stages
-  for (size_t i = 0; i < subpassesCount; ++i)
-  {
-    auto && description = m_subpassDescriptions[i];
-    auto [colorAttachments, dsAttachments, inputAttachments] =
-      ExtractSubpassAttachments(description);
-
-    std::span<RHI::vulkan::BarrierInfo> layoutsRow = GetBarriersRow(static_cast<SubpassIndex>(i));
-    for (auto && ref : colorAttachments)
-      layoutsRow[ref.attachment] = CalcAttachmentBarrier(prevRow[ref.attachment], ref.layout);
-    for (auto && ref : dsAttachments)
-      layoutsRow[ref.attachment] = CalcAttachmentBarrier(prevRow[ref.attachment], ref.layout);
-    for (auto && ref : inputAttachments)
-      layoutsRow[ref.attachment] = CalcAttachmentBarrier(prevRow[ref.attachment], ref.layout);
-
-    prevRow = layoutsRow;
-  }
-  m_attachmentsUsageTable = std::move(layoutsTable);
 }
 
 void SubpassGraph::BuildDependencyGraph(std::span<SubpassIndex> selfDependencies)
@@ -255,11 +237,11 @@ void SubpassGraph::BuildDependencyGraph(std::span<SubpassIndex> selfDependencies
   std::vector<VkSubpassDependency> dependencies;
   dependencies.reserve(subpassesCount + selfDependencies.size());
 
-  std::span<const RHI::vulkan::BarrierInfo> prevRow =
-    GetBarriersRow(SubpassIndex::initialRenderPass);
+  auto prevRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::initialRenderPass)];
   for (size_t i = 0; i < subpassesCount; ++i)
   {
-    std::span<const RHI::vulkan::BarrierInfo> row = GetBarriersRow(static_cast<SubpassIndex>(i));
+    auto row = m_attachmentsUsageTable[GetBarrierRowIndex(static_cast<SubpassIndex>(i))];
+
     auto depInfo = dependencies.emplace_back();
     depInfo.srcSubpass = i == 0 ? VK_SUBPASS_EXTERNAL : i - 1;
     depInfo.dstSubpass = i;
@@ -288,7 +270,7 @@ void SubpassGraph::BuildDependencyGraph(std::span<SubpassIndex> selfDependencies
   for (SubpassIndex idx : selfDependencies)
   {
     auto && description = m_subpassDescriptions[static_cast<uint32_t>(idx)];
-    auto [colorAttachments, dsAttachments, inputAttachments] =
+    auto [colorAttachments, dsAttachments, inputAttachments, resolveAttachments] =
       ExtractSubpassAttachments(description);
     VkSubpassDependency selfDependency{};
     selfDependency.srcSubpass = selfDependency.dstSubpass = static_cast<uint32_t>(idx);

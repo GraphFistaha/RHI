@@ -4,15 +4,49 @@
 
 #include <Attachments/SurfacedAttachment.hpp>
 #include <Private/Constants.hpp>
+#include <RenderPass/AttachmentDescriptionBuilder.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
-namespace
-{
 
-bool operator==(const VkExtent3D & e1, const VkExtent3D & e2)
+/// @brief Compare operator for VkAttachmentDescription
+static bool operator==(const VkAttachmentDescription & lhs, const VkAttachmentDescription & rhs) noexcept
+{
+  return std::memcmp(&lhs, &rhs, sizeof(VkAttachmentDescription)) == 0;
+}
+
+static bool operator==(const VkExtent3D & e1, const VkExtent3D & e2)
 {
   return std::memcmp(&e1, &e2, sizeof(VkExtent3D)) == 0;
+}
+
+namespace
+{
+constexpr VkImageLayout MakeAttachmentFinalLayout(VkFormat format, bool isPresent)
+{
+  // If the attachment is going to be presented, it must end in PRESENT_SRC_KHR.
+  if (isPresent)
+    return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+  // Depth/stencil attachments typically end in DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+  // so they can be reused as attachments in a subsequent pass.
+  switch (format)
+  {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+    case VK_FORMAT_S8_UINT:
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    default:
+      break;
+  }
+
+  // Color attachments end in COLOR_ATTACHMENT_OPTIMAL so they're ready
+  // to be used as attachments again without an extra barrier.
+  return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 }
 
 } // namespace
@@ -35,7 +69,7 @@ size_t Framebuffer::GetImagesCount() const noexcept
   return m_targets.size();
 }
 
-void Framebuffer::Invalidate()
+void Framebuffer::Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
 {
   bool targetsChanged = false;
   //rebuild attachments
@@ -44,26 +78,46 @@ void Framebuffer::Invalidate()
     if (m_attachments.empty())
       throw std::runtime_error("Framebuffer has no attachments");
 
+    // collect info about how each attachment is used during render pass
     std::vector<VkImageUsageFlags> attachmentsUsage;
     attachmentsUsage.resize(m_attachments.size(), 0);
     m_renderPass.CollectAttachmentsUsageInfo(attachmentsUsage);
 
-    std::vector<VkAttachmentDescription> newAttachmentsDescription;
-    newAttachmentsDescription.reserve(m_attachments.size());
+    // rebuilt attachment for each usage
     for (size_t i = 0; auto * attachment : m_attachments)
     {
       if (attachment)
       {
         attachment->Invalidate(attachmentsUsage[i]);
-        newAttachmentsDescription.push_back(attachment->BuildDescription());
       }
       ++i;
     }
 
+    // build description for each attachment
+    std::vector<VkAttachmentDescription> newAttachmentsDescription;
+    newAttachmentsDescription.reserve(m_attachments.size());
+    for (auto * att : m_attachments)
+    {
+      if (att)
+      {
+        newAttachmentsDescription.push_back(
+          BuildPassAttachmentDescription(*att,
+                                         MakeAttachmentFinalLayout(att->GetInternalFormat(),
+                                                                   att->IsPresent()),
+                                         loadOp, storeOp));
+      }
+    }
+
+    // if attachments have been changed - rebuild RenderPass
+    if (m_attachmentDescriptions != newAttachmentsDescription)
+    {
+      m_renderPass.SetInvalid();
+    }
+
     m_attachmentDescriptions = std::move(newAttachmentsDescription);
 
-    uint32_t buffersCount = m_attachments[0]->GetBuffering();
-    auto extent = m_attachments[0]->GetInternalExtent();
+    const uint32_t buffersCount = m_attachments[0]->GetBuffering();
+    const VkExtent3D extent = m_attachments[0]->GetInternalExtent();
     // all attachments must have equal count of buffers
     assert(std::all_of(m_attachments.begin(), m_attachments.end(),
                        [buffersCount, extent](IInternalAttachment * att)
@@ -72,8 +126,6 @@ void Framebuffer::Invalidate()
                                 att->GetInternalExtent() == extent;
                        }));
 
-    // set attachments to render Pass
-    m_renderPass.SetAttachments(buffersCount, m_attachmentDescriptions);
     targetsChanged = true;
   }
 
@@ -123,6 +175,11 @@ RHI::SamplesCount Framebuffer::CalcSamplesCount() const noexcept
       return attachment->GetSamplesCount();
   }
   return RHI::SamplesCount::One;
+}
+
+std::span<const VkAttachmentDescription> Framebuffer::GetAttachementsDescription() const noexcept
+{
+  return m_attachmentDescriptions;
 }
 
 RenderTarget * Framebuffer::BeginFrame()

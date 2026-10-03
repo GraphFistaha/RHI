@@ -33,6 +33,8 @@ PRIVATE
 	"RenderPass/RenderTarget.hpp"
 	"RenderPass/SubpassGraph.cpp"
 	"RenderPass/SubpassGraph.hpp"
+	"RenderPass/AttachmentDescriptionBuilder.hpp"
+	"RenderPass/AttachmentDescriptionBuilder.cpp"
 
 	"Pipeline/DescriptorBufferLayout.cpp"
 	"Pipeline/DescriptorBufferLayout.hpp"

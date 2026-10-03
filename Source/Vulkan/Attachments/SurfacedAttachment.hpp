@@ -50,9 +50,10 @@ public: // IInternalAttachment interface
   virtual bool FinalRendering(VkSemaphore waitSemaphore) override;
   virtual uint32_t GetBuffering() const noexcept override;
   virtual RHI::SamplesCount GetSamplesCount() const noexcept override;
-  virtual VkAttachmentDescription BuildDescription() const noexcept override;
   virtual void Resize(const VkExtent2D & new_extent) noexcept;
   virtual details::Synchronizer & GetSynchronizer() & noexcept override;
+  /// @brief returns true if attachment is presenting swapchain
+  virtual bool IsPresent() const noexcept override { return true; }
 
 protected:
   void DestroySwapchain() noexcept;
