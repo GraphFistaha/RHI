@@ -59,15 +59,15 @@ struct BaseDescriptor : public OwnedBy<Context>, //TODO: remove
 
   VkDescriptorType GetDescriptorType() const noexcept { return m_type; }
   uint32_t GetArrayIndex() const noexcept { return m_arrayIndex; }
-  uint32_t GetBinding() const noexcept { return m_index.binding; }
-  uint32_t GetSet() const noexcept { return m_index.set; }
+  uint32_t GetBinding() const noexcept { return static_cast<uint32_t>(m_index.binding); }
+  uint32_t GetSet() const noexcept { return static_cast<uint32_t>(m_index.set); }
   virtual void Invalidate() = 0;
   virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const = 0;
 
 protected:
   VkDescriptorType m_type;
   uint32_t m_arrayIndex = 0;
-  LayoutIndex m_index{0, 0};
+  LayoutIndex m_index{ShaderSlot::_0, ShaderSlot::_0};
 };
 
 

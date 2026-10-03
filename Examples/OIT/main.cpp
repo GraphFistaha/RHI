@@ -149,7 +149,9 @@ int main()
     opacityPipeline->SetMeshTopology(RHI::MeshTopology::Triangle);
     opacityPipeline->EnableDepthTest(true);
     // uniforms
-    auto viewProjUniform = opacityPipeline->DeclareUniform({0, 0}, RHI::ShaderType::Vertex);
+    auto viewProjUniform =
+      opacityPipeline->DeclareUniform({RHI::ShaderSet::_0, RHI::ShaderBinding::_0},
+                                      RHI::ShaderType::Vertex);
     viewProjUniform->AssignBuffer(viewProjUniformBuffer, 0);
     // set attributes
     SetupCubeInputAttributes(opacityPipeline);
@@ -181,7 +183,7 @@ int main()
     summaryPipeline->BindAttachment(0,
                                     RHI::ShaderAttachmentSlot::Color |
                                       RHI::ShaderAttachmentSlot::Input,
-                                    {0, 0});
+                                    {RHI::ShaderSet::_0, RHI::ShaderBinding::_0});
     summaryPipeline->BindAttachment(1, RHI::ShaderAttachmentSlot::Preserved);
     summaryPipeline->BindAttachment(2, RHI::ShaderAttachmentSlot::Preserved);
     summaryPipeline->BindAttachment(3, RHI::ShaderAttachmentSlot::Preserved);

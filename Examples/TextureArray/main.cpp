@@ -51,8 +51,8 @@ int main()
                                        RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
   constexpr uint32_t samplersCount = 8;
   std::array<RHI::ISamplerUniformDescriptor *, samplersCount> samplers;
-  trianglePipeline->DeclareSamplersArray({0, 0}, RHI::ShaderType::Fragment, samplersCount,
-                                         samplers.data());
+  trianglePipeline->DeclareSamplersArray({RHI::ShaderSet::_0, RHI::ShaderBinding::_0},
+                                         RHI::ShaderType::Fragment, samplersCount, samplers.data());
 
   {
     auto it = image_it;

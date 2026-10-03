@@ -55,7 +55,9 @@ int main()
   auto it = textures.begin();
   for (uint32_t i = 0; i < 8; ++i)
   {
-    auto * texture = trianglePipeline->DeclareSampler({0, i}, RHI::ShaderType::Fragment);
+    auto * texture =
+      trianglePipeline->DeclareSampler({RHI::ShaderSet::_0, static_cast<RHI::ShaderBinding>(i)},
+                                       RHI::ShaderType::Fragment);
     texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     texture->AssignImage(*it);
     samplers.push_back(texture);
@@ -85,9 +87,9 @@ int main()
         ct.pos_y = offset + i * (cell_width + margin);
         ct.texture_index = (ct.texture_index + 1) % textures.size();
         process->PushConstant(&ct, sizeof(PushConstant));
-        process->DrawVertices(6, 1); 
+        process->DrawVertices(6, 1);
       }
-    } 
+    }
   }
   framebuffer->SetSubpass(0, trianglePipeline, process);
 

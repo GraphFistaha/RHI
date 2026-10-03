@@ -49,7 +49,8 @@ int main()
                                        RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
 
   {
-    auto * sampler = trianglePipeline->DeclareSampler({0, 0}, RHI::ShaderType::Fragment);
+    auto * sampler = trianglePipeline->DeclareSampler({RHI::ShaderSet::_0, RHI::ShaderBinding::_0},
+                                                      RHI::ShaderType::Fragment);
     sampler->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     sampler->AssignImage(texture);
   }

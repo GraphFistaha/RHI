@@ -107,12 +107,12 @@ void DescriptorBufferLayout::DeclareDescriptorsArray(const LayoutIndex & index,
                                                      VkDescriptorType type, ShaderType shaderStage,
                                                      uint32_t size)
 {
-  const uint32_t setIdx = index.set;
+  const uint32_t setIdx = static_cast<uint32_t>(index.set);
   while (m_layouts.size() <= setIdx)
     m_layouts.push_back(VK_NULL_HANDLE);
   while (m_builders.size() <= setIdx)
     m_builders.emplace_back();
-  m_builders[setIdx].DeclareDescriptorsArray(index.binding, type, shaderStage, size);
+  m_builders[setIdx].DeclareDescriptorsArray(static_cast<uint32_t>(index.binding), type, shaderStage, size);
   m_layoutsHash = 0;
 
   auto it = std::ranges::find_if(m_poolSizes, [type](const VkDescriptorPoolSize & poolSize)

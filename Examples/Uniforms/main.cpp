@@ -50,10 +50,13 @@ int main()
 
   // declare uniform variables
   auto && u_t =
-    trianglePipeline->DeclareUniform({0, 0}, RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
+    trianglePipeline->DeclareUniform({RHI::ShaderSet::_0, RHI::ShaderBinding::_0},
+                                     RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
   u_t->AssignBuffer(tBuf); // bind buffer to uniform variable
 
-  auto && u_transform = trianglePipeline->DeclareUniform({0, 1}, RHI::ShaderType::Vertex);
+  auto && u_transform =
+    trianglePipeline->DeclareUniform({RHI::ShaderSet::_0, RHI::ShaderBinding::_1},
+                                     RHI::ShaderType::Vertex);
   u_transform->AssignBuffer(transformBuf); // bind buffer to uniform variable
 
   // create vertex buffer
@@ -83,7 +86,7 @@ int main()
     process->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
     process->DrawIndexedVertices(IndicesCount, 1);
   }
-  framebuffer->SetSubpass(0,trianglePipeline, std::move(process));
+  framebuffer->SetSubpass(0, trianglePipeline, std::move(process));
 
   float x = 0.0f;
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);

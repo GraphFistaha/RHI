@@ -46,7 +46,8 @@ int main()
   trianglePipeline->DefinePushConstant(sizeof(PushConstant),
                                        RHI::ShaderType::Fragment | RHI::ShaderType::Vertex);
   RHI::ISamplerUniformDescriptor * sampler =
-    trianglePipeline->DeclareSampler({0, 0}, RHI::ShaderType::Fragment);
+    trianglePipeline->DeclareSampler({RHI::ShaderSet::_0, RHI::ShaderBinding::_0},
+                                     RHI::ShaderType::Fragment);
   sampler->AssignImage(textureArray);
 
   auto process = ctx->CreateProcess();
