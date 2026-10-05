@@ -3,8 +3,8 @@
 #include <CommandsExecution/Submitter.hpp>
 #include <Memory/Synchronizer.hpp>
 #include <Pipeline/Pipeline.hpp>
-#include <Pipeline/PipelineProcess.hpp>
 #include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/RenderProcess.hpp>
 #include <RenderPass/RenderTarget.hpp>
 #include <RenderPass/SubpassGraph.hpp>
 #include <VulkanContext.hpp>
@@ -25,27 +25,20 @@ RenderPass::~RenderPass()
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
-void RenderPass::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
-{
-  while (index >= m_subpasses.size())
-    m_subpasses.push_back({nullptr, nullptr});
-  // if pipeline has changed - we should rebuild renderPass
-  // if process has changed - we should rewrite commands
-  Subpass newSubpass = {FastDynamicCast<Pipeline>(pipeline),
-                        FastDynamicCast<PipelineProcess>(process)};
-  if (newSubpass.first != m_subpasses[index].first)
-    m_invalidRenderPass = true;
-  if (newSubpass.second != m_subpasses[index].second)
-    m_dirtyCommands = true;
-  m_subpasses[index] = newSubpass;
-}
-
-void RenderPass::ClearSubpasses()
-{
-  m_subpasses.clear();
-  m_invalidRenderPass = true;
-  m_dirtyCommands = true;
-}
+//void RenderPass::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
+//{
+//  while (index >= m_subpasses.size())
+//    m_subpasses.push_back({nullptr, nullptr});
+//  // if pipeline has changed - we should rebuild renderPass
+//  // if process has changed - we should rewrite commands
+//  Subpass newSubpass = {FastDynamicCast<Pipeline>(pipeline),
+//                        FastDynamicCast<PipelineProcess>(process)};
+//  if (newSubpass.first != m_subpasses[index].first)
+//    m_invalidRenderPass = true;
+//  if (newSubpass.second != m_subpasses[index].second)
+//    m_dirtyCommands = true;
+//  m_subpasses[index] = newSubpass;
+//}
 
 void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget)
 {
@@ -119,14 +112,6 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget 
   m_activeRenderTarget = nullptr;
 }
 
-void RenderPass::CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> usage) const
-{
-  for (auto && [pipeline, _] : m_subpasses)
-  {
-    pipeline->GetAttachmentUsageInfo().CollectAttachmentsUsageInfo(usage);
-  }
-}
-
 void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   for (auto && [pipeline, process] : m_subpasses)
@@ -154,7 +139,7 @@ void RenderPass::Invalidate()
         newGraph->AddSelfDependency(index);
       for (size_t i = 0; auto * att : GetFramebuffer().GetAttachments())
       {
-        if (att && att->IsPresent())
+        if (att && att->IsPresent() /*|| WasPrevRenderPass()*/)
           newGraph->AddExternalDependency(att->GetSynchronizer().GetState(), index, i);
         ++i;
       }

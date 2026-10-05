@@ -138,37 +138,4 @@ constexpr inline VkVertexInputRate CastInterfaceEnum2Vulkan<
   }
 }
 
-template<>
-constexpr inline VkAttachmentLoadOp CastInterfaceEnum2Vulkan<
-  VkAttachmentLoadOp, RHI::AttachmentsContentOperation>(AttachmentsContentOperation op)
-{
-  switch (op)
-  {
-    case RHI::AttachmentsContentOperation::Clear:
-      return VK_ATTACHMENT_LOAD_OP_CLEAR;
-    case RHI::AttachmentsContentOperation::Store:
-      return VK_ATTACHMENT_LOAD_OP_LOAD;
-    case RHI::AttachmentsContentOperation::DontCare:
-      return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    default:
-      return VK_ATTACHMENT_LOAD_OP_NONE;
-  }
-}
-
-template<>
-constexpr inline VkAttachmentStoreOp CastInterfaceEnum2Vulkan<
-  VkAttachmentStoreOp, RHI::AttachmentsContentOperation>(AttachmentsContentOperation op)
-{
-  switch (op)
-  {
-    case RHI::AttachmentsContentOperation::Store:
-      return VK_ATTACHMENT_STORE_OP_STORE;
-    case RHI::AttachmentsContentOperation::DontCare:
-      return VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    case RHI::AttachmentsContentOperation::Clear:
-    default:
-      return VK_ATTACHMENT_STORE_OP_NONE;
-  }
-}
-
 } // namespace RHI::vulkan::utils

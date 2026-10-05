@@ -7,7 +7,6 @@
 #include <Attachments/Attachment.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/RenderPass.hpp>
 #include <RenderPass/RenderTarget.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
@@ -24,15 +23,10 @@ struct Framebuffer : public IFramebuffer,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IFramebuffer interface
-  ///
-  virtual void SetSubpass(uint32_t index, PipelinePtr pipeline,
-                          PipelineProcessPtr process) override;
   /// @brief adds attachment to all frames
   /// @param binding - index of binding
   /// @param args - arguments for image creation
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) override;
-  /// @brief removes all images from all frames
-  virtual void ClearAttachments() noexcept override;
 
   virtual void Resize(uint32_t width, uint32_t height) override;
   virtual RHI::TexelIndex GetExtent() const override;
@@ -45,7 +39,7 @@ public: // IResourceUser
 
 public: // RHI-only API
   size_t GetImagesCount() const noexcept;
-  void Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp);
+  bool Invalidate(std::span<const VkImageUsageFlags> attachmentsUsageFlags);
   /// begins rendering
   RenderTarget * BeginFrame();
   /// finish rendering
@@ -55,16 +49,14 @@ public: // RHI-only API
   std::span<IInternalAttachment *> GetAttachments() noexcept;
   IInternalAttachment * GetAttachment(uint32_t idx) const;
   RHI::SamplesCount CalcSamplesCount() const noexcept;
-  std::span<const VkAttachmentDescription> GetAttachementsDescription() const noexcept;
+  //std::span<const VkAttachmentDescription> GetAttachementsDescription() const noexcept;
 
 protected:
-  RenderPass m_renderPass;
   std::vector<RenderTarget> m_targets; //TODO: small_vector
   uint32_t m_activeTarget = -1;
 
   //TODO: shared_ptr
   std::vector<IInternalAttachment *> m_attachments; //sort by count of buffers
-  std::vector<VkAttachmentDescription> m_attachmentDescriptions;
   bool m_attachmentsChanged = false;
 };
 

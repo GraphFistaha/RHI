@@ -3,7 +3,6 @@
 #include <Pipeline/BufferUniform.hpp>
 #include <Pipeline/DescriptorBufferLayout.hpp>
 #include <Pipeline/InputAttachmentUniform.hpp>
-#include <Pipeline/PipelineProcess.hpp>
 #include <Pipeline/SamplerArrayUniform.hpp>
 #include <Pipeline/SamplerUniform.hpp>
 #include <RenderPass/Framebuffer.hpp>
@@ -210,7 +209,7 @@ void Pipeline::Invalidate(RenderPass & renderPass, uint32_t subpassIndex)
 
   if (m_invalidPipeline || !m_pipeline || m_bindPoint != &renderPass)
   {
-    m_pipelineBuilder.SetSamplesCount(renderPass.GetFramebuffer().CalcSamplesCount());
+    m_pipelineBuilder.SetSamplesCount(/*renderPass.GetFramebuffer().CalcSamplesCount()*/ RHI::SamplesCount::One);
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
                                                renderPass.GetHandle(), subpassIndex,
                                                m_pipelineLayout);

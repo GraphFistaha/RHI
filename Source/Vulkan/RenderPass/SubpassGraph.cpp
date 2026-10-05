@@ -6,11 +6,12 @@
 #include <span>
 
 #include <Attachments/Attachment.hpp>
-#include <RenderPass/Framebuffer.hpp>
+#include <Pipeline/Pipeline.hpp>
+#include <Utils/CastHelper.hpp>
 
 /// @brief Compare operator for VkAttachmentDescription
 static bool operator==(const VkAttachmentDescription & lhs,
-                              const VkAttachmentDescription & rhs) noexcept
+                       const VkAttachmentDescription & rhs) noexcept
 {
   return std::memcmp(&lhs, &rhs, sizeof(VkAttachmentDescription)) == 0;
 }
@@ -98,13 +99,12 @@ std::array<std::span<const VkAttachmentReference>, 4> ExtractSubpassAttachments(
 
 namespace RHI::vulkan
 {
-SubpassGraph::SubpassGraph(Framebuffer & framebuffer, size_t requiredSubpasses)
-  : OwnedBy<Framebuffer>(framebuffer)
-  // +2 because of the table contains info about initialRenderPass and finalRenderPass
-  , m_attachmentsUsageTable(requiredSubpasses + 2, framebuffer.GetAttachments().size())
+SubpassGraph::SubpassGraph(Context & ctx, VkPipelineBindPoint bindPoint)
+  : OwnedBy<Context>(ctx)
+  , m_bindPoint(bindPoint)
 {
-  auto descr = framebuffer.GetAttachementsDescription();
-  m_attachmentsDescription.assign(descr.begin(), descr.end());
+  //auto descr = framebuffer.GetAttachementsDescription();
+  //m_attachmentsDescription.assign(descr.begin(), descr.end());
   auto && attachments = framebuffer.GetAttachments();
 
   m_subpassDescriptions.reserve(requiredSubpasses);
@@ -125,25 +125,51 @@ SubpassGraph::SubpassGraph(Framebuffer & framebuffer, size_t requiredSubpasses)
   m_prevState.assign(firstRow.begin(), firstRow.end());
 }
 
-SubpassIndex SubpassGraph::AddSubpass(const VkSubpassDescription & subpass)
+ShaderSlot SubpassGraph::AddAttachment(const IInternalAttachment & attachment,
+                                       const ResourceState & initState,
+                                       const ResourceState & finalState, VkAttachmentLoadOp loadOp,
+                                       VkAttachmentStoreOp storeOp)
+{
+  VkAttachmentDescription description{};
+  {
+    description.format = attachment.GetInternalFormat();
+    description.samples =
+      utils::CastInterfaceEnum2Vulkan<VkSampleCountFlagBits>(attachment.GetSamplesCount());
+    description.loadOp = loadOp;
+    description.stencilLoadOp = loadOp;
+    description.storeOp = storeOp;
+    description.stencilStoreOp = storeOp;
+    description.initialLayout = initState.requiredLayout;
+    description.finalLayout = finalState.requiredLayout;
+  }
+  ShaderSlot attachmentIdx = static_cast<ShaderSlot>(m_attachmentsObj.size());
+  m_attachments.push_back(description);
+  m_attachmentsObj.push_back(&attachment);
+  return attachmentIdx;
+}
+
+SubpassIndex SubpassGraph::AddSubpass(const Pipeline & pipeline)
 {
   auto processAttachments = [this](std::span<const VkAttachmentReference> refs, SubpassIndex index)
   {
     auto row = m_attachmentsUsageTable[GetBarrierRowIndex(index)];
     for (VkAttachmentReference ref : refs)
     {
-      auto * attachment = GetFramebuffer().GetAttachment(ref.attachment);
+      auto * attachment = m_attachmentsObj[ref.attachment];
       row[ref.attachment] = CalcAttachmentBarrier(m_prevState[ref.attachment], ref.layout);
       m_prevState[ref.attachment] = row[ref.attachment];
     }
   };
 
+  VkSubpassDescription description =
+    pipeline.GetAttachmentUsageInfo().BuildDescription(m_bindPoint);
+
   SubpassIndex index = static_cast<SubpassIndex>(m_subpassDescriptions.size());
-  m_subpassDescriptions.push_back(subpass);
+  m_subpassDescriptions.push_back(description);
 
   { // calc row in m_attachmentsUsageTable
     auto [colorAttachments, dsAttachments, inputAttachments, resolveAttachments] =
-      ExtractSubpassAttachments(subpass);
+      ExtractSubpassAttachments(description);
     processAttachments(inputAttachments, index);
     processAttachments(colorAttachments, index);
     processAttachments(resolveAttachments, index);
@@ -153,25 +179,46 @@ SubpassIndex SubpassGraph::AddSubpass(const VkSubpassDescription & subpass)
   return index;
 }
 
+void SubpassGraph::AddDependency(SubpassIndex waitFor, SubpassIndex waitingSubpass,
+                                 ShaderSlot attachment)
+{
+  VkSubpassDependency dependency{};
+  {
+    dependency.srcSubpass = static_cast<uint32_t>(waitFor);
+    dependency.dstSubpass = static_cast<uint32_t>(waitingSubpass);
+    dependency.srcStageMask = externalState.currentStage;
+    dependency.srcAccessMask = externalState.requiredAccess;
+    auto requiredLayout =
+      m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
+    ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
+    dependency.dstStageMask = newBarrier.currentStage;
+    dependency.dstAccessMask = newBarrier.requiredAccess;
+  }
+  m_dependenciesGraph.push_back(dependency);
+}
+
 void SubpassGraph::AddExternalDependency(const ResourceState & externalState, SubpassIndex subpass,
                                          uint32_t attachmentIdx)
 {
   VkSubpassDependency dependency{};
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.dstSubpass = static_cast<uint32_t>(subpass);
-  dependency.srcStageMask = externalState.currentStage;
-  dependency.srcAccessMask = externalState.requiredAccess;
-  auto requiredLayout =
-    m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
-  ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
-  dependency.dstStageMask = newBarrier.currentStage;
-  dependency.dstAccessMask = newBarrier.requiredAccess;
+  {
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = static_cast<uint32_t>(subpass);
+    dependency.srcStageMask = externalState.currentStage;
+    dependency.srcAccessMask = externalState.requiredAccess;
+    auto requiredLayout =
+      m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
+    ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
+    dependency.dstStageMask = newBarrier.currentStage;
+    dependency.dstAccessMask = newBarrier.requiredAccess;
+  }
   m_dependenciesGraph.push_back(dependency);
 }
 
 void SubpassGraph::AddSelfDependency(SubpassIndex subpass)
 {
-    VkSubpassDependency dependency{};
+  VkSubpassDependency dependency{};
+  {
     dependency.srcSubpass = static_cast<uint32_t>(subpass);
     dependency.dstSubpass = static_cast<uint32_t>(subpass);
     /*dependency.srcStageMask = externalState.currentStage;
@@ -180,8 +227,9 @@ void SubpassGraph::AddSelfDependency(SubpassIndex subpass)
         m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
     ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
     dependency.dstStageMask = newBarrier.currentStage;
-    dependency.dstAccessMask = newBarrier.requiredAccess;
-    m_dependenciesGraph.push_back(dependency);*/
+    dependency.dstAccessMask = newBarrier.requiredAccess;*/
+  }
+  m_dependenciesGraph.push_back(dependency);
 }
 
 VkRenderPass SubpassGraph::MakeRenderPass(const VkDevice & device) const
@@ -192,8 +240,8 @@ VkRenderPass SubpassGraph::MakeRenderPass(const VkDevice & device) const
   VkRenderPass renderPass = VK_NULL_HANDLE;
   VkRenderPassCreateInfo renderPassCreateInfo{};
   renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachmentsDescription.size());
-  renderPassCreateInfo.pAttachments = m_attachmentsDescription.data();
+  renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
+  renderPassCreateInfo.pAttachments = m_attachments.data();
   renderPassCreateInfo.subpassCount = static_cast<uint32_t>(m_subpassDescriptions.size());
   renderPassCreateInfo.pSubpasses = m_subpassDescriptions.data();
   renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(m_dependenciesGraph.size());

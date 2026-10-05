@@ -15,19 +15,36 @@ namespace RHI::vulkan
 {
 struct Context;
 struct Pipeline;
+struct Framebuffer;
+struct SubpassGraph;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
 
 /// @brief class to accumulate commands to call them every frame
-struct PipelineProcess final : public RHI::IPipelineProcess,
-                               public IResourceUser,
-                               public OwnedBy<Context>
+struct RenderProcess final : public RHI::IRenderPass,
+                             public IResourceUser,
+                             public OwnedBy<Context>
 {
-  explicit PipelineProcess(Context & ctx);
-  virtual ~PipelineProcess() override;
+  explicit RenderProcess(Context & ctx, FramebufferPtr framebuffer, PipelinePtr initialPipeline);
+  virtual ~RenderProcess() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+
+public: // IRenderPass interface
+  virtual void Barrier(IBufferGPU & buffer) override;
+  virtual void Barrier(ITexture & texture) override;
+  virtual void Barrier(IAttachment & attachment) override;
+  virtual void NextPipeline(PipelinePtr pipeline) override;
+  /// @brief marks that framebuffer attachments must be filled with clear color value in the begining of the pass
+  /// put that in the beginning of the pass
+  virtual void ClearFramebuffer() override;
+  /// @brief marks that framebuffer attachments must be loaded from CPU memory in the begining of the pass
+  ///   put that in the beginning of the pass
+  virtual void LoadFramebuffer() override;
+  /// @brief marks that framebuffer attachments must be stored in CPU memory in the end of the pass
+  ///   Put that in the end of pass
+  virtual void StoreFramebuffer() override;
 
 public: // Commands
   /// @brief draw vertices command (analog glDrawArrays)
@@ -64,13 +81,25 @@ public: // IResourceUser
   virtual void SynchroniseResources(SynchronizationFilter filter,
                                     details::CommandBuffer & commands) const override;
 
-public:
-  void RecordCommands(details::CommandBuffer & commands, const Pipeline & pipeline);
+public: // internal public API
+  void RecordCommands(details::CommandBuffer & commands);
+  void Invalidate();
 
 private:
-  using DrawCommand = std::function<void(details::CommandBuffer &, const Pipeline &)>;
-  std::vector<DrawCommand> m_commands;
-  std::vector<ResourceUsageInfo> m_resourceSyncInfos;
+  std::shared_ptr<Framebuffer> m_framebuffer;
+  std::vector<std::shared_ptr<Pipeline>> m_pipelines;
+  std::unique_ptr<SubpassGraph> m_renderGraph;
+  /// what happends to attachments when renderPass has began
+  VkAttachmentLoadOp m_loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  /// what happends to attachments when renderPass has end
+  VkAttachmentStoreOp m_storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  //using DrawCommand = std::function<void(details::CommandBuffer &)>;
+  //using CommandsVector = std::vector<DrawCommand>;
+  //std::vector<CommandsVector> m_commands;
+  //std::vector<ResourceUsageInfo> m_resourceSyncInfos;
+
+private:
+  void CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> usage) const;
 };
 
 } // namespace RHI::vulkan

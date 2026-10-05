@@ -29,7 +29,7 @@ int main()
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  RHI::FramebufferPtr framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   auto * colorAttachment = ctx->CreateAttachment(surfaceAttachment->GetDescription().format,
@@ -75,21 +75,21 @@ int main()
   // to make sure that buffer is sent on GPU
   indexBuffer->Flush();
 
-  RHI::PipelineProcessPtr renderProcess = ctx->CreateProcess();
+  RHI::RenderPassPtr renderPass = ctx->CreateRenderPass(framebuffer, trianglePipeline);
   {
+    renderPass->Barrier(*surfaceAttachment);
     // get size of window
     auto [width, height] = window.GetSize();
     // set viewport
-    renderProcess->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
     // set scissor
-    renderProcess->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    renderPass->ClearFramebuffer();
     // draw triangle
-    renderProcess->BindVertexBuffer(0, vertexBuffer, 0);
-    renderProcess->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
-    renderProcess->DrawIndexedVertices(IndicesCount, 1);
+    renderPass->BindVertexBuffer(0, vertexBuffer, 0);
+    renderPass->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
+    renderPass->DrawIndexedVertices(IndicesCount, 1);
   }
-
-  framebuffer->SetSubpass(0, trianglePipeline, renderProcess);
 
   float t = 0.0;
   window.MainLoop(
@@ -97,7 +97,7 @@ int main()
     {
       colorAttachment->SetClearValue(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       surfaceAttachment->SetClearValue(0, 0, 0, 1);
-      ctx->RenderPass(framebuffer);
+      ctx->RenderPass(renderPass);
       t += 0.001f;
     });
 

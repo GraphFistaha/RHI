@@ -10,7 +10,8 @@
 
 
 /// @brief Compare operator for VkAttachmentDescription
-static bool operator==(const VkAttachmentDescription & lhs, const VkAttachmentDescription & rhs) noexcept
+static bool operator==(const VkAttachmentDescription & lhs,
+                       const VkAttachmentDescription & rhs) noexcept
 {
   return std::memcmp(&lhs, &rhs, sizeof(VkAttachmentDescription)) == 0;
 }
@@ -56,7 +57,6 @@ namespace RHI::vulkan
 
 Framebuffer::Framebuffer(Context & ctx)
   : OwnedBy<Context>(ctx)
-  , m_renderPass(ctx, *this)
 {
 }
 
@@ -69,7 +69,7 @@ size_t Framebuffer::GetImagesCount() const noexcept
   return m_targets.size();
 }
 
-void Framebuffer::Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp)
+bool Framebuffer::Invalidate(std::span<const VkImageUsageFlags> attachmentsUsageFlags)
 {
   bool targetsChanged = false;
   //rebuild attachments
@@ -78,43 +78,15 @@ void Framebuffer::Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp stor
     if (m_attachments.empty())
       throw std::runtime_error("Framebuffer has no attachments");
 
-    // collect info about how each attachment is used during render pass
-    std::vector<VkImageUsageFlags> attachmentsUsage;
-    attachmentsUsage.resize(m_attachments.size(), 0);
-    m_renderPass.CollectAttachmentsUsageInfo(attachmentsUsage);
-
     // rebuilt attachment for each usage
     for (size_t i = 0; auto * attachment : m_attachments)
     {
       if (attachment)
       {
-        attachment->Invalidate(attachmentsUsage[i]);
+        attachment->Invalidate(attachmentsUsageFlags[i]);
       }
       ++i;
     }
-
-    // build description for each attachment
-    std::vector<VkAttachmentDescription> newAttachmentsDescription;
-    newAttachmentsDescription.reserve(m_attachments.size());
-    for (auto * att : m_attachments)
-    {
-      if (att)
-      {
-        newAttachmentsDescription.push_back(
-          BuildPassAttachmentDescription(*att,
-                                         MakeAttachmentFinalLayout(att->GetInternalFormat(),
-                                                                   att->IsPresent()),
-                                         loadOp, storeOp));
-      }
-    }
-
-    // if attachments have been changed - rebuild RenderPass
-    if (m_attachmentDescriptions != newAttachmentsDescription)
-    {
-      m_renderPass.SetInvalid();
-    }
-
-    m_attachmentDescriptions = std::move(newAttachmentsDescription);
 
     const uint32_t buffersCount = m_attachments[0]->GetBuffering();
     const VkExtent3D extent = m_attachments[0]->GetInternalExtent();
@@ -128,32 +100,33 @@ void Framebuffer::Invalidate(VkAttachmentLoadOp loadOp, VkAttachmentStoreOp stor
 
     targetsChanged = true;
   }
+  return targetsChanged;
 
   //rebuild render pass
-  m_renderPass.Invalidate();
+  //m_renderPass.Invalidate();
 
   //rebuild RenderTarget(VkFramebuffer)
-  if (targetsChanged)
-  {
-    uint32_t buffersCount = m_attachments[0]->GetBuffering();
-    auto extent = m_attachments[0]->GetInternalExtent();
-    if (m_targets.size() != buffersCount)
-    {
-      while (m_targets.size() > buffersCount)
-        m_targets.pop_back();
+  //if (targetsChanged)
+  //{
+  //  uint32_t buffersCount = m_attachments[0]->GetBuffering();
+  //  auto extent = m_attachments[0]->GetInternalExtent();
+  //  if (m_targets.size() != buffersCount)
+  //  {
+  //    while (m_targets.size() > buffersCount)
+  //      m_targets.pop_back();
 
-      while (m_targets.size() < buffersCount)
-        m_targets.emplace_back(GetContext());
-    }
+  //    while (m_targets.size() < buffersCount)
+  //      m_targets.emplace_back(GetContext());
+  //  }
 
-    // build RenderTargets
-    for (auto && target : m_targets)
-    {
-      target.SetExtent(extent);
-      target.BindRenderPass(m_renderPass.GetHandle());
-    }
-    targetsChanged = false;
-  }
+  //  // build RenderTargets
+  //  for (auto && target : m_targets)
+  //  {
+  //    target.SetExtent(extent);
+  //    //target.BindRenderPass(m_renderPass.GetHandle());
+  //  }
+  //  targetsChanged = false;
+  //}
 }
 
 std::span<IInternalAttachment *> Framebuffer::GetAttachments() noexcept
@@ -177,10 +150,10 @@ RHI::SamplesCount Framebuffer::CalcSamplesCount() const noexcept
   return RHI::SamplesCount::One;
 }
 
-std::span<const VkAttachmentDescription> Framebuffer::GetAttachementsDescription() const noexcept
-{
-  return m_attachmentDescriptions;
-}
+//std::span<const VkAttachmentDescription> Framebuffer::GetAttachementsDescription() const noexcept
+//{
+//  return m_attachmentDescriptions;
+//}
 
 RenderTarget * Framebuffer::BeginFrame()
 {
@@ -225,13 +198,13 @@ RenderTarget * Framebuffer::BeginFrame()
 
 void Framebuffer::RecordCommands(details::CommandBuffer & commands)
 {
-  m_renderPass.RecordCommands(commands, m_targets[m_activeTarget]);
+  //m_renderPass.RecordCommands(commands, m_targets[m_activeTarget]);
 }
 
 void Framebuffer::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   resources.insert(resources.end(), m_attachments.begin(), m_attachments.end());
-  m_renderPass.CollectResources(resources);
+  //m_renderPass.CollectResources(resources);
 }
 
 void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
@@ -241,11 +214,6 @@ void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)
     if (attachment)
       attachment->FinalRendering(renderPassSemaphore);
   }
-}
-
-void Framebuffer::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
-{
-  m_renderPass.SetSubpass(index, std::move(pipeline), std::move(process));
 }
 
 void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
@@ -265,12 +233,6 @@ void Framebuffer::AddAttachment(uint32_t binding, IAttachment * attachment)
   {
     throw std::runtime_error("Failed to cast ITexture * to IInternalAttachment *");
   }
-}
-
-void Framebuffer::ClearAttachments() noexcept
-{
-  m_attachments.clear();
-  m_attachmentsChanged = true;
 }
 
 void Framebuffer::Resize(uint32_t width, uint32_t height)

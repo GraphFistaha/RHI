@@ -10,7 +10,8 @@
 namespace RHI::vulkan
 {
 struct IInternalAttachment;
-struct Framebuffer;
+struct Context;
+struct Pipeline;
 } // namespace RHI::vulkan
 
 namespace RHI::vulkan
@@ -28,17 +29,24 @@ enum class SubpassIndex : int32_t
   //...
 };
 
-struct SubpassGraph final : public OwnedBy<Framebuffer>
+struct SubpassGraph final : public OwnedBy<Context>
 {
-  explicit SubpassGraph(Framebuffer & framebuffer, size_t requiredSubpasses);
+  explicit SubpassGraph(Context & ctx, VkPipelineBindPoint bindPoint);
   virtual ~SubpassGraph() override = default;
-  MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
+  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
+  ShaderSlot AddAttachment(const IInternalAttachment & attachment, const ResourceState & initState,
+                           const ResourceState & finalState, VkAttachmentLoadOp loadOp,
+                           VkAttachmentStoreOp storeOp);
+
   /// @brief add subpass description to graph (the same as to add vertex to graph)
   /// @param subpass - description of subpass
   /// @return - index of subpass
-  SubpassIndex AddSubpass(const VkSubpassDescription & subpass);
+  SubpassIndex AddSubpass(const Pipeline & pipeline);
+
+  /// @brief you must add dependency if subpass should wait for some actions in previos subpass
+  void AddDependency(SubpassIndex waitFor, SubpassIndex waitingSubpass, ShaderSlot attachment);
 
   /// @brief you must add external dependency when attachment is changed outside of RenderPass.
   /// For example: when you call vkAcquireNextImageKHR you should synchronize render pass with that external operation
@@ -53,17 +61,23 @@ public:
   /// @param subpass - index of subpass which has Pipeline barriers
   void AddSelfDependency(SubpassIndex subpass);
 
-  VkRenderPass MakeRenderPass(const VkDevice & device) const;
+  /// @brief compile graph and make VkRenderPass
+  /// @param device 
+  /// @return true if renderPass created successfully
+  bool Compile(const VkDevice & device);
 
   void SynchronizeAttachmentsDuringRenderPass(SubpassIndex subpassIndex,
                                               std::span<IInternalAttachment *> attachments) const;
 
 
 private:
+  VkPipelineBindPoint m_bindPoint;
+  /// cached info about attachments
+  std::vector<VkAttachmentDescription> m_attachments;
+  /// cached attachments objects
+  std::vector<const IInternalAttachment *> m_attachmentsObj; // TODO: shared_ptr
   /// description of subpass. A vertex of the graph
   std::vector<VkSubpassDescription> m_subpassDescriptions;
-  /// cached info about attachments
-  std::vector<VkAttachmentDescription> m_attachmentsDescription;
   /// transfers from one subpass to another. The edge of vertex
   std::vector<VkSubpassDependency> m_dependenciesGraph;
   /// a table with subpassCount rows and attachmentsCount columns

@@ -196,15 +196,6 @@ enum class IndexType : uint8_t
   UINT32  ///< indices will be interpreted in driver as uint32_t*
 };
 
-/// @brief describes what is gonna happend with attachment's content in render pass
-enum class AttachmentsContentOperation : uint8_t
-{
-  DontCare, ///< content is not important
-  Store,    ///< content will be saved
-  Clear,    ///< content will be cleared
-};
-
-
 //----------------- Images ---------------------
 
 struct IBufferGPU;
@@ -229,28 +220,6 @@ struct IAwaitable
 };
 
 using SpirV = std::vector<uint32_t>;
-
-struct IPipelineProcess
-{
-  virtual ~IPipelineProcess() = default;
-  /// @brief draw vertices command (analog glDrawArrays)
-  virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
-                            uint32_t firstInstance = 0) = 0;
-  /// @brief draw vertices with indieces (analog glDrawElements)
-  virtual void DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
-                                   uint32_t firstIndex = 0, int32_t vertexOffset = 0,
-                                   uint32_t firstInstance = 0) = 0;
-  /// @brief Set viewport command
-  virtual void SetViewport(float width, float height) = 0;
-  /// @brief Set scissor command
-  virtual void SetScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
-  /// @brief binds buffer as input attribute data
-  virtual void BindVertexBuffer(uint32_t binding, IBufferGPU * buffer, uint32_t offset = 0) = 0;
-  /// @brief binds buffer as index buffer
-  virtual void BindIndexBuffer(IBufferGPU * buffer, IndexType type, uint32_t offset = 0) = 0;
-  virtual void PushConstant(const void * data, size_t size) = 0;
-};
-using PipelineProcessPtr = std::shared_ptr<IPipelineProcess>;
 
 
 /// @brief SubpassConfiguration is container for rendering state settings (like shaders, input attributes, uniforms, etc).
@@ -304,12 +273,48 @@ struct IFramebuffer
   virtual void AddAttachment(uint32_t binding, IAttachment * attachment) = 0;
   virtual void Resize(uint32_t width, uint32_t height) = 0;
   virtual RHI::TexelIndex GetExtent() const = 0;
-  virtual void ClearAttachments() noexcept = 0;
-
-  virtual void SetSubpass(
-    uint32_t index, PipelinePtr pipeline,
-    PipelineProcessPtr process /*TODO: std::initializer_list<int> subpassDeps*/) = 0;
 };
+using FramebufferPtr = std::shared_ptr<IFramebuffer>;
+
+struct IRenderPass
+{
+  virtual ~IRenderPass() = default;
+
+  /// @brief switches render pass to a new pipeline
+  /// @param pipeline - pipeline to switch on
+  virtual void NextPipeline(PipelinePtr pipeline) = 0;
+  virtual void Barrier(IBufferGPU & buffer) = 0;
+  virtual void Barrier(ITexture & texture) = 0;
+  virtual void Barrier(IAttachment & texture) = 0;
+
+  /// @brief marks that framebuffer attachments must be filled with clear color value in the begining of the pass
+  /// put that in the beginning of the pass
+  virtual void ClearFramebuffer() = 0;
+  /// @brief marks that framebuffer attachments must be loaded from CPU memory in the begining of the pass
+  ///   put that in the beginning of the pass
+  virtual void LoadFramebuffer() = 0;
+  /// @brief marks that framebuffer attachments must be stored in CPU memory in the end of the pass
+  ///   Put that in the end of pass
+  virtual void StoreFramebuffer() = 0;
+
+  /// @brief draw vertices command (analog glDrawArrays)
+  virtual void DrawVertices(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0,
+                            uint32_t firstInstance = 0) = 0;
+  /// @brief draw vertices with indieces (analog glDrawElements)
+  virtual void DrawIndexedVertices(uint32_t indexCount, uint32_t instanceCount,
+                                   uint32_t firstIndex = 0, int32_t vertexOffset = 0,
+                                   uint32_t firstInstance = 0) = 0;
+  /// @brief Set viewport command
+  virtual void SetViewport(float width, float height) = 0;
+  /// @brief Set scissor command
+  virtual void SetScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) = 0;
+  /// @brief binds buffer as input attribute data
+  virtual void BindVertexBuffer(uint32_t binding, IBufferGPU * buffer, uint32_t offset = 0) = 0;
+  /// @brief binds buffer as index buffer
+  virtual void BindIndexBuffer(IBufferGPU * buffer, IndexType type, uint32_t offset = 0) = 0;
+  virtual void PushConstant(const void * data, size_t size) = 0;
+};
+using RenderPassPtr = std::shared_ptr<IRenderPass>;
 
 /// @brief Generic data buffer in GPU. You can map it on CPU memory and change.
 /// After mapping changed data can be sent to GPU. Use Flush method to be sure that data is sent
@@ -368,15 +373,13 @@ struct IContext
 
   virtual void ClearResources() = 0;
   virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) = 0;
-  virtual IAwaitable * RenderPass(
-    IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait = {},
-    AttachmentsContentOperation beforePassOp = AttachmentsContentOperation::Clear,
-    AttachmentsContentOperation afterPassOp = AttachmentsContentOperation::DontCare) = 0;
+  virtual IAwaitable * RenderPass(RenderPassPtr renderPass,
+                                  std::span<const IAwaitable *> commandsToWait = {}) = 0;
 
   virtual PipelinePtr CreatePipeline() = 0;
-  virtual PipelineProcessPtr CreateProcess() = 0;
-  virtual IFramebuffer * CreateFramebuffer() = 0;
-  virtual void DeleteFramebuffer(IFramebuffer * fbo) = 0;
+  virtual RenderPassPtr CreateRenderPass(FramebufferPtr framebuffer,
+                                         PipelinePtr initialPipeline) = 0;
+  virtual FramebufferPtr CreateFramebuffer() = 0;
   virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess) = 0;
   virtual void DeleteBuffer(IBufferGPU * buffer) = 0;
   virtual ITexture * CreateTexture(const TextureDescription & args) = 0;

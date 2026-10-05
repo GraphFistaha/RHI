@@ -22,9 +22,9 @@ public: // IContext interface
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) override;
   virtual PipelinePtr CreatePipeline() override;
-  virtual PipelineProcessPtr CreateProcess() override;
-  virtual IFramebuffer * CreateFramebuffer() override;
-  virtual void DeleteFramebuffer(IFramebuffer * fbo) override;
+  virtual RenderPassPtr CreateRenderPass(FramebufferPtr framebuffer,
+                                         PipelinePtr initialPipeline) override;
+  virtual FramebufferPtr CreateFramebuffer() override;
   virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage,
                                     bool allowHostAccess) override;
   virtual void DeleteBuffer(IBufferGPU * buffer) override;
@@ -38,10 +38,8 @@ public: // IContext interface
   // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
   virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) override;
-  virtual IAwaitable * RenderPass(
-    IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait = {},
-    AttachmentsContentOperation beforePassOp = AttachmentsContentOperation::Clear,
-    AttachmentsContentOperation afterPassOp = AttachmentsContentOperation::DontCare) override;
+  virtual IAwaitable * RenderPass(RenderPassPtr renderPass,
+                                  std::span<const IAwaitable *> commandsToWait = {}) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;

@@ -27,14 +27,14 @@ PRIVATE
 	
 	"RenderPass/Framebuffer.cpp"
 	"RenderPass/Framebuffer.hpp"
-	"RenderPass/RenderPass.cpp"
-	"RenderPass/RenderPass.hpp"
 	"RenderPass/RenderTarget.cpp"
 	"RenderPass/RenderTarget.hpp"
 	"RenderPass/SubpassGraph.cpp"
 	"RenderPass/SubpassGraph.hpp"
 	"RenderPass/AttachmentDescriptionBuilder.hpp"
 	"RenderPass/AttachmentDescriptionBuilder.cpp"
+	"RenderPass/RenderProcess.hpp"
+	"RenderPass/RenderProcess.cpp"
 
 	"Pipeline/DescriptorBufferLayout.cpp"
 	"Pipeline/DescriptorBufferLayout.hpp"
@@ -52,8 +52,6 @@ PRIVATE
 	"Pipeline/UpdateDescriptorTask.hpp"
 	"Pipeline/Pipeline.cpp"
 	"Pipeline/Pipeline.hpp"
-	"Pipeline/PipelineProcess.hpp"
-	"Pipeline/PipelineProcess.cpp"
 	"Pipeline/PipelineAttachmentsUsage.cpp"
 	"Pipeline/PipelineAttachmentsUsage.hpp"
 	

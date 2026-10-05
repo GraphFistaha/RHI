@@ -7,10 +7,10 @@
 #include <Memory/BufferGPU.hpp>
 #include <Memory/Texture.hpp>
 #include <Pipeline/Pipeline.hpp>
-#include <Pipeline/PipelineProcess.hpp>
 #include <Private/FastDynamicCast.hpp>
 #include <Private/Overload.hpp>
 #include <RenderPass/Framebuffer.hpp>
+#include <RenderPass/RenderProcess.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
 #include <TransferPass/Transferer.hpp>
@@ -98,19 +98,14 @@ PipelinePtr Context::CreatePipeline()
   return std::make_shared<Pipeline>(*this);
 }
 
-PipelineProcessPtr Context::CreateProcess()
+RenderPassPtr Context::CreateRenderPass(FramebufferPtr framebuffer, PipelinePtr initialPipeline)
 {
-  return std::make_shared<PipelineProcess>(*this);
+  return std::make_shared<RenderProcess>(*this, framebuffer, std::move(initialPipeline));
 }
 
-IFramebuffer * Context::CreateFramebuffer()
+FramebufferPtr Context::CreateFramebuffer()
 {
-  return m_framebuffers.Emplace<Framebuffer>(*this);
-}
-
-void Context::DeleteFramebuffer(IFramebuffer * fbo)
-{
-  m_framebuffers.Destroy(fbo);
+  return std::make_shared<Framebuffer>(*this);
 }
 
 IBufferGPU * Context::CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
@@ -185,52 +180,51 @@ IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait 
   return result;
 }
 
-IAwaitable * Context::RenderPass(
-  IFramebuffer * framebuffer, std::span<const IAwaitable *> commandsToWait /* = {}*/,
-  AttachmentsContentOperation beforePassOp /* = AttachmentsContentOperation::Clear*/,
-  AttachmentsContentOperation afterPassOp /* = AttachmentsContentOperation::DontCare*/)
+IAwaitable * Context::RenderPass(RenderPassPtr renderPass,
+                                 std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
-  auto * fbo = FastDynamicCast<Framebuffer>(framebuffer);
-  if (!fbo)
+  auto internalRenderPass = FastDynamicCast<RenderProcess>(renderPass);
+  if (!internalRenderPass)
     return nullptr;
-  fbo->Invalidate(utils::CastInterfaceEnum2Vulkan<VkAttachmentLoadOp>(beforePassOp),
-                  utils::CastInterfaceEnum2Vulkan<VkAttachmentStoreOp>(afterPassOp));
-  SubmitTask * result = nullptr;
-  m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
-  std::vector<VkSemaphore> waitSemaphores;
-  waitSemaphores.reserve(fbo->GetImagesCount() + commandsToWait.size());
-  if (RenderTarget * renderTarget = fbo->BeginFrame())
-  {
-    std::vector<ResourcePtr> usedResources;
-    m_graphicTransferer.CollectResources(usedResources);
-    fbo->CollectResources(usedResources);
-    ResetResourceSynchronization(usedResources);
+  internalRenderPass->Invalidate();
 
-    m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
-    fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+  return nullptr;
+  //SubmitTask * result = nullptr;
+  //m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
+  //std::vector<VkSemaphore> waitSemaphores;
+  //waitSemaphores.reserve(fbo->GetImagesCount() + commandsToWait.size());
+  //if (RenderTarget * renderTarget = fbo->BeginFrame())
+  //{
+  //  std::vector<ResourcePtr> usedResources;
+  //  m_graphicTransferer.CollectResources(usedResources);
+  //  fbo->CollectResources(usedResources);
+  //  ResetResourceSynchronization(usedResources);
 
-    auto && imageSemaphores = renderTarget->GetImageAvailableForRenderSemaphores();
-    waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
-    for (auto taskPtr : commandsToWait)
-    {
-      if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
-      {
-        /*
-            If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
-            In that case, access is synchronized by barriers
-            */
-        if (auto sem = ptr->GetSemaphore())
-          waitSemaphores.push_back(sem);
-      }
-    }
+  //  m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+  //  fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
 
-    result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
-    m_graphicTransferer.OnSubmit(*result);
-    fbo->EndFrame(result->GetSemaphore());
-    m_graphicTransferer.ProcessExecutingCommands();
-  }
+  //  auto && imageSemaphores = renderTarget->GetImageAvailableForRenderSemaphores();
+  //  waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
+  //  for (auto taskPtr : commandsToWait)
+  //  {
+  //    if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+  //    {
+  //      /*
+  //          If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
+  //          In that case, access is synchronized by barriers
+  //          */
+  //      if (auto sem = ptr->GetSemaphore())
+  //        waitSemaphores.push_back(sem);
+  //    }
+  //  }
 
-  return result;
+  //  result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
+  //  m_graphicTransferer.OnSubmit(*result);
+  //  fbo->EndFrame(result->GetSemaphore());
+  //  m_graphicTransferer.ProcessExecutingCommands();
+  //}
+
+  //return result;
 }
 
 void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept

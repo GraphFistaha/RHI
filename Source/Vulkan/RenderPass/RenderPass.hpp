@@ -20,17 +20,12 @@ namespace RHI::vulkan
 {
 
 struct RenderPass : public IInvalidable,
-                    public OwnedBy<Context>,
-                    public OwnedBy<Framebuffer>
+                    public RHI::IRenderPass,
+                    public OwnedBy<Context>
 {
   explicit RenderPass(Context & ctx, Framebuffer & framebuffer);
   virtual ~RenderPass() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
-  MAKE_ALIAS_FOR_GET_OWNER(Framebuffer, GetFramebuffer);
-
-public:
-  void SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process);
-  void ClearSubpasses();
 
 public: // IInvalidable Interface
   virtual void Invalidate() override;

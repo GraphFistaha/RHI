@@ -23,7 +23,7 @@ void InputAttachmentUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet
   VkDescriptorImageInfo imageInfo{};
   if (RenderPass * renderPass = GetPipeline().GetBindPoint())
   {
-    auto attachment = renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
+    IInternalAttachment * attachment = nullptr; //renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
     if (!attachment)
       return;
     imageInfo.imageView = attachment->GetImageView();
@@ -52,11 +52,13 @@ void InputAttachmentUniform::SynchroniseResources(SynchronizationFilter filter,
   {
     if (RenderPass * renderPass = GetPipeline().GetBindPoint())
     {
-      auto attachment = renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
-      attachment->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                       VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT,
-                                                       commands,
-                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      IInternalAttachment * attachment =
+        nullptr; //renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
+      if (attachment)
+        attachment->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                                         VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT,
+                                                         commands,
+                                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
   }
 }
