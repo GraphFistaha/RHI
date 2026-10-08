@@ -42,7 +42,7 @@ endif()
 target_include_directories(${this_target} 
 PUBLIC
 	"Public"
-PRVATE
+PRIVATE
 	"./"
 )
 

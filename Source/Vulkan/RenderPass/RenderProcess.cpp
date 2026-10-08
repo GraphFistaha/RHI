@@ -203,7 +203,7 @@ void RenderProcess::Invalidate()
   // rebuild attachments
   if (m_framebuffer->Invalidate(attachmentsUsage))
   {
-    std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext());
+    std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext(), VK_PIPELINE_BIND_POINT_GRAPHICS);
 
     for (auto && attachment : m_framebuffer->GetAttachments())
     {

@@ -105,24 +105,24 @@ SubpassGraph::SubpassGraph(Context & ctx, VkPipelineBindPoint bindPoint)
 {
   //auto descr = framebuffer.GetAttachementsDescription();
   //m_attachmentsDescription.assign(descr.begin(), descr.end());
-  auto && attachments = framebuffer.GetAttachments();
+  //auto && attachments = framebuffer.GetAttachments();
 
-  m_subpassDescriptions.reserve(requiredSubpasses);
-  auto firstRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::initialRenderPass)];
-  auto lastRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::finalRenderPass)];
+  //m_subpassDescriptions.reserve(requiredSubpasses);
+  //auto firstRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::initialRenderPass)];
+  //auto lastRow = m_attachmentsUsageTable[GetBarrierRowIndex(SubpassIndex::finalRenderPass)];
 
   // fill initial and final stages
-  for (size_t i = 0; i < m_attachmentsDescription.size(); ++i)
-  {
+  //for (size_t i = 0; i < m_attachmentsDescription.size(); ++i)
+  //{
     // initial barrier for each attachment
-    firstRow[i] = ResourceState{VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                m_attachmentsDescription[i].initialLayout};
+  //  firstRow[i] = ResourceState{VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+     //                           m_attachmentsDescription[i].initialLayout};
     // final barrier for each attachment
-    lastRow[i] = ResourceState{VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                               m_attachmentsDescription[i].finalLayout};
-  }
+  //  lastRow[i] = ResourceState{VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+   //                            m_attachmentsDescription[i].finalLayout};
+  //}
 
-  m_prevState.assign(firstRow.begin(), firstRow.end());
+  //m_prevState.assign(firstRow.begin(), firstRow.end());
 }
 
 ShaderSlot SubpassGraph::AddAttachment(const IInternalAttachment & attachment,
@@ -167,14 +167,14 @@ SubpassIndex SubpassGraph::AddSubpass(const Pipeline & pipeline)
   SubpassIndex index = static_cast<SubpassIndex>(m_subpassDescriptions.size());
   m_subpassDescriptions.push_back(description);
 
-  { // calc row in m_attachmentsUsageTable
-    auto [colorAttachments, dsAttachments, inputAttachments, resolveAttachments] =
-      ExtractSubpassAttachments(description);
-    processAttachments(inputAttachments, index);
-    processAttachments(colorAttachments, index);
-    processAttachments(resolveAttachments, index);
-    processAttachments(dsAttachments, index);
-  }
+  // { // calc row in m_attachmentsUsageTable
+  //   auto [colorAttachments, dsAttachments, inputAttachments, resolveAttachments] =
+  //     ExtractSubpassAttachments(description);
+  //   processAttachments(inputAttachments, index);
+  //   processAttachments(colorAttachments, index);
+  //   processAttachments(resolveAttachments, index);
+  //   processAttachments(dsAttachments, index);
+  // }
 
   return index;
 }
@@ -184,15 +184,15 @@ void SubpassGraph::AddDependency(SubpassIndex waitFor, SubpassIndex waitingSubpa
 {
   VkSubpassDependency dependency{};
   {
-    dependency.srcSubpass = static_cast<uint32_t>(waitFor);
-    dependency.dstSubpass = static_cast<uint32_t>(waitingSubpass);
-    dependency.srcStageMask = externalState.currentStage;
-    dependency.srcAccessMask = externalState.requiredAccess;
-    auto requiredLayout =
-      m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
-    ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
-    dependency.dstStageMask = newBarrier.currentStage;
-    dependency.dstAccessMask = newBarrier.requiredAccess;
+    // dependency.srcSubpass = static_cast<uint32_t>(waitFor);
+    // dependency.dstSubpass = static_cast<uint32_t>(waitingSubpass);
+    // dependency.srcStageMask = externalState.currentStage;
+    // dependency.srcAccessMask = externalState.requiredAccess;
+    // auto requiredLayout =
+    //   m_attachmentsUsageTable[GetBarrierRowIndex(subpass)][attachmentIdx].requiredLayout;
+    // ResourceState newBarrier = CalcAttachmentBarrier(externalState, requiredLayout);
+    // dependency.dstStageMask = newBarrier.currentStage;
+    // dependency.dstAccessMask = newBarrier.requiredAccess;
   }
   m_dependenciesGraph.push_back(dependency);
 }
@@ -232,26 +232,27 @@ void SubpassGraph::AddSelfDependency(SubpassIndex subpass)
   m_dependenciesGraph.push_back(dependency);
 }
 
-VkRenderPass SubpassGraph::MakeRenderPass(const VkDevice & device) const
+bool SubpassGraph::Compile(const VkDevice & device)
 {
-  if (m_subpassDescriptions.empty())
-    return VK_NULL_HANDLE;
+  // if (m_subpassDescriptions.empty())
+  //   return VK_NULL_HANDLE;
 
-  VkRenderPass renderPass = VK_NULL_HANDLE;
-  VkRenderPassCreateInfo renderPassCreateInfo{};
-  renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
-  renderPassCreateInfo.pAttachments = m_attachments.data();
-  renderPassCreateInfo.subpassCount = static_cast<uint32_t>(m_subpassDescriptions.size());
-  renderPassCreateInfo.pSubpasses = m_subpassDescriptions.data();
-  renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(m_dependenciesGraph.size());
-  renderPassCreateInfo.pDependencies = m_dependenciesGraph.data();
+  // VkRenderPass renderPass = VK_NULL_HANDLE;
+  // VkRenderPassCreateInfo renderPassCreateInfo{};
+  // renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  // renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
+  // renderPassCreateInfo.pAttachments = m_attachments.data();
+  // renderPassCreateInfo.subpassCount = static_cast<uint32_t>(m_subpassDescriptions.size());
+  // renderPassCreateInfo.pSubpasses = m_subpassDescriptions.data();
+  // renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(m_dependenciesGraph.size());
+  // renderPassCreateInfo.pDependencies = m_dependenciesGraph.data();
 
-  if (auto res = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
-      res != VK_SUCCESS)
-    throw std::runtime_error("Failed to create render pass");
+  //if (auto res = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
+ //     res != VK_SUCCESS)
+   // throw std::runtime_error("Failed to create render pass");
 
-  return renderPass;
+  //return renderPass;
+  return false;
 }
 
 void SubpassGraph::SynchronizeAttachmentsDuringRenderPass(
@@ -304,8 +305,8 @@ void SubpassGraph::BuildDependencyGraph(std::span<SubpassIndex> selfDependencies
     else
     {
       //TODO: find last used attachment and extrace masks from them.
-      depInfo.srcStageMask = dependencies[i - 1].dstStageMask;
-      depInfo.srcAccessMask = dependencies[i - 1].dstAccessMask;
+      //depInfo.srcStageMask = dependencies[i - 1].dstStageMask;
+      //depInfo.srcAccessMask = dependencies[i - 1].dstAccessMask;
     }
     for (auto && barrier : row)
     {
