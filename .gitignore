@@ -48,3 +48,5 @@ CMakeCache.txt
 .vs/*
 out/*
 CMakeCache/*
+
+.agents/reports/*
