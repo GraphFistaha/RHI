@@ -1,4 +1,4 @@
-#include "RenderProcess.hpp"
+﻿#include "RenderProcess.hpp"
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/BufferGPU.hpp>
@@ -203,8 +203,8 @@ void RenderProcess::Invalidate()
   // rebuild attachments
   if (m_framebuffer->Invalidate(attachmentsUsage))
   {
-    std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext(), VK_PIPELINE_BIND_POINT_GRAPHICS);
-
+    std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext());
+    // TODO: fill and build newRenderGraph
     for (auto && attachment : m_framebuffer->GetAttachments())
     {
       if (attachment)

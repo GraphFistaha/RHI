@@ -31,6 +31,8 @@ PRIVATE
 	"RenderPass/RenderTarget.hpp"
 	"RenderPass/SubpassGraph.cpp"
 	"RenderPass/SubpassGraph.hpp"
+	"RenderPass/SubpassSynchronization.hpp"
+	"RenderPass/SubpassSynchronization.cpp"
 	"RenderPass/AttachmentDescriptionBuilder.hpp"
 	"RenderPass/AttachmentDescriptionBuilder.cpp"
 	"RenderPass/RenderProcess.hpp"

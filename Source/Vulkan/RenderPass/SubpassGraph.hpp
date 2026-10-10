@@ -1,10 +1,11 @@
 #pragma once
+#include <cstdint>
+#include <limits>
+#include <span>
 #include <vector>
 
 #include <Memory/Synchronizer.hpp>
 #include <Private/OwnedBy.hpp>
-#include <Private/Table2D.hpp>
-#include <RHI.hpp>
 #include <vulkan/vulkan.h>
 
 namespace RHI::vulkan
@@ -12,10 +13,7 @@ namespace RHI::vulkan
 struct IInternalAttachment;
 struct Context;
 struct Pipeline;
-} // namespace RHI::vulkan
 
-namespace RHI::vulkan
-{
 enum class SubpassIndex : int32_t
 {
   initialRenderPass = -1,
@@ -26,68 +24,82 @@ enum class SubpassIndex : int32_t
   Subpass3,
   Subpass4,
   Subpass5,
-  //...
 };
 
+/// Builds and owns one render pass. Not thread-safe; the context must outlive this object.
+/// Successful compilation freezes the graph. Rebuilding requires a new graph.
 struct SubpassGraph final : public OwnedBy<Context>
 {
-  explicit SubpassGraph(Context & ctx, VkPipelineBindPoint bindPoint);
-  virtual ~SubpassGraph() override = default;
+  explicit SubpassGraph(Context & ctx);
+  ~SubpassGraph() override;
+  SubpassGraph(const SubpassGraph &) = delete;
+  SubpassGraph & operator=(const SubpassGraph &) = delete;
+  SubpassGraph(SubpassGraph &&) = delete;
+  SubpassGraph & operator=(SubpassGraph &&) = delete;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:
-  ShaderSlot AddAttachment(const IInternalAttachment & attachment, const ResourceState & initState,
-                           const ResourceState & finalState, VkAttachmentLoadOp loadOp,
-                           VkAttachmentStoreOp storeOp);
+  /// Returns an index in this graph's attachment array (not a shader location).
+  /// Register attachments before subpasses that reference them. Depth/stencil share load/store ops.
+  /// Boundary states track usage; initial/final layouts are supplied to Vulkan.
+  uint32_t AddAttachment(const IInternalAttachment & attachment, const ResourceState & initState,
+                         const ResourceState & finalState, VkAttachmentLoadOp loadOp,
+                         VkAttachmentStoreOp storeOp);
 
-  /// @brief add subpass description to graph (the same as to add vertex to graph)
-  /// @param subpass - description of subpass
-  /// @return - index of subpass
+  /// Pipeline attachment arrays must remain alive and unchanged until Compile finishes.
+  /// References use graph attachment indices. Subpasses execute in insertion order.
   SubpassIndex AddSubpass(const Pipeline & pipeline);
 
-  /// @brief you must add dependency if subpass should wait for some actions in previos subpass
-  void AddDependency(SubpassIndex waitFor, SubpassIndex waitingSubpass, ShaderSlot attachment);
+  /// Connects distinct forward-ordered subpasses using the attachment. No automatic dependencies.
+  void AddDependency(SubpassIndex source, SubpassIndex destination, uint32_t attachment);
 
-  /// @brief you must add external dependency when attachment is changed outside of RenderPass.
-  /// For example: when you call vkAcquireNextImageKHR you should synchronize render pass with that external operation
-  /// You do it with external dependency
-  /// @param externalState - the state of attachment after external operation completed
-  /// @param subpass - index of subpass that should wait for the external operation
-  /// @param attachmentIdx - attachment index has been changed
-  void AddExternalDependency(const ResourceState & externalState, SubpassIndex subpass,
-                             uint32_t attachmentIdx);
+  /// External scopes describe earlier/later accesses. Layouts must match the attachment boundary,
+  /// except an UNDEFINED initial layout discards contents regardless of the prior external layout.
+  /// These do not perform semaphore waits or queue ownership transfers.
+  void AddIncomingDependency(const ResourceState & externalState, SubpassIndex destination,
+                             uint32_t attachment);
+  void AddOutgoingDependency(SubpassIndex source, const ResourceState & externalState,
+                             uint32_t attachment);
 
-  /// @brief You must add self-dependency when subpass must have PipelineBarriers
-  /// @param subpass - index of subpass which has Pipeline barriers
-  void AddSelfDependency(SubpassIndex subpass);
+  /// Enables barriers within these scopes; does not perform layout transitions.
+  /// Framebuffer-space scopes use BY_REGION; other scopes use a global dependency.
+  void AddSelfDependency(SubpassIndex subpass, const ResourceState & sourceState,
+                         const ResourceState & destinationState);
 
-  /// @brief compile graph and make VkRenderPass
-  /// @param device 
-  /// @return true if renderPass created successfully
-  bool Compile(const VkDevice & device);
+  /// Uses the context device and vkCreateRenderPass. Vulkan failures return false and are logged.
+  /// Failed creation permits retry. Invalid descriptions and modification/recompile after success throw.
+  /// Core synchronization2 masks are converted to legacy equivalents; unsupported masks throw.
+  bool Compile();
+  VkRenderPass GetHandle() const noexcept { return m_renderPass; }
 
+  /// Updates CPU tracking only; records no barriers. Call at the corresponding execution boundary.
+  /// Attachments must be alive, in graph index order, and have exactly the registered count.
+  /// Boundary sentinels select initial/final states; unused subpass attachments retain tracked state.
   void SynchronizeAttachmentsDuringRenderPass(SubpassIndex subpassIndex,
                                               std::span<IInternalAttachment *> attachments) const;
 
-
 private:
-  VkPipelineBindPoint m_bindPoint;
-  /// cached info about attachments
+  /// Bind point shared by all subpasses in this graphics render pass.
+  static constexpr VkPipelineBindPoint m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  /// Owned handle; null until compilation succeeds. Destruction is deferred through the context.
+  VkRenderPass m_renderPass = VK_NULL_HANDLE;
+  /// Native attachment descriptions in graph attachment index order.
   std::vector<VkAttachmentDescription> m_attachments;
-  /// cached attachments objects
-  std::vector<const IInternalAttachment *> m_attachmentsObj; // TODO: shared_ptr
-  /// description of subpass. A vertex of the graph
+  /// Boundary tracking states, indexed identically to m_attachments.
+  std::vector<ResourceState> m_initialStates;
+  std::vector<ResourceState> m_finalStates;
+  /// Insertion-ordered subpasses; attachment reference arrays are borrowed from pipelines.
   std::vector<VkSubpassDescription> m_subpassDescriptions;
-  /// transfers from one subpass to another. The edge of vertex
+  /// Explicit internal, external, and self dependencies passed to render pass creation.
   std::vector<VkSubpassDependency> m_dependenciesGraph;
-  /// a table with subpassCount rows and attachmentsCount columns
-  /// it describes barrier, the attachment should sync into, to enter in subpassIdx
-  RHI::utils::Table2D<ResourceState> m_attachmentsUsageTable;
-
-  std::vector<ResourceState> m_prevState; ///< prev state of each attachment
+  /// States indexed by subpass then attachment; UNDEFINED layout marks unused attachments.
+  std::vector<std::vector<ResourceState>> m_attachmentsUsage;
 
 private:
-  size_t GetBarrierRowIndex(SubpassIndex idx) const noexcept;
-  void BuildDependencyGraph(std::span<SubpassIndex> selfDependencies);
+  void RequireMutable() const;
+  size_t GetSubpassIndex(SubpassIndex index) const;
+  const ResourceState & GetAttachmentState(SubpassIndex subpass, uint32_t attachment) const &;
+  void AppendDependency(uint32_t source, uint32_t destination, const ResourceState & sourceState,
+                        const ResourceState & destinationState, bool byRegion);
 };
 } // namespace RHI::vulkan
