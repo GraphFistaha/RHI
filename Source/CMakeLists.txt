@@ -23,6 +23,12 @@ PRIVATE
 	"Private/Types.hpp"
 	"Private/OwnedBy.hpp"
 	"Private/ObjectsTable.hpp"
+	"Private/FastDynamicCast.hpp"
+	"Private/Overload.hpp"
+	"Private/Hash.hpp"
+	"Private/Table2D.hpp"
+	"Private/SmallVector.hpp"
+	"Private/Constants.hpp"
 )
 
 if (${RHI_VULKAN_BACKEND})
@@ -36,7 +42,7 @@ endif()
 target_include_directories(${this_target} 
 PUBLIC
 	"Public"
-PRVATE
+PRIVATE
 	"./"
 )
 
@@ -50,6 +56,7 @@ PRIVATE
 	RHI_BUILD
 	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
 	$<$<BOOL:${RHI_USE_LOG_OUTPUT}>:RHI_USE_LOG_OUTPUT>
+	$<$<CONFIG:Release>:RHI_FAST_DYNAMIC_CAST>
 )
 
 install(TARGETS ${this_target}

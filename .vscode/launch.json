@@ -1,0 +1,218 @@
+﻿{
+    "version":  "0.2.0",
+    "configurations":  [
+                           {
+                               "name":  "HelloWindow",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/HelloWindow/HelloWindow.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/HelloWindow",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "HelloTriangle",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/HelloTriangle/HelloTriangle.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/HelloTriangle",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "Uniforms",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Uniforms/Uniforms.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Uniforms",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "ParallelPass",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/ParallelPass/ParallelPass.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/ParallelPass",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "MultiWindow",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/MultiWindow/MultiWindow.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/MultiWindow",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "Texturing",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Texturing/Texturing.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Texturing",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "DownloadImages",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/DownloadImages/DownloadImages.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/DownloadImages",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "TextureArray",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/TextureArray/TextureArray.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/TextureArray",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "LayeredTexture",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/LayeredTexture/LayeredTexture.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/LayeredTexture",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "TextureAtlas",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/TextureAtlas/TextureAtlas.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/TextureAtlas",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "Cube",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Cube/Cube.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/Cube",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           },
+                           {
+                               "name":  "OIT",
+                               "type":  "cppvsdbg",
+                               "request":  "launch",
+                               "program":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/OIT/OIT.exe",
+                               "args":  [
+
+                                        ],
+                               "stopAtEntry":  false,
+                               "cwd":  "${workspaceFolder}/out/install/${command:cmake.activeConfigurePresetName}/Examples/OIT",
+                               "environment":  [
+
+                                               ],
+                               "console":  "integratedTerminal",
+                               "preLaunchTask":  "CMake: build and install examples"
+                           }
+                       ],
+    "compounds":  [
+                      {
+                          "name":  "All Examples",
+                          "configurations":  [
+                                                 "HelloWindow",
+                                                 "HelloTriangle",
+                                                 "Uniforms",
+                                                 "ParallelPass",
+                                                 "MultiWindow",
+                                                 "Texturing",
+                                                 "DownloadImages",
+                                                 "TextureArray",
+                                                 "LayeredTexture",
+                                                 "TextureAtlas",
+                                                 "Cube",
+                                                 "OIT"
+                                             ],
+                          "preLaunchTask":  "CMake: build and install examples",
+                          "stopAll":  true
+                      }
+                  ]
+}

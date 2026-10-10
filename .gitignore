@@ -36,13 +36,6 @@
 build/*
 **/Build/*
 
-.vscode/*
-.vscode/settings.json
-.vscode/tasks.json
-.vscode/launch.json
-.vscode/extensions.json
-.vscode/*.code-snippets
-
 # Local History for Visual Studio Code
 .history/
 
@@ -55,3 +48,5 @@ CMakeCache.txt
 .vs/*
 out/*
 CMakeCache/*
+
+.agents/reports/*
