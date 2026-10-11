@@ -1,111 +1,125 @@
-add_subdirectory (ThirdParty/VkBootstrap)
+﻿add_subdirectory (ThirdParty/VkBootstrap)
 
-target_sources (${PROJECT_NAME}
-PRIVATE
-	"VulkanContext.cpp"
+set(this_target "RHI_vulkan_backend")
+set(backend_target ${this_target} PARENT_SCOPE)
+add_library(${this_target} OBJECT)
+set_target_properties(${this_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_sources (${this_target}
+PUBLIC
 	"VulkanContext.hpp"
-	"GarbageCollector.cpp"
 	"GarbageCollector.hpp"
-	"Device.cpp"
 	"Device.hpp"
-	"Surface.cpp"
 	"Surface.hpp"
 
 	"Memory/MemoryAllocator.hpp"
-	"Memory/MemoryAllocator.cpp"
-	"Memory/MemoryBlock.cpp"
 	"Memory/MemoryBlock.hpp"
 	"Memory/TextureInterface.hpp"
-	"Memory/Texture.cpp"
 	"Memory/Texture.hpp"
-	"Memory/BufferGPU.cpp"
 	"Memory/BufferGPU.hpp"
 	"Memory/BufferInterface.hpp"
-	"Memory/Synchronizer.cpp"
 	"Memory/Synchronizer.hpp"
 	"Memory/ResourceUser.hpp"
-	
-	"RenderPass/Framebuffer.cpp"
+
 	"RenderPass/Framebuffer.hpp"
-	"RenderPass/RenderTarget.cpp"
 	"RenderPass/RenderTarget.hpp"
-	"RenderPass/SubpassGraph.cpp"
 	"RenderPass/SubpassGraph.hpp"
 	"RenderPass/SubpassSynchronization.hpp"
-	"RenderPass/SubpassSynchronization.cpp"
 	"RenderPass/AttachmentDescriptionBuilder.hpp"
-	"RenderPass/AttachmentDescriptionBuilder.cpp"
 	"RenderPass/RenderProcess.hpp"
-	"RenderPass/RenderProcess.cpp"
 
-	"Pipeline/DescriptorBufferLayout.cpp"
 	"Pipeline/DescriptorBufferLayout.hpp"
-	"Pipeline/DescriptorsBuffer.cpp"
 	"Pipeline/DescriptorsBuffer.hpp"
 	"Pipeline/BaseDescriptor.hpp"
 	"Pipeline/SamplerUniform.hpp"
-	"Pipeline/SamplerUniform.cpp"
 	"Pipeline/SamplerArrayUniform.hpp"
-	"Pipeline/SamplerArrayUniform.cpp"
-	"Pipeline/BufferUniform.cpp"
 	"Pipeline/BufferUniform.hpp"
-	"Pipeline/InputAttachmentUniform.cpp"
 	"Pipeline/InputAttachmentUniform.hpp"
 	"Pipeline/UpdateDescriptorTask.hpp"
-	"Pipeline/Pipeline.cpp"
 	"Pipeline/Pipeline.hpp"
-	"Pipeline/PipelineAttachmentsUsage.cpp"
 	"Pipeline/PipelineAttachmentsUsage.hpp"
-	
-	
+
 	"Utils/CastHelper.hpp"
-	"Utils/DescriptorSetLayoutBuilder.cpp"
 	"Utils/DescriptorSetLayoutBuilder.hpp"
-	"Utils/FramebufferBuilder.cpp"
 	"Utils/FramebufferBuilder.hpp"
-	"Utils/PipelineBuilder.cpp" 
 	"Utils/PipelineBuilder.hpp"
-	"Utils/PipelineLayoutBuilder.cpp"
 	"Utils/PipelineLayoutBuilder.hpp"
-	"Utils/SamplerBuilder.cpp"
 	"Utils/SamplerBuilder.hpp"
 	"Utils/FenceBuilder.hpp"
-	"Utils/FenceBuilder.cpp"
 	"Utils/SemaphoreBuilder.hpp"
-	"Utils/SemaphoreBuilder.cpp"
 	"Utils/EventBuilder.hpp"
-	"Utils/EventBuilder.cpp"
-	
+
 	"ImageUtils/InternalImageTraits.hpp"
-	"ImageUtils/ImageFormatsConversation.cpp"
 	"ImageUtils/ImageFormatsConversation.hpp"
 	"ImageUtils/ImageUtils.hpp"
-	"ImageUtils/ImageUtils.cpp"
 
-	"Attachments/GenericAttachment.cpp"
 	"Attachments/GenericAttachment.hpp"
 	"Attachments/Attachment.hpp"
-	"Attachments/SurfacedAttachment.cpp"
 	"Attachments/SurfacedAttachment.hpp"
 
 	"TransferPass/Transferer.hpp"
-	"TransferPass/Transferer.cpp"
 	"TransferPass/TransferTask.hpp"
-	"TransferPass/TransferTask.cpp"
 	"TransferPass/TransferAlgorithm.hpp"
+
+	"CommandsExecution/InternalAwaitable.hpp"
+	"CommandsExecution/CommandBuffer.hpp"
+	"CommandsExecution/Submitter.hpp"
+	"CommandsExecution/SubmitTask.hpp"
+	"CommandsExecution/DoubleBufferedSubmitter.hpp"
+
+PRIVATE
+	"VulkanContext.cpp"
+	"GarbageCollector.cpp"
+	"Device.cpp"
+	"Surface.cpp"
+
+	"Memory/MemoryAllocator.cpp"
+	"Memory/MemoryBlock.cpp"
+	"Memory/Texture.cpp"
+	"Memory/BufferGPU.cpp"
+	"Memory/Synchronizer.cpp"
+
+	"RenderPass/Framebuffer.cpp"
+	"RenderPass/RenderTarget.cpp"
+	"RenderPass/SubpassGraph.cpp"
+	"RenderPass/SubpassSynchronization.cpp"
+	"RenderPass/AttachmentDescriptionBuilder.cpp"
+	"RenderPass/RenderProcess.cpp"
+
+	"Pipeline/DescriptorBufferLayout.cpp"
+	"Pipeline/DescriptorsBuffer.cpp"
+	"Pipeline/SamplerUniform.cpp"
+	"Pipeline/SamplerArrayUniform.cpp"
+	"Pipeline/BufferUniform.cpp"
+	"Pipeline/InputAttachmentUniform.cpp"
+	"Pipeline/Pipeline.cpp"
+	"Pipeline/PipelineAttachmentsUsage.cpp"
+
+	"Utils/DescriptorSetLayoutBuilder.cpp"
+	"Utils/FramebufferBuilder.cpp"
+	"Utils/PipelineBuilder.cpp"
+	"Utils/PipelineLayoutBuilder.cpp"
+	"Utils/SamplerBuilder.cpp"
+	"Utils/FenceBuilder.cpp"
+	"Utils/SemaphoreBuilder.cpp"
+	"Utils/EventBuilder.cpp"
+
+	"ImageUtils/ImageFormatsConversation.cpp"
+	"ImageUtils/ImageUtils.cpp"
+
+	"Attachments/GenericAttachment.cpp"
+	"Attachments/SurfacedAttachment.cpp"
+
+	"TransferPass/Transferer.cpp"
+	"TransferPass/TransferTask.cpp"
 	"TransferPass/Blit.cpp"
 	"TransferPass/Buffer.cpp"
 	"TransferPass/Image.cpp"
 	"TransferPass/Mipmaps.cpp"
-	
-	"CommandsExecution/InternalAwaitable.hpp"
-	"CommandsExecution/CommandBuffer.cpp" 
-	"CommandsExecution/CommandBuffer.hpp" 
+
+	"CommandsExecution/CommandBuffer.cpp"
 	"CommandsExecution/Submitter.cpp"
-	"CommandsExecution/Submitter.hpp"
 	"CommandsExecution/SubmitTask.cpp"
-	"CommandsExecution/SubmitTask.hpp"
-	"CommandsExecution/DoubleBufferedSubmitter.hpp"
 	"CommandsExecution/DoubleBufferedSubmitter.cpp"
 )
 
@@ -115,21 +129,35 @@ find_package(VulkanHeaders REQUIRED)
 find_package(VulkanLoader REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
-target_compile_definitions(${PROJECT_NAME} 
-PRIVATE
+target_compile_definitions(${this_target} 
+PUBLIC
 	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
 
-target_link_libraries(${PROJECT_NAME}
-PRIVATE
+
+target_link_libraries(${this_target}
+PUBLIC
 	#Vulkan::Vulkan
-	vulkan-headers::vulkan-headers
-	Vulkan::Loader
-	vk-bootstrap::vk-bootstrap
-	GPUOpen::VulkanMemoryAllocator
+    vulkan-headers::vulkan-headers
+    Vulkan::Loader
+    vk-bootstrap::vk-bootstrap
+    GPUOpen::VulkanMemoryAllocator
 )
 
-target_include_directories(${PROJECT_NAME}
-PRIVATE
- "./"
+target_include_directories(${this_target} 
+PUBLIC 
+	"./"
 )
+
+if (RHI_BUILD_TESTS)
+    find_package(Catch2 REQUIRED)
+    add_executable(RHI_Vulkan_Tests
+        "Utils/DescriptorSetLayoutBuilder_test.cpp"
+    )
+    target_link_libraries(RHI_Vulkan_Tests 
+	PRIVATE Catch2::Catch2WithMain ${this_target} RHI_Interface
+	)
+    target_include_directories(RHI_Vulkan_Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+    target_compile_definitions(RHI_Vulkan_Tests PRIVATE RHI_BUILD)
+    add_test(NAME RHI_Vulkan_Tests COMMAND $<TARGET_FILE:RHI_Vulkan_Tests>)
+endif()
