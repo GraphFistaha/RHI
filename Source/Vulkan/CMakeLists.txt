@@ -1,98 +1,128 @@
-add_subdirectory (ThirdParty/VkBootstrap)
+﻿add_subdirectory (ThirdParty/VkBootstrap)
 
-target_sources (${PROJECT_NAME}
-PRIVATE
-	"VulkanContext.cpp"
+set(this_target "RHI_vulkan_backend")
+set(backend_target ${this_target} PARENT_SCOPE)
+add_library(${this_target} OBJECT)
+set_target_properties(${this_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_sources (${this_target}
+PUBLIC
 	"VulkanContext.hpp"
-	"GarbageCollector.cpp"
 	"GarbageCollector.hpp"
-	"Device.cpp"
 	"Device.hpp"
-	"Surface.cpp"
 	"Surface.hpp"
 
 	"Memory/MemoryAllocator.hpp"
-	"Memory/MemoryAllocator.cpp"
-	"Memory/MemoryBlock.cpp"
 	"Memory/MemoryBlock.hpp"
-	
-	"RenderPass/Framebuffer.cpp"
-	"RenderPass/Framebuffer.hpp"
-	"RenderPass/Subpass.cpp"
-	"RenderPass/Subpass.hpp"
-	"RenderPass/SubpassLayout.cpp"
-	"RenderPass/SubpassLayout.hpp"
-	"RenderPass/RenderPass.cpp"
-	"RenderPass/RenderPass.hpp"
-	"RenderPass/RenderTarget.cpp"
-	"RenderPass/RenderTarget.hpp"
-	"RenderPass/SubpassConfiguration.cpp"
-	"RenderPass/SubpassConfiguration.hpp"
+	"Memory/TextureInterface.hpp"
+	"Memory/Texture.hpp"
+	"Memory/BufferGPU.hpp"
+	"Memory/BufferInterface.hpp"
+	"Memory/Synchronizer.hpp"
+	"Memory/LegacySynchronization.hpp"
+	"Memory/ResourceUser.hpp"
 
-	"Descriptors/DescriptorBufferLayout.cpp"
-	"Descriptors/DescriptorBufferLayout.hpp"
-	"Descriptors/DescriptorsBuffer.cpp"
-	"Descriptors/DescriptorsBuffer.hpp"
-	"Descriptors/BaseUniform.hpp"
-	"Descriptors/SamplerUniform.hpp"
-	"Descriptors/SamplerUniform.cpp"
-	"Descriptors/SamplerArrayUniform.hpp"
-	"Descriptors/SamplerArrayUniform.cpp"
-	"Descriptors/BufferUniform.cpp"
-	"Descriptors/BufferUniform.hpp"
-	
-	
+	"RenderPass/Framebuffer.hpp"
+	"RenderPass/RenderTarget.hpp"
+	"RenderPass/SubpassGraph.hpp"
+	"RenderPass/SubpassSynchronization.hpp"
+	"RenderPass/AttachmentDescriptionBuilder.hpp"
+	"RenderPass/RenderProcess.hpp"
+
+	"Pipeline/DescriptorBufferLayout.hpp"
+	"Pipeline/DescriptorsBuffer.hpp"
+	"Pipeline/BaseDescriptor.hpp"
+	"Pipeline/SamplerUniform.hpp"
+	"Pipeline/SamplerArrayUniform.hpp"
+	"Pipeline/BufferUniform.hpp"
+	"Pipeline/InputAttachmentUniform.hpp"
+	"Pipeline/UpdateDescriptorTask.hpp"
+	"Pipeline/Pipeline.hpp"
+	"Pipeline/PipelineAttachmentsUsage.hpp"
+
 	"Utils/CastHelper.hpp"
-	"Utils/DescriptorSetLayoutBuilder.cpp"
 	"Utils/DescriptorSetLayoutBuilder.hpp"
-	"Utils/FramebufferBuilder.cpp"
 	"Utils/FramebufferBuilder.hpp"
-	"Utils/PipelineBuilder.cpp" 
 	"Utils/PipelineBuilder.hpp"
-	"Utils/PipelineLayoutBuilder.cpp"
 	"Utils/PipelineLayoutBuilder.hpp"
-	"Utils/RenderPassBuilder.cpp"
-	"Utils/RenderPassBuilder.hpp"
-	"Utils/SamplerBuilder.cpp"
 	"Utils/SamplerBuilder.hpp"
 	"Utils/FenceBuilder.hpp"
-	"Utils/FenceBuilder.cpp"
 	"Utils/SemaphoreBuilder.hpp"
-	"Utils/SemaphoreBuilder.cpp"
-	
-	
-	"ImageUtils/ImageLayoutTransferer.cpp"
-	"ImageUtils/ImageLayoutTransferer.hpp"
+	"Utils/EventBuilder.hpp"
+
 	"ImageUtils/InternalImageTraits.hpp"
-	"ImageUtils/ImageFormatsConversation.cpp"
 	"ImageUtils/ImageFormatsConversation.hpp"
-	"ImageUtils/TextureInterface.hpp"
 	"ImageUtils/ImageUtils.hpp"
+
+	"Attachments/GenericAttachment.hpp"
+	"Attachments/Attachment.hpp"
+	"Attachments/SurfacedAttachment.hpp"
+
+	"TransferPass/Transferer.hpp"
+	"TransferPass/TransferTask.hpp"
+	"TransferPass/TransferAlgorithm.hpp"
+
+	"CommandsExecution/InternalAwaitable.hpp"
+	"CommandsExecution/CommandBuffer.hpp"
+	"CommandsExecution/Submitter.hpp"
+	"CommandsExecution/SubmitTask.hpp"
+	"CommandsExecution/DoubleBufferedSubmitter.hpp"
+
+PRIVATE
+	"VulkanContext.cpp"
+	"GarbageCollector.cpp"
+	"Device.cpp"
+	"Surface.cpp"
+
+	"Memory/MemoryAllocator.cpp"
+	"Memory/MemoryBlock.cpp"
+	"Memory/Texture.cpp"
+	"Memory/BufferGPU.cpp"
+	"Memory/Synchronizer.cpp"
+	"Memory/LegacySynchronization.cpp"
+
+	"RenderPass/Framebuffer.cpp"
+	"RenderPass/RenderTarget.cpp"
+	"RenderPass/SubpassGraph.cpp"
+	"RenderPass/SubpassSynchronization.cpp"
+	"RenderPass/AttachmentDescriptionBuilder.cpp"
+	"RenderPass/RenderProcess.cpp"
+
+	"Pipeline/DescriptorBufferLayout.cpp"
+	"Pipeline/DescriptorsBuffer.cpp"
+	"Pipeline/SamplerUniform.cpp"
+	"Pipeline/SamplerArrayUniform.cpp"
+	"Pipeline/BufferUniform.cpp"
+	"Pipeline/InputAttachmentUniform.cpp"
+	"Pipeline/Pipeline.cpp"
+	"Pipeline/PipelineAttachmentsUsage.cpp"
+
+	"Utils/DescriptorSetLayoutBuilder.cpp"
+	"Utils/FramebufferBuilder.cpp"
+	"Utils/PipelineBuilder.cpp"
+	"Utils/PipelineLayoutBuilder.cpp"
+	"Utils/SamplerBuilder.cpp"
+	"Utils/FenceBuilder.cpp"
+	"Utils/SemaphoreBuilder.cpp"
+	"Utils/EventBuilder.cpp"
+
+	"ImageUtils/ImageFormatsConversation.cpp"
 	"ImageUtils/ImageUtils.cpp"
 
 	"Attachments/GenericAttachment.cpp"
-	"Attachments/GenericAttachment.hpp"
-	"Attachments/Attachment.hpp"
 	"Attachments/SurfacedAttachment.cpp"
-	"Attachments/SurfacedAttachment.hpp"
-	
-	"Resources/Texture.cpp"
-	"Resources/Texture.hpp"
-	"Resources/BufferGPU.cpp"
-	"Resources/BufferGPU.hpp"
-	"Resources/Transferer.hpp"
-	"Resources/Transferer.cpp"
-	
-	
-	"CommandsExecution/CommandBuffer.cpp" 
-	"CommandsExecution/CommandBuffer.hpp" 
-	"CommandsExecution/Submitter.cpp"
-	"CommandsExecution/Submitter.hpp"
-	"CommandsExecution/AsyncTask.cpp"
-	"CommandsExecution/AsyncTask.hpp"
 
-	"CommandsExecution/CompositeAsyncTask.cpp"
-	"CommandsExecution/CompositeAsyncTask.hpp"
+	"TransferPass/Transferer.cpp"
+	"TransferPass/TransferTask.cpp"
+	"TransferPass/Blit.cpp"
+	"TransferPass/Buffer.cpp"
+	"TransferPass/Image.cpp"
+	"TransferPass/Mipmaps.cpp"
+
+	"CommandsExecution/CommandBuffer.cpp"
+	"CommandsExecution/Submitter.cpp"
+	"CommandsExecution/SubmitTask.cpp"
+	"CommandsExecution/DoubleBufferedSubmitter.cpp"
 )
 
 #---------------- Link third-party libraries ---------------
@@ -101,21 +131,36 @@ find_package(VulkanHeaders REQUIRED)
 find_package(VulkanLoader REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
-target_compile_definitions(${PROJECT_NAME} 
-PRIVATE
+target_compile_definitions(${this_target} 
+PUBLIC
 	$<$<CONFIG:Debug>:ENABLE_VALIDATION_LAYERS>
 )
 
-target_link_libraries(${PROJECT_NAME}
-PRIVATE
+
+target_link_libraries(${this_target}
+PUBLIC
 	#Vulkan::Vulkan
-	vulkan-headers::vulkan-headers
-	Vulkan::Loader
-	vk-bootstrap::vk-bootstrap
-	GPUOpen::VulkanMemoryAllocator
+    vulkan-headers::vulkan-headers
+    Vulkan::Loader
+    vk-bootstrap::vk-bootstrap
+    GPUOpen::VulkanMemoryAllocator
 )
 
-target_include_directories(${PROJECT_NAME}
-PRIVATE
- "./"
+target_include_directories(${this_target} 
+PUBLIC 
+	"./"
 )
+
+if (RHI_BUILD_TESTS)
+    find_package(Catch2 REQUIRED)
+    add_executable(RHI_Vulkan_Tests
+        "Utils/DescriptorSetLayoutBuilder_test.cpp"
+        "Memory/LegacySynchronization_test.cpp"
+    )
+    target_link_libraries(RHI_Vulkan_Tests 
+	PRIVATE Catch2::Catch2WithMain ${this_target} RHI_Interface
+	)
+    target_include_directories(RHI_Vulkan_Tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+    target_compile_definitions(RHI_Vulkan_Tests PRIVATE RHI_BUILD)
+    add_test(NAME RHI_Vulkan_Tests COMMAND $<TARGET_FILE:RHI_Vulkan_Tests>)
+endif()

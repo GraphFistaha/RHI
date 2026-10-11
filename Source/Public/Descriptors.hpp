@@ -7,14 +7,38 @@ namespace RHI
 struct IBufferGPU;
 struct ITexture;
 
+// clang-format off
+enum class ShaderSlot : uint8_t
+{
+  _0 = 0,
+  _1, _2, _3, _4, _5,
+  _6, _7, _8, _9, _10,
+  _11, _12, _13, _14, _15,
+  _16, _17, _18, _19, _20,
+  _21, _22, _23, _24, _25,
+  _26, _27, _28, _29, _30,
+  _31, _32,
+  Max = 32,
+  Invalid = 255,
+};
+// clang-format on
+
+using ShaderBinding = ShaderSlot;
+using ShaderSet = ShaderSlot;
+
 struct LayoutIndex final
 {
-  uint32_t set;
-  uint32_t binding;
+  ShaderSet set = ShaderSet::_0;
+  ShaderBinding binding = ShaderBinding::_0;
 
   bool operator==(const LayoutIndex & rhs) const noexcept
   {
     return set == rhs.set && binding == rhs.binding;
+  }
+
+  inline bool IsValid() const noexcept
+  {
+    return set != ShaderSet::Invalid && binding != ShaderBinding::Invalid;
   }
 };
 
@@ -65,7 +89,7 @@ struct ISamplerArrayUniformDescriptor : public IUniformDescriptor,
 
 struct IBufferUniformDescriptor : public IUniformDescriptor
 {
-  virtual void AssignBuffer(const IBufferGPU & buffer, size_t offset = 0) = 0;
+  virtual void AssignBuffer(IBufferGPU * buffer, size_t offset = 0) = 0;
   virtual bool IsBufferAssigned() const noexcept = 0;
 };
 
@@ -80,7 +104,8 @@ struct hash<RHI::LayoutIndex>
 {
   std::size_t operator()(const RHI::LayoutIndex & x) const
   {
-    return std::hash<uint32_t>()(x.set) << 32 | std::hash<uint32_t>()(x.binding);
+    return static_cast<size_t>(static_cast<uint32_t>(x.set) << 8 |
+                               static_cast<uint32_t>(x.binding));
   }
 };
 

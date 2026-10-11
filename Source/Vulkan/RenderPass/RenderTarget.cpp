@@ -26,9 +26,7 @@ RenderTarget::RenderTarget(RenderTarget && rhs) noexcept
   std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
   std::swap(m_attachedImages, rhs.m_attachedImages);
   std::swap(m_extent, rhs.m_extent);
-  std::swap(m_clearValues, rhs.m_clearValues);
   std::swap(m_framebuffer, rhs.m_framebuffer);
-  std::swap(m_builder, rhs.m_builder);
   std::swap(m_invalidFramebuffer, rhs.m_invalidFramebuffer);
 }
 
@@ -40,42 +38,20 @@ RenderTarget & RenderTarget::operator=(RenderTarget && rhs) noexcept
     std::swap(m_boundRenderPass, rhs.m_boundRenderPass);
     std::swap(m_attachedImages, rhs.m_attachedImages);
     std::swap(m_extent, rhs.m_extent);
-    std::swap(m_clearValues, rhs.m_clearValues);
     std::swap(m_framebuffer, rhs.m_framebuffer);
-    std::swap(m_builder, rhs.m_builder);
     std::swap(m_invalidFramebuffer, rhs.m_invalidFramebuffer);
   }
   return *this;
 }
 
-void RenderTarget::SetClearValue(uint32_t attachmentIndex, float r, float g, float b,
-                                 float a) noexcept
-{
-  m_clearValues[attachmentIndex].color = VkClearColorValue{r, g, b, a};
-}
-
-void RenderTarget::SetClearValue(uint32_t attachmentIndex, float depth, uint32_t stencil) noexcept
-{
-  m_clearValues[attachmentIndex].depthStencil = VkClearDepthStencilValue{depth, stencil};
-}
-
-TexelIndex RenderTarget::GetExtent() const noexcept
-{
-  return {static_cast<texel_t>(m_extent.width), static_cast<texel_t>(m_extent.height),
-          static_cast<texel_t>(m_extent.depth) /*= 1*/};
-}
-
-void RenderTarget::Invalidate()
+void RenderTarget::RebuildFramebuffer()
 {
   assert(m_boundRenderPass);
   if (m_invalidFramebuffer || !m_framebuffer)
   {
-    m_builder.Reset();
-    for (uint32_t i = 0; i < m_attachedImages.size(); ++i)
-      m_builder.BindAttachment(i, m_attachedImages[i]);
-
-    auto new_framebuffer =
-      m_builder.Make(GetContext().GetGpuConnection().GetDevice(), m_boundRenderPass, m_extent);
+    utils::FramebufferBuilder builder;
+    auto new_framebuffer = builder.Make(GetContext().GetGpuConnection().GetDevice(),
+                                        m_boundRenderPass, m_extent, m_attachedImages);
     GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_framebuffer, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkFramebuffer({}) has been rebuilt - {}",
                      static_cast<void *>(m_framebuffer), static_cast<void *>(new_framebuffer));
@@ -98,19 +74,30 @@ void RenderTarget::SetExtent(const VkExtent3D & extent) noexcept
   m_extent = extent;
 }
 
-const std::vector<VkClearValue> & RenderTarget::GetClearValues() const & noexcept
+std::span<const VkClearValue> RenderTarget::GetClearValues() const noexcept
 {
   return m_clearValues;
 }
 
-void RenderTarget::SetAttachments(std::vector<VkImageView> && views) noexcept
+std::span<const VkImageView> RenderTarget::GetImageViews() const noexcept
+{
+  return m_attachedImages;
+}
+
+std::span<const VkSemaphore> RenderTarget::GetImageAvailableForRenderSemaphores() const noexcept
+{
+  return m_imageAvailabilitySemaphores;
+}
+
+void RenderTarget::SetAttachments(MultibufferVector<VkImageView> && views,
+                                  MultibufferVector<VkClearValue> && clearValues,
+                                  MultibufferVector<VkSemaphore> && imageSemaphores) noexcept
 {
   if (views != m_attachedImages)
-  {
-    m_attachedImages = std::move(views);
-    m_clearValues.resize(m_attachedImages.size(), VkClearValue{});
     m_invalidFramebuffer = true;
-  }
+  m_attachedImages = std::move(views);
+  m_clearValues = std::move(clearValues);
+  m_imageAvailabilitySemaphores = std::move(imageSemaphores);
 }
 
 size_t RenderTarget::GetAttachmentsCount() const noexcept

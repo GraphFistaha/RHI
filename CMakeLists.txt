@@ -8,7 +8,7 @@ option(RHI_USE_LOG_OUTPUT "use debug log output" ON)
 
 project(RHI C CXX)
 set (CMAKE_CXX_STANDARD 20)
-set (CMAKE_C_STANDATD 17)
+set (CMAKE_C_STANDARD 17)
 cmake_policy(SET CMP0135 NEW)
 if(LINUX)
 add_compile_options(-fPIC)
@@ -26,32 +26,6 @@ set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 set(EXAMPLES_DIR ${PROJECT_SOURCE_DIR}/Examples)
 
 include(${SOURCE_DIR}/ShaderCompile.cmake)
-# -------------------- Install conan packages ----------------------
-message(STATUS "Copy conanfile.txt into CMake cache")
-configure_file("${PROJECT_SOURCE_DIR}/conanfile.txt" "${PROJECT_BINARY_DIR}/conanfile.txt" COPYONLY)
-
-include(${SOURCE_DIR}/conan.cmake)
-
-conan_cmake_autodetect(settings RUNTIME static)
-message(status ${settings})
-conan_cmake_install(PATH_OR_REFERENCE .
-                    BUILD missing
-                    REMOTE conancenter
-                    SETTINGS ${settings}
-                    OUTPUT_FOLDER ${PROJECT_BINARY_DIR}/ConanResult
-)
-
-# TODO: do not find conan_toolchain, make it with CMakePresets
-file(GLOB_RECURSE ToolchainFile
-     "${PROJECT_BINARY_DIR}/ConanResult/**/conan_toolchain.cmake"
-)
-get_filename_component(GeneratorsFolder ${ToolchainFile} DIRECTORY)
-
-list(APPEND CMAKE_MODULE_PATH ${GeneratorsFolder})
-list(APPEND CMAKE_PREFIX_PATH ${GeneratorsFolder})
-
-#------------------------------------------------------------------
-
 
 ADD_SUBDIRECTORY(${SOURCE_DIR})
 if (${RHI_BUILD_EXAMPLES})

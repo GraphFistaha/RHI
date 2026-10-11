@@ -4,20 +4,49 @@
 
 #include <Attachments/GenericAttachment.hpp>
 #include <Attachments/SurfacedAttachment.hpp>
-#include <CommandsExecution/CommandBuffer.hpp>
+#include <Memory/BufferGPU.hpp>
+#include <Memory/Texture.hpp>
+#include <Pipeline/Pipeline.hpp>
+#include <Private/FastDynamicCast.hpp>
+#include <Private/Overload.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <RenderPass/RenderPass.hpp>
-#include <RenderPass/RenderTarget.hpp>
-#include <RenderPass/SubpassConfiguration.hpp>
-#include <Resources/BufferGPU.hpp>
-#include <Resources/Texture.hpp>
-#include <Resources/Transferer.hpp>
+#include <RenderPass/RenderProcess.hpp>
 #include <RHI.hpp>
 #include <Surface.hpp>
+#include <TransferPass/Transferer.hpp>
 #include <Utils/CastHelper.hpp>
 
 // --------------------- Static functions ------------------------------
+namespace RHI::vulkan
+{
+static void ResetResourceSynchronization(std::vector<ResourcePtr> & resources)
+{
+  std::ranges::sort(resources); // sort to equal pointers stay close
 
+  constexpr ResourcePtr nullPtr = static_cast<IInternalTexture *>(nullptr);
+  ResourcePtr prevPtr = static_cast<IInternalTexture *>(nullptr);
+  // reset synchronization in the begining of pass
+  for (auto && ptr : resources)
+  {
+    if (prevPtr == nullPtr || ptr != prevPtr)
+    {
+      std::visit(std::overload(
+                   [](IInternalBuffer * buffer)
+                   {
+                     if (buffer)
+                       buffer->GetSynchronizer().ResetSynchronization();
+                   },
+                   [](IInternalTexture * texture)
+                   {
+                     if (texture)
+                       texture->GetSynchronizer().ResetSynchronization();
+                   }),
+                 ptr);
+      prevPtr = ptr;
+    }
+  }
+}
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
@@ -26,6 +55,12 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
   , m_device(*this, gpuTraits)
   , m_allocator(*this)
   , m_gc(*this)
+  , m_graphicSubmitter(*this, QueueType::Graphics, 2, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+  , m_transferSubmitter(*this, QueueType::Transfer, 2, VK_PIPELINE_STAGE_TRANSFER_BIT)
+  , m_computeSubmitter(*this, QueueType::Compute, 2, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT)
+  , m_graphicTransferer(*this, m_device.GetQueue(QueueType::Graphics).first, 3)
+  , m_transferTransferer(*this, m_device.GetQueue(QueueType::Transfer).first, 3)
+  , m_computeTransferer(*this, m_device.GetQueue(QueueType::Compute).first, 3)
 {
   // alloc null texture
   RHI::TextureDescription args{};
@@ -35,7 +70,19 @@ Context::Context(const GpuTraits & gpuTraits, LoggingFunc logFunc)
     args.mipLevels = 1;
     args.type = RHI::ImageType::Image2D;
   }
-  m_nullTexture = CreateTexture(args);
+  auto * texture = CreateTexture(args);
+  int freeColor = 0xFF;
+  RHI::UploadImageArgs uploadArgs{};
+  {
+    uploadArgs.copyRegion = {{0, 0, 0}, {1, 1, 1}};
+    uploadArgs.dstOffset = {0, 0, 0};
+    uploadArgs.srcTexture.extent = {1, 1, 1};
+    uploadArgs.srcTexture.format = RHI::HostImageFormat::RGBA8;
+    uploadArgs.srcTexture.type = RHI::ImageType::Image2D;
+    uploadArgs.srcTexture.pixelData = reinterpret_cast<uint8_t *>(&freeColor);
+  }
+  texture->UploadImage(uploadArgs);
+  m_nullTexture = texture;
 }
 
 
@@ -46,14 +93,19 @@ IAttachment * Context::CreateSurfacedAttachment(const SurfaceConfig & surfaceTra
   return m_attachments.Emplace<SurfacedAttachment>(*this, std::move(surface), buffering);
 }
 
-IFramebuffer * Context::CreateFramebuffer()
+PipelinePtr Context::CreatePipeline()
 {
-  return m_framebuffers.Emplace<Framebuffer>(*this);
+  return std::make_shared<Pipeline>(*this);
 }
 
-void Context::DeleteFramebuffer(IFramebuffer * fbo)
+RenderPassPtr Context::CreateRenderPass(FramebufferPtr framebuffer, PipelinePtr initialPipeline)
 {
-  m_framebuffers.Destroy(fbo);
+  return std::make_shared<RenderProcess>(*this, framebuffer, std::move(initialPipeline));
+}
+
+FramebufferPtr Context::CreateFramebuffer()
+{
+  return std::make_shared<Framebuffer>(*this);
 }
 
 IBufferGPU * Context::CreateBuffer(size_t size, BufferGPUUsage usage, bool allowHostAccess)
@@ -100,17 +152,79 @@ void Context::ClearResources()
   m_gc.ClearObjects();
 }
 
-void Context::TransferPass(bool flush /* = false*/)
+IAwaitable * Context::TransferPass(std::span<const IAwaitable *> commandsToWait /* = {}*/)
 {
-  std::vector<RHI::IAwaitable *> awaits;
-  for (auto && [thread_id, transferer] : m_transferers)
-    awaits.push_back(transferer.DoTransfer(flush));
-
-  if (flush)
+  SubmitTask * result = nullptr;
+  std::vector<VkSemaphore> waitSemaphores;
+  waitSemaphores.reserve(commandsToWait.size());
+  for (auto taskPtr : commandsToWait)
   {
-    for (auto && await : awaits)
-      await->Wait();
+    if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+    {
+      /*
+        If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
+        In that case, access is synchronized by barriers
+      */
+      if (auto sem = ptr->GetSemaphore())
+        waitSemaphores.push_back(sem);
+    }
   }
+  m_transferSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
+  m_transferTransferer.RecordCommands(m_transferSubmitter.GetWritingBuffer());
+  result = m_transferSubmitter.Submit(false, waitSemaphores);
+  m_transferTransferer.OnSubmit(*result);
+
+  //dm_graphicTransferer.ProcessExecutingCommands();
+  //m_transferTransferer.ProcessExecutingCommands();
+  //m_computeTransferer.ProcessExecutingCommands();
+  return result;
+}
+
+IAwaitable * Context::RenderPass(RenderPassPtr renderPass,
+                                 std::span<const IAwaitable *> commandsToWait /* = {}*/)
+{
+  auto internalRenderPass = FastDynamicCast<RenderProcess>(renderPass);
+  if (!internalRenderPass)
+    return nullptr;
+  internalRenderPass->Invalidate();
+
+  return nullptr;
+  //SubmitTask * result = nullptr;
+  //m_graphicSubmitter.WaitForSubmitCompleted(); //TODO: think about removing this line
+  //std::vector<VkSemaphore> waitSemaphores;
+  //waitSemaphores.reserve(fbo->GetImagesCount() + commandsToWait.size());
+  //if (RenderTarget * renderTarget = fbo->BeginFrame())
+  //{
+  //  std::vector<ResourcePtr> usedResources;
+  //  m_graphicTransferer.CollectResources(usedResources);
+  //  fbo->CollectResources(usedResources);
+  //  ResetResourceSynchronization(usedResources);
+
+  //  m_graphicTransferer.RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+  //  fbo->RecordCommands(m_graphicSubmitter.GetWritingBuffer());
+
+  //  auto && imageSemaphores = renderTarget->GetImageAvailableForRenderSemaphores();
+  //  waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
+  //  for (auto taskPtr : commandsToWait)
+  //  {
+  //    if (auto * ptr = FastDynamicCast<const IInternalAwaitable>(taskPtr))
+  //    {
+  //      /*
+  //          If ptr->GetSemaphore() == nullptr then command will be submitted in the same commandBuffer that's going to be submitted below
+  //          In that case, access is synchronized by barriers
+  //          */
+  //      if (auto sem = ptr->GetSemaphore())
+  //        waitSemaphores.push_back(sem);
+  //    }
+  //  }
+
+  //  result = m_graphicSubmitter.Submit(false /*waitPrevSubmitOnGPU*/, waitSemaphores);
+  //  m_graphicTransferer.OnSubmit(*result);
+  //  fbo->EndFrame(result->GetSemaphore());
+  //  m_graphicTransferer.ProcessExecutingCommands();
+  //}
+
+  //return result;
 }
 
 void Context::LogImpl(LogMessageStatus status, const std::string & message) const noexcept
@@ -134,17 +248,19 @@ const Device & Context::GetGpuConnection() const & noexcept
   return m_device;
 }
 
-Transferer & Context::GetTransferer() & noexcept
+Transferer & Context::GetTransferer(QueueType queue) &
 {
-  auto id = std::this_thread::get_id();
-  auto it = m_transferers.find(id);
-  if (it == m_transferers.end())
+  switch (queue)
   {
-    bool inserted = false;
-    std::tie(it, inserted) = m_transferers.insert({id, Transferer(*this)});
-    assert(inserted);
+    case QueueType::Graphics:
+      return m_graphicTransferer;
+    case QueueType::Transfer:
+      return m_transferTransferer;
+    case QueueType::Compute:
+      return m_computeTransferer;
+    default:
+      throw std::runtime_error("Incorrect queue type");
   }
-  return it->second;
 }
 
 memory::MemoryAllocator & Context::GetBuffersAllocator() & noexcept

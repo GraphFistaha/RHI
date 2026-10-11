@@ -1,0 +1,31 @@
+﻿{
+    "version":  "2.0.0",
+    "tasks":  [
+                  {
+                      "label":  "CMake: build examples",
+                      "type":  "process",
+                      "command":  "cmake",
+                      "args":  [
+                                   "--build",
+                                   "${command:cmake.buildDirectory}"
+                               ],
+                      "problemMatcher":  [
+                                             "$msCompile"
+                                         ]
+                  },
+                  {
+                      "label":  "CMake: build and install examples",
+                      "type":  "process",
+                      "command":  "cmake",
+                      "args":  [
+                                   "--install",
+                                   "${command:cmake.buildDirectory}"
+                               ],
+                      "dependsOn":  "CMake: build examples",
+                      "dependsOrder":  "sequence",
+                      "problemMatcher":  [
+
+                                         ]
+                  }
+              ]
+}
