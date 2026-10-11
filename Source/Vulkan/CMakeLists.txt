@@ -19,6 +19,7 @@ PUBLIC
 	"Memory/BufferGPU.hpp"
 	"Memory/BufferInterface.hpp"
 	"Memory/Synchronizer.hpp"
+	"Memory/LegacySynchronization.hpp"
 	"Memory/ResourceUser.hpp"
 
 	"RenderPass/Framebuffer.hpp"
@@ -78,6 +79,7 @@ PRIVATE
 	"Memory/Texture.cpp"
 	"Memory/BufferGPU.cpp"
 	"Memory/Synchronizer.cpp"
+	"Memory/LegacySynchronization.cpp"
 
 	"RenderPass/Framebuffer.cpp"
 	"RenderPass/RenderTarget.cpp"
@@ -153,6 +155,7 @@ if (RHI_BUILD_TESTS)
     find_package(Catch2 REQUIRED)
     add_executable(RHI_Vulkan_Tests
         "Utils/DescriptorSetLayoutBuilder_test.cpp"
+        "Memory/LegacySynchronization_test.cpp"
     )
     target_link_libraries(RHI_Vulkan_Tests 
 	PRIVATE Catch2::Catch2WithMain ${this_target} RHI_Interface
