@@ -20,7 +20,6 @@ struct TransferTask;
 namespace RHI::vulkan
 {
 struct Transferer final : public OwnedBy<Context>,
-                          public IResourceUser,
                           public ICommandWriter
 {
   explicit Transferer(Context & ctx, uint32_t queueFamily, uint32_t buffersCount);
@@ -28,10 +27,6 @@ struct Transferer final : public OwnedBy<Context>,
 
 public: // ICommandWriter
   virtual void RecordCommands(details::CommandBuffer & commands) override;
-
-public: // IResourceUser
-  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const override;
 
 public:
   void OnSubmit(SubmitTask & submitTask);
@@ -57,7 +52,7 @@ private:
   std::mutex m_execLock;
   TasksBatch m_writingTasks;
   std::list<TasksBatch> m_executingTasks;
-  std::vector<ResourcePtr> m_resourcesToSync;
+  //std::vector<ResourcePtr> m_resourcesToSync;
 
 private:
   void WriteNewTask(std::shared_ptr<TransferTask> task,

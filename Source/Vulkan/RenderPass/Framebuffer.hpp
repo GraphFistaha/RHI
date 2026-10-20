@@ -7,9 +7,15 @@
 #include <Attachments/Attachment.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
-#include <RenderPass/RenderTarget.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.hpp>
+
+
+namespace RHI::vulkan
+{
+struct Context;
+struct RenderTargetInfo;
+} // namespace RHI::vulkan
 
 namespace RHI::vulkan
 {
@@ -31,17 +37,16 @@ public: // IFramebuffer interface
   virtual void Resize(uint32_t width, uint32_t height) override;
   virtual RHI::TexelIndex GetExtent() const override;
 
-public: // ICommandWriter
-  void RecordCommands(details::CommandBuffer & commands);
-
 public: // IResourceUser
   void CollectResources(std::vector<ResourcePtr> & resources) const;
 
 public: // RHI-only API
-  size_t GetImagesCount() const noexcept;
+  size_t GetBuffering() const noexcept;
+  size_t GetAttachmentsCount() const noexcept;
   bool Invalidate(std::span<const VkImageUsageFlags> attachmentsUsageFlags);
+  void RebuildRenderTargets(VkRenderPass renderPass);
   /// begins rendering
-  RenderTarget * BeginFrame();
+  RenderTargetInfo BeginFrame();
   /// finish rendering
   void EndFrame(VkSemaphore renderPassSemaphore);
 
@@ -49,12 +54,10 @@ public: // RHI-only API
   std::span<IInternalAttachment *> GetAttachments() noexcept;
   IInternalAttachment * GetAttachment(uint32_t idx) const;
   RHI::SamplesCount CalcSamplesCount() const noexcept;
+  VkExtent3D GetInternalExtent() const noexcept;
   //std::span<const VkAttachmentDescription> GetAttachementsDescription() const noexcept;
 
 protected:
-  std::vector<RenderTarget> m_targets; //TODO: small_vector
-  uint32_t m_activeTarget = -1;
-
   //TODO: shared_ptr
   std::vector<IInternalAttachment *> m_attachments; //sort by count of buffers
   bool m_attachmentsChanged = false;

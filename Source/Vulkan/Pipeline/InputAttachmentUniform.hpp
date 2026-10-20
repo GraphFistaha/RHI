@@ -18,15 +18,14 @@ struct InputAttachmentUniform final : public details::BaseDescriptor
   virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const override;
 
 public: // IResourceUser
-  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const override;
+  virtual void CollectBarriers(std::vector<Barrier> & barriers) const override;
 
 public: // IInvalidable interface
   virtual void Invalidate() override;
   void SetInvalid();
 
 private:
-    uint32_t m_attachmentIndex = -1;
+  uint32_t m_attachmentIndex = -1;
 };
 
 } // namespace RHI::vulkan

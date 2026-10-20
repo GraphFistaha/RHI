@@ -27,7 +27,7 @@ PUBLIC
 	"RenderPass/SubpassGraph.hpp"
 	"RenderPass/SubpassSynchronization.hpp"
 	"RenderPass/AttachmentDescriptionBuilder.hpp"
-	"RenderPass/RenderProcess.hpp"
+	"RenderPass/RenderPass.hpp"
 
 	"Pipeline/DescriptorBufferLayout.hpp"
 	"Pipeline/DescriptorsBuffer.hpp"
@@ -86,7 +86,10 @@ PRIVATE
 	"RenderPass/SubpassGraph.cpp"
 	"RenderPass/SubpassSynchronization.cpp"
 	"RenderPass/AttachmentDescriptionBuilder.cpp"
-	"RenderPass/RenderProcess.cpp"
+	"RenderPass/RenderPass.cpp"
+	"RenderPass/RenderPass.hpp"
+	"RenderPass/SubpassInfo.hpp"
+	"RenderPass/SubpassInfo.cpp"
 
 	"Pipeline/DescriptorBufferLayout.cpp"
 	"Pipeline/DescriptorsBuffer.cpp"

@@ -77,7 +77,6 @@ int main()
 
   RHI::RenderPassPtr renderPass = ctx->CreateRenderPass(framebuffer, trianglePipeline);
   {
-    renderPass->Barrier(*surfaceAttachment);
     // get size of window
     auto [width, height] = window.GetSize();
     // set viewport

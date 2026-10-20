@@ -77,27 +77,15 @@ void SamplerArrayUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet> s
   }
 }
 
-void SamplerArrayUniform::CollectResources(std::vector<ResourcePtr> & resources) const
+void SamplerArrayUniform::CollectBarriers(std::vector<Barrier> & barriers) const
 {
+  const ResourceState requiredState{VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                    VK_ACCESS_2_SHADER_READ_BIT,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
   for (auto * texture : m_boundTextures)
   {
     if (texture)
-      resources.push_back(texture);
-  }
-}
-
-void SamplerArrayUniform::SynchroniseResources(SynchronizationFilter filter,
-                                               details::CommandBuffer & commands) const
-{
-  if (FilterSatisfied(filter, SynchronizationFilter::ImageOnly))
-  {
-    for (auto * texture : m_boundTextures)
-    {
-      if (texture)
-        texture->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                      VK_ACCESS_2_SHADER_READ_BIT, commands,
-                                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
+      barriers.push_back({texture, requiredState});
   }
 }
 

@@ -31,8 +31,7 @@ public:
   virtual void UpdateDescriptorSet(std::span<const VkDescriptorSet> sets) const override;
 
 public: // IResourceUser
-  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const override;
+  virtual void CollectBarriers(std::vector<Barrier> & barriers) const override;
 
 public: // IUniformDescriptor interface
   virtual uint32_t GetSet() const noexcept override { return BaseDescriptor::GetSet(); }

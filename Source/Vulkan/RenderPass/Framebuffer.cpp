@@ -5,6 +5,7 @@
 #include <Attachments/SurfacedAttachment.hpp>
 #include <Private/Constants.hpp>
 #include <RenderPass/AttachmentDescriptionBuilder.hpp>
+#include <RenderPass/RenderTarget.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
 
@@ -64,9 +65,14 @@ Framebuffer::~Framebuffer()
 {
 }
 
-size_t Framebuffer::GetImagesCount() const noexcept
+size_t Framebuffer::GetBuffering() const noexcept
 {
-  return m_targets.size();
+  return m_attachments.empty() ? 0 : m_attachments[0]->GetBuffering();
+}
+
+size_t Framebuffer::GetAttachmentsCount() const noexcept
+{
+  return m_attachments.size();
 }
 
 bool Framebuffer::Invalidate(std::span<const VkImageUsageFlags> attachmentsUsageFlags)
@@ -98,6 +104,7 @@ bool Framebuffer::Invalidate(std::span<const VkImageUsageFlags> attachmentsUsage
                                 att->GetInternalExtent() == extent;
                        }));
 
+    m_attachmentsChanged = false;
     targetsChanged = true;
   }
   return targetsChanged;
@@ -150,19 +157,17 @@ RHI::SamplesCount Framebuffer::CalcSamplesCount() const noexcept
   return RHI::SamplesCount::One;
 }
 
-//std::span<const VkAttachmentDescription> Framebuffer::GetAttachementsDescription() const noexcept
-//{
-//  return m_attachmentDescriptions;
-//}
+VkExtent3D Framebuffer::GetInternalExtent() const noexcept
+{
+  return !m_attachments.empty() ? m_attachments[0]->GetInternalExtent() : VkExtent3D{};
+}
 
-RenderTarget * Framebuffer::BeginFrame()
+RenderTargetInfo Framebuffer::BeginFrame()
 {
   if (m_attachments.empty())
-    return nullptr;
+    return RenderTargetInfo();
 
-  MultibufferVector<VkImageView> renderingImages;
-  MultibufferVector<VkSemaphore> semaphores;
-  MultibufferVector<VkClearValue> clearValues;
+  RenderTargetInfo result;
   bool success = true;
 
   for (auto * attachment : m_attachments)
@@ -176,35 +181,23 @@ RenderTarget * Framebuffer::BeginFrame()
         break;
       }
       if (imgAvailSemaphore)
-        semaphores.push_back(imgAvailSemaphore);
-      renderingImages.push_back(imageView);
-      clearValues.push_back(attachment->GetClearValue());
+        result.semaphores.push_back(imgAvailSemaphore);
+      result.renderingImages.push_back(imageView);
+      result.clearValues.push_back(attachment->GetClearValue());
     }
   }
 
   if (!success)
   {
     m_attachmentsChanged = true;
-    return nullptr;
+    return RenderTargetInfo();
   }
-
-  m_activeTarget = (m_activeTarget + 1) % m_targets.size();
-  //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
-  m_targets[m_activeTarget].SetAttachments(std::move(renderingImages), std::move(clearValues),
-                                           std::move(semaphores));
-  m_targets[m_activeTarget].RebuildFramebuffer(); // rebuilds VkFramebuffer if need it
-  return &m_targets[m_activeTarget];
-}
-
-void Framebuffer::RecordCommands(details::CommandBuffer & commands)
-{
-  //m_renderPass.RecordCommands(commands, m_targets[m_activeTarget]);
+  return result;
 }
 
 void Framebuffer::CollectResources(std::vector<ResourcePtr> & resources) const
 {
   resources.insert(resources.end(), m_attachments.begin(), m_attachments.end());
-  //m_renderPass.CollectResources(resources);
 }
 
 void Framebuffer::EndFrame(VkSemaphore renderPassSemaphore)

@@ -164,24 +164,11 @@ void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands,
   }
 }
 
-bool Pipeline::RequireSynchronization() const
-{
-  return !m_descriptors.empty();
-}
-
-void Pipeline::CollectResources(std::vector<ResourcePtr> & resources) const
+void Pipeline::CollectBarriers(std::vector<Barrier> & barriers) const
 {
   // collect descriptors and uniforms
   for (auto && uniformPtr : m_descriptors)
-    uniformPtr->CollectResources(resources);
-}
-
-void Pipeline::SynchroniseResources(SynchronizationFilter filter,
-                                    details::CommandBuffer & commands) const
-{
-  // collect descriptors and uniforms
-  for (auto && uniformPtr : m_descriptors)
-    uniformPtr->SynchroniseResources(filter, commands);
+    uniformPtr->CollectBarriers(barriers);
 }
 
 const PipelineAttachmentsUsage & Pipeline::GetAttachmentUsageInfo() const & noexcept
@@ -209,7 +196,8 @@ void Pipeline::Invalidate(RenderPass & renderPass, uint32_t subpassIndex)
 
   if (m_invalidPipeline || !m_pipeline || m_bindPoint != &renderPass)
   {
-    m_pipelineBuilder.SetSamplesCount(/*renderPass.GetFramebuffer().CalcSamplesCount()*/ RHI::SamplesCount::One);
+    auto fbo = renderPass.GetFramebuffer();
+    m_pipelineBuilder.SetSamplesCount(fbo ? fbo->CalcSamplesCount() : RHI::SamplesCount::One);
     auto new_pipeline = m_pipelineBuilder.Make(GetContext().GetGpuConnection().GetDevice(),
                                                renderPass.GetHandle(), subpassIndex,
                                                m_pipelineLayout);

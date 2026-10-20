@@ -1,33 +1,27 @@
 #pragma once
 #include <variant>
 
+#include <Attachments/Attachment.hpp>
 #include <Memory/BufferInterface.hpp>
 #include <Memory/TextureInterface.hpp>
 
+
 namespace RHI::vulkan
 {
-using ResourcePtr = std::variant<IInternalBuffer *, IInternalTexture *>;
-using ResourceUsageInfo =
-  std::tuple<ResourcePtr, VkPipelineStageFlags2, VkAccessFlags2, VkImageLayout>;
+using ResourcePtr =
+  std::variant<IInternalBuffer *, IInternalTexture *, uint32_t /*attachmentIndex*/>;
 
-enum class SynchronizationFilter : uint8_t
+struct ResourceState final
 {
-  None = 0,
-  BufferOnly = 1,
-  ImageOnly = 2,
-  All = 3,
+  VkPipelineStageFlags2 currentStage = VK_PIPELINE_STAGE_2_NONE;
+  VkAccessFlagBits2 requiredAccess = VK_ACCESS_2_NONE;
+  VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 };
-
-inline bool FilterSatisfied(SynchronizationFilter f1, SynchronizationFilter f2) noexcept
-{
-  return (static_cast<uint8_t>(f1) & static_cast<uint8_t>(f2)) != 0;
-}
+using Barrier = std::pair<ResourcePtr, ResourceState /*requiresState*/>;
 
 struct IResourceUser
 {
   virtual ~IResourceUser() = default;
-  virtual void CollectResources(std::vector<ResourcePtr> & resources) const = 0;
-  virtual void SynchroniseResources(SynchronizationFilter filter,
-                                    details::CommandBuffer & commands) const = 0;
+  virtual void CollectBarriers(std::vector<Barrier> & barriers) const = 0;
 };
 } // namespace RHI::vulkan

@@ -19,21 +19,11 @@ void Transferer::RecordCommands(details::CommandBuffer & commands)
     return;
   for (auto && taskPtr : m_writingTasks)
     taskPtr->RecordCommands(commands);
-  m_resourcesToSync.clear();
+  //m_resourcesToSync.clear();
   std::lock_guard lk2{m_execLock};
   m_executingTasks.push_front(std::move(m_writingTasks));
 }
 
-void Transferer::CollectResources(std::vector<ResourcePtr> & resources) const
-{
-  std::lock_guard lk{m_writeLock};
-  resources.insert(resources.end(), m_resourcesToSync.begin(), m_resourcesToSync.end());
-}
-
-void Transferer::SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const
-{
-  //Do nothing, because commands synchronise resources themselfs
-}
 
 void Transferer::OnSubmit(SubmitTask & submitTask)
 {
@@ -139,7 +129,7 @@ void Transferer::WriteNewTask(TrasferTaskPtr task,
 {
   std::lock_guard lk{m_writeLock};
   m_writingTasks.push_back(std::move(task));
-  m_resourcesToSync.insert(m_resourcesToSync.end(), resourcesToSync.begin(), resourcesToSync.end());
+  //m_resourcesToSync.insert(m_resourcesToSync.end(), resourcesToSync.begin(), resourcesToSync.end());
 }
 
 } // namespace RHI::vulkan

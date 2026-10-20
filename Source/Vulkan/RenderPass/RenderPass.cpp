@@ -1,177 +1,264 @@
-#include "RenderPass.hpp"
+﻿#include "RenderPass.hpp"
 
-#include <CommandsExecution/Submitter.hpp>
-#include <Memory/Synchronizer.hpp>
+#include <CommandsExecution/CommandBuffer.hpp>
+#include <CommandsExecution/SubmitTask.hpp>
+#include <Memory/BufferGPU.hpp>
 #include <Pipeline/Pipeline.hpp>
+#include <Private/FastDynamicCast.hpp>
 #include <RenderPass/Framebuffer.hpp>
-#include <RenderPass/RenderProcess.hpp>
-#include <RenderPass/RenderTarget.hpp>
 #include <RenderPass/SubpassGraph.hpp>
+#include <RenderPass/SubpassInfo.hpp>
+#include <utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
+
 
 namespace RHI::vulkan
 {
 
-RenderPass::RenderPass(Context & ctx, Framebuffer & framebuffer)
+RenderPass::RenderPass(Context & ctx, FramebufferPtr framebuffer, PipelinePtr initialPipeline)
   : OwnedBy<Context>(ctx)
-  , OwnedBy<Framebuffer>(framebuffer)
-  , m_subpassGraph()
-  , m_dummyPipeline(new Pipeline(ctx))
+  , m_framebuffer(FastDynamicCast<Framebuffer>(framebuffer))
+  , m_renderGraph(new SubpassGraph(ctx))
 {
+  m_subpasses.emplace_back(
+    std::make_unique<SubpassInfo>(ctx, FastDynamicCast<Pipeline>(initialPipeline)));
 }
 
 RenderPass::~RenderPass()
 {
-  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
 }
 
-//void RenderPass::SetSubpass(uint32_t index, PipelinePtr pipeline, PipelineProcessPtr process)
-//{
-//  while (index >= m_subpasses.size())
-//    m_subpasses.push_back({nullptr, nullptr});
-//  // if pipeline has changed - we should rebuild renderPass
-//  // if process has changed - we should rewrite commands
-//  Subpass newSubpass = {FastDynamicCast<Pipeline>(pipeline),
-//                        FastDynamicCast<PipelineProcess>(process)};
-//  if (newSubpass.first != m_subpasses[index].first)
-//    m_invalidRenderPass = true;
-//  if (newSubpass.second != m_subpasses[index].second)
-//    m_dirtyCommands = true;
-//  m_subpasses[index] = newSubpass;
-//}
-
-void RenderPass::RecordCommands(details::CommandBuffer & commands, RenderTarget & renderTarget)
+void RenderPass::Barrier(IBufferGPU & buffer)
 {
-  assert(m_renderPass);
-  //assert(renderTarget.GetAttachmentsCount() == m_subpassGraph->GetCachedAttachments().size());
-  m_activeRenderTarget = &renderTarget;
-  VkFramebuffer buf = renderTarget.GetHandle();
-  VkExtent3D extent = renderTarget.GetVkExtent();
-  auto && clearValues = renderTarget.GetClearValues();
+  if (auto res = FastDynamicCast<IInternalBuffer>(&buffer))
+    m_subpasses.back()->AddBarrier(*res);
+}
 
-  // here must be buffer synchronization
-  for (auto [pipeline, process] : m_subpasses)
+void RenderPass::Barrier(ITexture & texture)
+{
+  if (auto res = FastDynamicCast<IInternalTexture>(&texture))
+    m_subpasses.back()->AddBarrier(*res);
+}
+
+void RenderPass::Barrier(IAttachment & attachment)
+{
+  if (auto res = FastDynamicCast<IInternalAttachment>(&attachment))
+    m_subpasses.back()->AddBarrier(*res);
+}
+
+void RenderPass::NextPipeline(PipelinePtr pipeline)
+{
+  m_subpasses.emplace_back(
+    std::make_unique<SubpassInfo>(GetContext(), FastDynamicCast<Pipeline>(pipeline)));
+}
+
+void RenderPass::ClearFramebuffer()
+{
+  m_loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+}
+
+void RenderPass::LoadFramebuffer()
+{
+  m_loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+}
+
+void RenderPass::StoreFramebuffer()
+{
+  m_storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+}
+
+void RenderPass::ResetResourcesSynchronization()
+{
+  for (auto && subpass : m_subpasses)
   {
-    pipeline->SynchroniseResources(SynchronizationFilter::BufferOnly, commands);
-    process->SynchroniseResources(SynchronizationFilter::BufferOnly, commands);
+    subpass->ResetSynchronization();
   }
+}
 
-  VkRenderPassBeginInfo renderPassInfo{};
+void RenderPass::RecordCommands(details::CommandBuffer & commands,
+                                std::vector<VkSemaphore> & waitSemaphores)
+{
+  if (RenderTargetInfo renderTargetInfo = m_framebuffer->BeginFrame())
   {
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_renderPass;
-    renderPassInfo.framebuffer = buf;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = {extent.width, extent.height};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-  }
-  commands
-    .PushCommand(vkCmdBeginRenderPass, &renderPassInfo,
-                 VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-  m_subpassGraph->SynchronizeAttachmentsDuringRenderPass(SubpassIndex::initialRenderPass,
-                                                         GetFramebuffer().GetAttachments());
+    m_activeTarget = (m_activeTarget + 1) % m_targets.size();
+    auto && renderTarget = m_targets[m_activeTarget];
+    //AcquireForRendering can return random imageView set, so probably it could rebuild VkFramebuffer for each frame
+    renderTarget.SetExtent(m_framebuffer->GetInternalExtent());
+    renderTarget.SetAttachments(std::move(renderTargetInfo));
+    renderTarget.RebuildFramebuffer(); // rebuilds VkFramebuffer if need it
 
+    auto && imageSemaphores = renderTarget.GetImageAvailableForRenderSemaphores();
+    waitSemaphores.insert(waitSemaphores.end(), imageSemaphores.begin(), imageSemaphores.end());
 
-  // execute commands for subpasses
-  // RenderPass must have one subpass always!
-  // if it's not, it'll be nothing to render
-  if (!m_subpasses.empty())
-  {
-    for (size_t i = 0; auto && [pipeline, process] : m_subpasses)
+    const VkFramebuffer buf = renderTarget.GetHandle();
+    const VkExtent3D extent = renderTarget.GetVkExtent();
+    auto && clearValues = renderTarget.GetClearValues();
+
+    // here must be buffer synchronization
+    for (auto && subpass : m_subpasses)
     {
-      // in renderPass you must not include any memoryBarrier,
-      // so it's allowed ImageOnly synchronization
-      pipeline->SynchroniseResources(SynchronizationFilter::ImageOnly, commands);
-      process->SynchroniseResources(SynchronizationFilter::ImageOnly, commands);
-      pipeline->BindToCommandBuffer(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
-      process->RecordCommands(commands, *pipeline);
+      subpass->SynchroniseResources(SynchronizationFilter::BufferOnly, commands);
+    }
 
-      m_subpassGraph->SynchronizeAttachmentsDuringRenderPass(static_cast<SubpassIndex>(i),
-                                                             GetFramebuffer().GetAttachments());
+    VkRenderPassBeginInfo renderPassInfo{};
+    {
+      renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      renderPassInfo.renderPass = m_renderGraph->GetHandle();
+      renderPassInfo.framebuffer = buf;
+      renderPassInfo.renderArea.offset = {0, 0};
+      renderPassInfo.renderArea.extent = {extent.width, extent.height};
+      renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+      renderPassInfo.pClearValues = clearValues.data();
+    }
+    commands.PushCommand(
+      vkCmdBeginRenderPass, &renderPassInfo,
+      VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+    m_renderGraph->SynchronizeAttachmentsDuringRenderPass(SubpassIndex::initialRenderPass,
+                                                          m_framebuffer->GetAttachments());
+
+
+    for (size_t i = 0; auto && subpass : m_subpasses)
+    {
+      subpass->RecordCommands(commands);
+      m_renderGraph->SynchronizeAttachmentsDuringRenderPass(static_cast<SubpassIndex>(i),
+                                                            m_framebuffer->GetAttachments());
 
       ++i;
       if (i < m_subpasses.size())
       {
-        commands.PushCommand(
-          vkCmdNextSubpass,
-          VK_SUBPASS_CONTENTS_INLINE); //TODO: VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+        commands.PushCommand(vkCmdNextSubpass, m_subpasses[i]->IsInlineCommands()
+                                                 ? VK_SUBPASS_CONTENTS_INLINE
+                                                 : VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
       }
     }
-  }
-  else
-  {
-    m_dummyPipeline->BindToCommandBuffer(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
-  }
 
-  commands.PushCommand(vkCmdEndRenderPass);
-
-  // probably it doesn't needed
-  m_subpassGraph->SynchronizeAttachmentsDuringRenderPass(SubpassIndex::finalRenderPass,
-                                                         GetFramebuffer().GetAttachments());
-  m_activeRenderTarget = nullptr;
+    commands.PushCommand(vkCmdEndRenderPass);
+    // probably it doesn't needed
+    m_renderGraph->SynchronizeAttachmentsDuringRenderPass(SubpassIndex::finalRenderPass,
+                                                          m_framebuffer->GetAttachments());
+  }
 }
 
-void RenderPass::CollectResources(std::vector<ResourcePtr> & resources) const
+void RenderPass::DrawVertices(std::uint32_t vertexCount, std::uint32_t instanceCount,
+                              std::uint32_t firstVertex, std::uint32_t firstInstance)
 {
-  for (auto && [pipeline, process] : m_subpasses)
-  {
-    pipeline->CollectResources(resources);
-    // collect resources from draw commands (vertex/index buffers)
-    process->CollectResources(resources);
-  }
+  m_subpasses.back()->DrawVertices(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void RenderPass::DrawIndexedVertices(std::uint32_t indexCount, std::uint32_t instanceCount,
+                                     std::uint32_t firstIndex, int32_t vertexOffset,
+                                     std::uint32_t firstInstance)
+{
+  m_subpasses.back()->DrawIndexedVertices(indexCount, instanceCount, firstIndex, vertexOffset,
+                                          firstInstance);
+}
+
+void RenderPass::SetViewport(float width, float height)
+{
+  m_subpasses.back()->SetViewport(width, height);
+}
+
+void RenderPass::SetScissor(int32_t x, int32_t y, std::uint32_t width, std::uint32_t height)
+{
+  m_subpasses.back()->SetScissor(x, y, width, height);
+}
+
+void RenderPass::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffer, std::uint32_t offset)
+{
+  m_subpasses.back()->BindVertexBuffer(binding, buffer, offset);
+}
+
+void RenderPass::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::uint32_t offset)
+{
+  m_subpasses.back()->BindIndexBuffer(buffer, type, offset);
+}
+
+void RenderPass::PushConstant(const void * data, size_t size)
+{
+  m_subpasses.back()->PushConstant(data, size);
+}
+
+VkRenderPass RenderPass::GetHandle() const noexcept
+{
+  return m_renderGraph ? m_renderGraph->GetHandle() : VK_NULL_HANDLE;
+}
+
+std::shared_ptr<Framebuffer> RenderPass::GetFramebuffer() const noexcept
+{
+  return m_framebuffer;
+}
+
+void RenderPass::OnSubmit(SubmitTask & submitTask)
+{
+  m_framebuffer->EndFrame(submitTask.GetSemaphore());
 }
 
 void RenderPass::Invalidate()
 {
-  bool rebuildSubpasses = false;
-  if (m_invalidRenderPass || !m_subpassGraph || !m_renderPass)
+  // collect info about how each attachment is used during render pass
+  std::vector<VkImageUsageFlags> attachmentsUsage;
+  attachmentsUsage.resize(m_framebuffer->GetAttachmentsCount(), 0);
+  for (auto && subpass : m_subpasses)
   {
-    std::unique_ptr<SubpassGraph> newGraph =
-      std::make_unique<SubpassGraph>(GetFramebuffer(), m_subpasses.size());
+    subpass->GetPipeline().GetAttachmentUsageInfo().CollectAttachmentsUsageInfo(attachmentsUsage);
+  }
 
-    for (auto && [pipeline, process] : m_subpasses)
+  bool renderPassChanged = false;
+  // rebuild attachments
+  if (m_framebuffer->Invalidate(attachmentsUsage))
+  {
+    std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext());
+    for (auto && attachment : m_framebuffer->GetAttachments())
     {
-      auto subpassDescription =
-        pipeline->GetAttachmentUsageInfo().BuildDescription(VK_PIPELINE_BIND_POINT_GRAPHICS);
-      SubpassIndex index = newGraph->AddSubpass(subpassDescription);
-      if (pipeline->RequireSynchronization() || process->RequireSynchronization())
-        newGraph->AddSelfDependency(index);
-      for (size_t i = 0; auto * att : GetFramebuffer().GetAttachments())
+      if (attachment)
       {
-        if (att && att->IsPresent() /*|| WasPrevRenderPass()*/)
-          newGraph->AddExternalDependency(att->GetSynchronizer().GetState(), index, i);
-        ++i;
+        ResourceState initialState{VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                   VK_IMAGE_LAYOUT_UNDEFINED};
+        ResourceState finalState{VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+        newRenderGraph->AddAttachment(*attachment, initialState, finalState, m_loadOp, m_storeOp);
       }
     }
-    m_subpassGraph = std::move(newGraph);
-    auto new_renderpass =
-      m_subpassGraph->MakeRenderPass(GetContext().GetGpuConnection().GetDevice());
-    GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
-                     static_cast<void *>(m_renderPass), static_cast<void *>(new_renderpass));
-    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
-    m_renderPass = new_renderpass;
-    m_invalidRenderPass = false;
-    rebuildSubpasses = true;
+
+    for (auto && subpass : m_subpasses)
+    {
+      SubpassIndex index = newRenderGraph->AddSubpass(subpass->GetPipeline());
+      subpass->AddDependenciesTo(*newRenderGraph, index);
+    }
+
+    if (newRenderGraph->Compile())
+    {
+      m_renderGraph = std::move(newRenderGraph);
+      renderPassChanged = true;
+    }
   }
 
-  //m_dummyPipeline->BuildAsGraphicPipeline(*this, 0);
-
-  // rebuild pipelines
-  for (uint32_t i = 0; auto && [pipeline, process] : m_subpasses)
+  if (renderPassChanged)
   {
-    pipeline->Invalidate(*this, i);
-    //TODO: reset commands?
-    ++i;
+    std::vector<RenderTarget> newTargets;
+    newTargets.reserve(m_framebuffer->GetBuffering());
+    for (size_t i = 0; i < m_framebuffer->GetBuffering(); ++i)
+    {
+      auto && target = newTargets.emplace_back(GetContext());
+      target.BindRenderPass(m_renderGraph->GetHandle());
+      //TODO: uncomment code below
+      //target.SetExtent();
+      //target.SetAttachments();
+      //target.RebuildFramebuffer();
+    }
+    m_targets = std::move(newTargets);
   }
 
-  // rebuild commands
+  if (renderPassChanged)
+  {
+    for (uint32_t i = 0; auto && subpass : m_subpasses)
+    {
+      subpass->GetPipeline().Invalidate(*this, i);
+      subpass->CollectBarriers();
+      ++i;
+    }
+  }
 }
 
-void RenderPass::SetInvalid()
-{
-  m_subpassGraph.reset();
-  m_invalidRenderPass = true;
-  m_dirtyCommands = true;
-}
 } // namespace RHI::vulkan

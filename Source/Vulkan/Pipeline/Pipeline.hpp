@@ -61,11 +61,7 @@ public: //ICommandWriter
   void BindToCommandBuffer(details::CommandBuffer & commands, VkPipelineBindPoint bindPoint) const;
 
 public: // IResourceUser
-  /// @brief return true if pipeline uses vkCmdPipelineBarrier.
-  /// used to detect if RenderPass should have self-dependency
-  bool RequireSynchronization() const;
-  void CollectResources(std::vector<ResourcePtr> & resources) const;
-  void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const;
+  void CollectBarriers(std::vector<Barrier> & barriers) const;
   const PipelineAttachmentsUsage & GetAttachmentUsageInfo() const & noexcept;
 
 public:

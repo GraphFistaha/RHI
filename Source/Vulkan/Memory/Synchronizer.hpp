@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <vulkan/vulkan.hpp>
 
@@ -14,16 +15,6 @@ namespace RHI::vulkan
 struct Context;
 }
 
-namespace RHI::vulkan
-{
-struct ResourceState final
-{
-  VkPipelineStageFlags2 currentStage = VK_PIPELINE_STAGE_2_NONE;
-  VkAccessFlagBits2 requiredAccess = VK_ACCESS_2_NONE;
-  VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-};
-} // namespace RHI::vulkan
-
 namespace RHI::vulkan::details
 {
 struct Synchronizer final : public OwnedBy<Context>
@@ -32,7 +23,7 @@ struct Synchronizer final : public OwnedBy<Context>
   explicit Synchronizer(Context & ctx, VkBuffer buffer);
   Synchronizer(Synchronizer && rhs) noexcept;
   Synchronizer & operator=(Synchronizer && rhs) noexcept;
-  ~Synchronizer();
+  virtual ~Synchronizer() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public:

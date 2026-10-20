@@ -1,12 +1,14 @@
-#include "SubpassGraph.hpp"
+﻿#include "SubpassGraph.hpp"
 
 #include <stdexcept>
 
 #include <Attachments/Attachment.hpp>
+#include <Memory/Synchronizer.hpp>
 #include <Pipeline/Pipeline.hpp>
 #include <RenderPass/SubpassSynchronization.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
+
 
 namespace RHI::vulkan
 {
@@ -18,6 +20,18 @@ SubpassGraph::SubpassGraph(Context & ctx)
 SubpassGraph::~SubpassGraph()
 {
   GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_renderPass, nullptr);
+}
+
+std::pair<SubpassIndex, ResourceState> SubpassGraph::FindLastUsage(
+  uint32_t attachmentIndex) const noexcept
+{
+  for (size_t index = m_attachmentsUsage.size(); index > 0; --index)
+  {
+    const auto & state = m_attachmentsUsage[index - 1][attachmentIndex];
+    if (state.requiredLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+      return {static_cast<SubpassIndex>(index - 1), state};
+  }
+  return {SubpassIndex::initialRenderPass, m_initialStates[attachmentIndex]};
 }
 
 void SubpassGraph::RequireMutable() const
@@ -56,11 +70,13 @@ uint32_t SubpassGraph::AddAttachment(const IInternalAttachment & attachment,
 
   // Reserve parallel arrays first so allocation failures cannot leave their sizes inconsistent.
   m_attachments.reserve(index + 1);
+  m_attachmentObjects.reserve(index + 1);
   m_initialStates.reserve(index + 1);
   m_finalStates.reserve(index + 1);
   for (auto & row : m_attachmentsUsage)
     row.reserve(index + 1);
   m_attachments.push_back(description);
+  m_attachmentObjects.push_back(&attachment);
   m_initialStates.push_back(initState);
   m_finalStates.push_back(finalState);
   for (auto & row : m_attachmentsUsage)
@@ -176,6 +192,8 @@ bool SubpassGraph::Compile()
   VkRenderPass renderPass = VK_NULL_HANDLE;
   const auto result =
     vkCreateRenderPass(GetContext().GetGpuConnection().GetDevice(), &info, nullptr, &renderPass);
+  GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG, "VkRenderPass({}) has been rebuilt - {}",
+                   static_cast<void *>(m_renderPass), static_cast<void *>(renderPass));
   if (result != VK_SUCCESS)
   {
     GetContext().Log(LogMessageStatus::LOG_ERROR, "Failed to create render pass: {}",

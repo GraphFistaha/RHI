@@ -23,7 +23,8 @@ void InputAttachmentUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet
   VkDescriptorImageInfo imageInfo{};
   if (RenderPass * renderPass = GetPipeline().GetBindPoint())
   {
-    IInternalAttachment * attachment = nullptr; //renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
+    IInternalAttachment * attachment =
+      nullptr; //renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
     if (!attachment)
       return;
     imageInfo.imageView = attachment->GetImageView();
@@ -41,27 +42,13 @@ void InputAttachmentUniform::UpdateDescriptorSet(std::span<const VkDescriptorSet
   vkUpdateDescriptorSets(GetContext().GetGpuConnection().GetDevice(), 1, &writeInfo, 0, nullptr);
 }
 
-void InputAttachmentUniform::CollectResources(std::vector<ResourcePtr> & resources) const
+void InputAttachmentUniform::CollectBarriers(std::vector<Barrier> & barriers) const
 {
+  barriers.push_back({m_attachmentIndex, ResourceState{VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                                                       VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT,
+                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}});
 }
 
-void InputAttachmentUniform::SynchroniseResources(SynchronizationFilter filter,
-                                                  details::CommandBuffer & commands) const
-{
-  if (FilterSatisfied(filter, SynchronizationFilter::ImageOnly))
-  {
-    if (RenderPass * renderPass = GetPipeline().GetBindPoint())
-    {
-      IInternalAttachment * attachment =
-        nullptr; //renderPass->GetFramebuffer().GetAttachment(m_attachmentIndex);
-      if (attachment)
-        attachment->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                         VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT,
-                                                         commands,
-                                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
-  }
-}
 
 void InputAttachmentUniform::Invalidate()
 {

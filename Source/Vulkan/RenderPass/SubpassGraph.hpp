@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <cstdint>
 #include <limits>
 #include <span>
 #include <vector>
 
-#include <Memory/Synchronizer.hpp>
+#include <Memory/ResourceUser.hpp>
 #include <Private/OwnedBy.hpp>
 #include <vulkan/vulkan.h>
 
@@ -31,12 +31,12 @@ enum class SubpassIndex : int32_t
 struct SubpassGraph final : public OwnedBy<Context>
 {
   explicit SubpassGraph(Context & ctx);
-  ~SubpassGraph() override;
-  SubpassGraph(const SubpassGraph &) = delete;
-  SubpassGraph & operator=(const SubpassGraph &) = delete;
-  SubpassGraph(SubpassGraph &&) = delete;
-  SubpassGraph & operator=(SubpassGraph &&) = delete;
+  virtual ~SubpassGraph() override;
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+
+public:
+  /// @brief Returns the latest subpass usage, or the initial state if unused.
+  std::pair<SubpassIndex, ResourceState> FindLastUsage(uint32_t attachmentIndex) const noexcept;
 
 public:
   /// Returns an index in this graph's attachment array (not a shader location).
@@ -70,7 +70,6 @@ public:
   /// Failed creation permits retry. Invalid descriptions and modification/recompile after success throw.
   /// Core synchronization2 masks are converted to legacy equivalents; unsupported masks throw.
   bool Compile();
-  VkRenderPass GetHandle() const noexcept { return m_renderPass; }
 
   /// Updates CPU tracking only; records no barriers. Call at the corresponding execution boundary.
   /// Attachments must be alive, in graph index order, and have exactly the registered count.
@@ -78,13 +77,18 @@ public:
   void SynchronizeAttachmentsDuringRenderPass(SubpassIndex subpassIndex,
                                               std::span<IInternalAttachment *> attachments) const;
 
+  VkRenderPass GetHandle() const noexcept { return m_renderPass; }
+
 private:
+  static constexpr uint32_t s_invalidAttachmentIndex = std::numeric_limits<uint32_t>::max();
   /// Bind point shared by all subpasses in this graphics render pass.
   static constexpr VkPipelineBindPoint m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   /// Owned handle; null until compilation succeeds. Destruction is deferred through the context.
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
   /// Native attachment descriptions in graph attachment index order.
   std::vector<VkAttachmentDescription> m_attachments;
+  /// Borrowed attachment identities in graph attachment index order.
+  std::vector<const IInternalAttachment *> m_attachmentObjects;
   /// Boundary tracking states, indexed identically to m_attachments.
   std::vector<ResourceState> m_initialStates;
   std::vector<ResourceState> m_finalStates;

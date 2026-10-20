@@ -15,6 +15,19 @@ struct Context;
 namespace RHI::vulkan
 {
 
+struct RenderTargetInfo final
+{
+  /// ImageViews to render to
+  std::vector<VkImageView> renderingImages;
+  /// wait for images are ready for rendering
+  std::vector<VkSemaphore> semaphores;
+  /// clear values for each attachment
+  std::vector<VkClearValue> clearValues;
+
+  bool operator==(const RenderTargetInfo & rhs) const noexcept;
+  operator bool() const noexcept;
+};
+
 struct RenderTarget final : public OwnedBy<Context>
 {
   explicit RenderTarget(Context & ctx);
@@ -35,22 +48,16 @@ public:
   std::span<const VkImageView> GetImageViews() const noexcept;
   std::span<const VkSemaphore> GetImageAvailableForRenderSemaphores() const noexcept;
 
-  void SetAttachments(MultibufferVector<VkImageView> && views,
-                      MultibufferVector<VkClearValue> && clearValues,
-                      MultibufferVector<VkSemaphore> && semaphores) noexcept;
+  void SetAttachments(RenderTargetInfo && info) noexcept;
   void ClearAttachments() noexcept;
   size_t GetAttachmentsCount() const noexcept;
 
 protected:
   VkRenderPass m_boundRenderPass = VK_NULL_HANDLE;
   /// cached size of all image attachments. ALl sizes of all images must be equal
-  VkExtent3D m_extent;
-  /// ImageViews
-  MultibufferVector<VkImageView> m_attachedImages;
-  /// clear values for each attachment
-  MultibufferVector<VkClearValue> m_clearValues;
-  /// wait for images are ready for rendering
-  MultibufferVector<VkSemaphore> m_imageAvailabilitySemaphores;
+  VkExtent3D m_extent{0, 0, 0};
+  ///data for render target
+  RenderTargetInfo m_info;
 
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
   bool m_invalidFramebuffer = false;

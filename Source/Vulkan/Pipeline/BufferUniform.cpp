@@ -68,19 +68,13 @@ bool BufferUniform::IsBufferAssigned() const noexcept
   return m_buffer;
 }
 
-void BufferUniform::CollectResources(std::vector<ResourcePtr> & resources) const
+void BufferUniform::CollectBarriers(std::vector<Barrier> & barriers) const
 {
   if (m_buffer)
-    resources.push_back(m_buffer);
-}
-
-void BufferUniform::SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const
-{
-  if (m_buffer && FilterSatisfied(filter, SynchronizationFilter::BufferOnly))
   {
-    m_buffer->GetSynchronizer().RequireSynchronize(VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                                                   VK_ACCESS_2_SHADER_READ_BIT, commands,
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    barriers.push_back(
+      {m_buffer, ResourceState{VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT,
+                               VK_IMAGE_LAYOUT_UNDEFINED}});
   }
 }
 

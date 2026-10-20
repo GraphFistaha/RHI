@@ -18,6 +18,25 @@ Use C++20. Delegate indentation, braces, spacing, wrapping, and include ordering
 - Use `RHI` for library code, `RHI::utils` for crossplatform helpers, and `RHI::vulkan` and its existing subnamespaces for backend code. Put source-local helper functions in anonymous namespaces; keep externally required definitions and template specializations in their owning namespaces.
 - Include declarations actually used rather than relying on transitive includes. Prefer complete includes; use forward declarations when they resolve dependency cycles or materially reduce compilation dependencies.
 
+## If-statements and Loop-statements
+
+- if body of `if` or `while/for` takes one-line - you don't need add `{}`.
+- If body of `if` or `while/for` takes multiple lines 0 you should add `{}`
+- If one of branches of `if-statement` takes multiline than both branches should have `{}`
+- If you want to use `do while` loop, you should add `{}`
+
+## Auto keyword
+- Prefer to not use `auto` keyword, but it's allowed in some cases:
+  - type is written in right side of expression. f.e. `auto t = static_cast<int>(5)`
+  - it's assignment and type is templated and long-to-write
+  - it's assignment from some function and return value is reference
+  - it's lambda
+  - it's tuple, pair, struct unpacking, f.e. `auto [inserted, it] = map.insert(...)`
+  - it's range-based loop (but if type is quite simple, prefer explicit type)
+- for basic types (`int`, `char`, `uint32_t`, `size_t`, `bool`, etc) do not use `auto`
+- if you use `auto` for pointers - write `auto *`
+- if you use `auto` for references - write `auto &&`
+
 ## Responsibilities and interfaces
 
 Keep each class and function responsible for one coherent operation. Prefer short operations delegating to the component owning the behavior, as `BufferGPU` delegates mapping to `MemoryBlock` and asynchronous uploads to the transferer. Extract helpers around meaningful responsibilities rather than arbitrary line counts.
@@ -27,6 +46,47 @@ Prefer composition and existing extension points over new inheritance hierarchie
 Use `explicit` for constructors that should not allow implicit conversion and `override` for interface implementations. If function is `virtual` - keep `virtual` in their overrides. Prefer const locals, const queries, and computations returning values without changing unrelated state. Preserve reference qualifiers when borrowed subobject access must be restricted to a live lvalue owner.
 
 Do not change declarations or behavior in `Source/Public` without explicit approval; comments may be edited. Keep Vulkan types and translation logic inside `Source/Vulkan`. Translate RHI enums and flags deliberately rather than assuming equal numeric values. Avoid editing `Source/Vulkan/ThirdParty` unless requested.
+
+## Structures
+- Use `struct` keyword when all it's members are public by default and can't have private methods, members
+- Struct can't have methods, but can have operators like `operator bool`, `operator==`, etc
+- Struct folows Zero rule, never implements its own constructors/destructors/copy operators/move operators, etc
+- struct is always `final`
+
+## Classes
+- use `class` keyword for complex objects with internal statement
+- members are listed in bottom of the class body
+- members has prefix `m_`
+- members are always `protected` or `private`
+- Try to group class methods by it's interfaces or similar in meaning
+```
+  class Foo : public Interface1, public Interface2
+  {
+    public: // constructors and destructors
+      Foo() = default;
+      virtual ~Foo() override = default;
+
+    public: // Interface1 implementation
+      virtual void Method1() override;
+      virtual void Method2() override;
+    public: // Interface2 implementation
+      virtual void Method3() override;
+      virtual void Method4() override;
+    public: // API for feature1
+      void Feature1_Method1();
+      void Feature1_Method2();
+    public: // API for feature2
+      void MyApi();
+      void AnotherMethod();
+
+    private:
+      int m_member;
+      std::vector<int> m_data;
+  };
+```
+- Avoid `inline` methods, `static` methods, `friend` declaration. `inline` allowed for template-classses
+- it's allowed to make a forward-declaration for some types used in class. If method uses type by ref/pointer - prefered forward-declaration. if class has some data in smart-pointer, it's allowed to used forwward-declaration
+- prefer to make destructor `default`.
 
 ## Ownership, lifetime, and failure
 
@@ -42,7 +102,7 @@ For command, transfer, or synchronization changes, check execution order, visibi
 
 ## Comments and verification
 
-Write English Doxygen comments with `@brief` for added classes and functions. Argements described with `@param`. Explain responsibility and observable behavior, including non-obvious ownership, lifetime, failure, and concurrency requirements. Implementation comments explain constraints or choices rather than narrating assignments. Document templates at their declarations; avoid repeating descriptions at every definition.
+Write English Doxygen comments with `@brief` for added classes and functions. For members use just `/// <comment>`. Argements described with `@param`. Explain responsibility and observable behavior, including non-obvious ownership, lifetime, failure, and concurrency requirements. Implementation comments explain constraints or choices rather than narrating assignments. Document templates at their declarations; avoid repeating descriptions at every definition.
 
 Build affected targets and run relevant CTest tests for implementation changes, following [build-project](../build-project/SKILL.md). Follow neighboring Catch2 cases and test behavior, including rejection without consuming state where that is the contract. Add focused regression coverage when practical. Graphics changes also require an appropriate enabled example with Vulkan validation when supported; report unavailable checks. Documentation-only changes do not require a GPU build.
 

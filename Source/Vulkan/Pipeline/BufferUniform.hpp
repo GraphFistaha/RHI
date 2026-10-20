@@ -35,8 +35,7 @@ public: // IUniformDescriptor interface
   }
 
 public: // IResourceUser
-  virtual void CollectResources(std::vector<ResourcePtr> & resources) const override;
-  virtual void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const override;
+  virtual void CollectBarriers(std::vector<Barrier> & barriers) const override;
 
 public: // IInvalidable interface
   virtual void Invalidate() override;
