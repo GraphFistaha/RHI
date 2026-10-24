@@ -1,4 +1,5 @@
-#pragma once
+﻿#pragma once
+#include <atomic>
 #include <future>
 
 #include <glm/glm.hpp>
@@ -30,7 +31,7 @@ public:
   ~CubesRenderer();
 
 public: // Client API
-  void BindDrawSurface(RHI::IFramebuffer * framebuffer);
+  void BindDrawSurface(RHI::FramebufferPtr framebuffer);
   size_t AddCubeToScene(const CubeDescription & description);
   void DeleteCubeFromScene(size_t cubeId);
   void SetCameraTransform(const glm::mat4 & vp);
@@ -40,17 +41,20 @@ public: // Client API
 
 public: // RenderThread API
   void Draw();
+  /// @brief Returns the recorded cube render pass for submission.
+  RHI::RenderPassPtr GetRenderPass() const;
 
 private:
   std::array<CubeDescription, g_MaxCubesCount> m_cubes;
   size_t m_cubesCount = 0; ///< count on scene
 
   RHI::IContext & m_context;
-  RHI::IFramebuffer * m_drawSurface = nullptr; ///< surface where to draw
+  RHI::FramebufferPtr m_drawSurface; ///< surface where to draw
 
   RHI::IBufferGPU * m_uniformBuffer = nullptr; ///< buffer for uniform
   RHI::IBufferGPU * m_cubesBuffer = nullptr;
-  RHI::PipelinePtr m_renderPass = nullptr; ///< renderPass for rendering cubes
+  RHI::PipelinePtr m_pipeline; ///< pipeline for rendering cubes
+  std::atomic<RHI::RenderPassPtr> m_renderPass; ///< recorded cube draw commands
   std::array<RHI::ISamplerUniformDescriptor *, g_MaxTexturesCount> m_textures;
 
   /// current draw task

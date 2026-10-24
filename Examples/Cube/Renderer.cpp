@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+﻿#include "Renderer.hpp"
 
 #include <glm/ext.hpp>
 #include <TestUtils.hpp>
@@ -40,7 +40,7 @@ CubesRenderer::CubesRenderer(RHI::IContext & ctx)
     for (auto * texture : m_textures)
       texture->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
   }
-  m_renderPass = pipeline;
+  m_pipeline = std::move(pipeline);
 }
 
 CubesRenderer::~CubesRenderer()
@@ -50,7 +50,7 @@ CubesRenderer::~CubesRenderer()
   DestroyHandles();
 }
 
-void CubesRenderer::BindDrawSurface(RHI::IFramebuffer * framebuffer)
+void CubesRenderer::BindDrawSurface(RHI::FramebufferPtr framebuffer)
 {
   DestroyHandles();
 
@@ -96,7 +96,9 @@ void CubesRenderer::Draw()
 
 void CubesRenderer::InvalidateScene()
 {
-  auto process = m_context.CreateProcess();
+  auto process = m_context.CreateRenderPass(m_drawSurface, m_pipeline);
+  process->ClearFramebuffer();
+  process->StoreFramebuffer();
   {
     auto extent = m_drawSurface->GetExtent();
     uint32_t width = extent[0], height = extent[1];
@@ -106,7 +108,12 @@ void CubesRenderer::InvalidateScene()
     process->BindVertexBuffer(0, m_cubesBuffer);
     process->DrawVertices(static_cast<uint32_t>(m_cubesCount), 1);
   }
-  m_drawSurface->SetSubpass(0, m_renderPass, process);
+  m_renderPass.store(std::move(process));
+}
+
+RHI::RenderPassPtr CubesRenderer::GetRenderPass() const
+{
+  return m_renderPass.load();
 }
 
 void CubesRenderer::DestroyHandles()

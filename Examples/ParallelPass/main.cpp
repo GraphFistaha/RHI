@@ -1,4 +1,4 @@
-#include <cassert>
+﻿#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -25,14 +25,17 @@ static constexpr uint32_t Indices[] = {0, 1, 2};
 // helper which incapsulated rendering code for some scene
 struct Renderer
 {
-  explicit Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer);
+  explicit Renderer(RHI::IContext & ctx, RHI::FramebufferPtr framebuffer);
   ~Renderer();
   // draw scene in parallel
   void UpdateGeometry(std::span<float> newVertices);
+  /// @brief Returns the recorded triangle render pass for submission.
+  RHI::RenderPassPtr GetRenderPass() const;
 
 private:
   RHI::IContext * m_context = nullptr;
-  RHI::IFramebuffer * m_fbo = nullptr;
+  RHI::FramebufferPtr m_fbo;
+  RHI::RenderPassPtr m_renderPass;
   /// subpass which can be executed in parallel
   RHI::PipelinePtr m_pipeline = nullptr;
 
@@ -47,7 +50,7 @@ void thread_main(Renderer * renderer)
   float t = 0.0;
   while (m_running)
   {
-    auto c = std::cosf(t);
+    auto c = std::cos(t);
     // clang-format off
     std::array<float, 15> newVertices{  
       // pos + colors(rgb)
@@ -72,12 +75,12 @@ int main()
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  auto framebuffer = ctx->CreateFramebuffer();
   RHI::IAttachment * colorAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, colorAttachment);
 
-  Renderer triangleRenderer(*ctx, *framebuffer);
+  Renderer triangleRenderer(*ctx, framebuffer);
 
   window.onResize = [&triangleRenderer, &framebuffer](int width, int height)
   {
@@ -91,7 +94,7 @@ int main()
     {
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer);
+      ctx->RenderPass(triangleRenderer.GetRenderPass());
     });
 
   m_running = false;
@@ -100,9 +103,9 @@ int main()
   return 0;
 }
 
-Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
+Renderer::Renderer(RHI::IContext & ctx, RHI::FramebufferPtr framebuffer)
   : m_context(&ctx)
-  , m_fbo(&framebuffer)
+  , m_fbo(std::move(framebuffer))
 {
   // create pipeline for triangle. Here we can configure gpu pipeline for rendering
   m_pipeline = ctx.CreatePipeline();
@@ -126,7 +129,9 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
     ctx.CreateBuffer(IndicesCount * sizeof(uint32_t), RHI::BufferGPUUsage::IndexBuffer, false);
   m_indexBuffer->UploadAsync(Indices, IndicesCount * sizeof(uint32_t));
 
-  auto process = ctx.CreateProcess();
+  auto process = ctx.CreateRenderPass(m_fbo, m_pipeline);
+  process->ClearFramebuffer();
+  process->StoreFramebuffer();
   {
     auto extent = m_fbo->GetExtent();
     process->SetViewport(static_cast<float>(extent[0]), static_cast<float>(extent[1]));
@@ -135,13 +140,18 @@ Renderer::Renderer(RHI::IContext & ctx, RHI::IFramebuffer & framebuffer)
     process->BindIndexBuffer(m_indexBuffer, RHI::IndexType::UINT32);
     process->DrawIndexedVertices(IndicesCount, 1);
   }
-  m_fbo->SetSubpass(0, m_pipeline, process);
+  m_renderPass = std::move(process);
 }
 
 Renderer::~Renderer()
 {
   m_context->DeleteBuffer(m_vertexBuffer);
   m_context->DeleteBuffer(m_indexBuffer);
+}
+
+RHI::RenderPassPtr Renderer::GetRenderPass() const
+{
+  return m_renderPass;
 }
 
 void Renderer::UpdateGeometry(std::span<float> newVertices)

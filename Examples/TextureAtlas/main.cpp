@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -29,7 +29,7 @@ int main()
                                               true, true);
 
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  auto framebuffer = ctx->CreateFramebuffer();
   auto * colorAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, colorAttachment);
@@ -54,15 +54,16 @@ int main()
     sampler->SetFilter(RHI::TextureFilteration::Linear, RHI::TextureFilteration::Linear);
     sampler->AssignImage(texture);
   }
-  auto process = ctx->CreateProcess();
+  auto renderPass = ctx->CreateRenderPass(framebuffer, trianglePipeline);
+  renderPass->ClearFramebuffer();
+  renderPass->StoreFramebuffer();
   {
     // get size of window
     auto [width, height] = window.GetSize();
-    process->SetViewport(static_cast<float>(width), static_cast<float>(height));
-    process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-    process->DrawVertices(6, 1);
+    renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    renderPass->DrawVertices(6, 1);
   }
-  framebuffer->SetSubpass(0, trianglePipeline, process);
 
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(
@@ -70,7 +71,7 @@ int main()
     {
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer);
+      ctx->RenderPass(renderPass);
     });
 
   return 0;

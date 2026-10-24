@@ -33,7 +33,7 @@ int main()
   auto transformBuf =
     ctx->CreateBuffer(2 * sizeof(float), RHI::BufferGPUUsage::UniformBuffer, true);
 
-  auto * framebuffer = ctx->CreateFramebuffer();
+  auto framebuffer = ctx->CreateFramebuffer();
   auto * colorAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, colorAttachment);
@@ -74,19 +74,19 @@ int main()
     framebuffer->Resize(width, height);
   };
 
-  auto process = ctx->CreateProcess();
+  auto renderPass = ctx->CreateRenderPass(framebuffer, trianglePipeline);
   {
     auto [width, height, _] = framebuffer->GetExtent();
+    renderPass->ClearFramebuffer();
     // set viewport
-    process->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
     // set scissor
-    process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
     // draw triangle
-    process->BindVertexBuffer(0, vertexBuffer, 0);
-    process->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
-    process->DrawIndexedVertices(IndicesCount, 1);
+    renderPass->BindVertexBuffer(0, vertexBuffer, 0);
+    renderPass->BindIndexBuffer(indexBuffer, RHI::IndexType::UINT32);
+    renderPass->DrawIndexedVertices(IndicesCount, 1);
   }
-  framebuffer->SetSubpass(0, trianglePipeline, std::move(process));
 
   float x = 0.0f;
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
@@ -104,7 +104,7 @@ int main()
       x += 0.001f;
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer, prerenderTasks);
+      ctx->RenderPass(renderPass, prerenderTasks);
     });
 
   return 0;

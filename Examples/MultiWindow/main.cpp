@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -17,8 +17,8 @@ int main()
   gpuTraits.require_presentation = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
-  RHI::IFramebuffer * framebuffer1 = ctx->CreateFramebuffer();
-  RHI::IFramebuffer * framebuffer2 = ctx->CreateFramebuffer();
+  auto framebuffer1 = ctx->CreateFramebuffer();
+  auto framebuffer2 = ctx->CreateFramebuffer();
   auto * surface1 =
     ctx->CreateSurfacedAttachment(window1.GetDrawSurface(), RHI::RenderBuffering::Triple);
   auto * surface2 =
@@ -27,37 +27,43 @@ int main()
   framebuffer2->AddAttachment(0, surface2);
 
   auto pipeline1 = ctx->CreatePipeline();
+  RHI::RenderPassPtr renderPass1;
   {
     pipeline1->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     // set shaders
     pipeline1->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("triangle.vert")));
     pipeline1->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
     pipeline1->SetMeshTopology(RHI::MeshTopology::Triangle);
-    auto process = ctx->CreateProcess();
+    auto process = ctx->CreateRenderPass(framebuffer1, pipeline1);
+    process->ClearFramebuffer();
+    process->StoreFramebuffer();
     {
       auto [width, height] = window1.GetSize();
       process->SetViewport(static_cast<float>(width), static_cast<float>(height));
       process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
       process->DrawVertices(3, 1);
     }
-    framebuffer1->SetSubpass(0, pipeline1, process);
+    renderPass1 = std::move(process);
   }
 
   auto pipeline2 = ctx->CreatePipeline();
+  RHI::RenderPassPtr renderPass2;
   {
     pipeline2->BindAttachment(0, RHI::ShaderAttachmentSlot::Color);
     // set shaders
     pipeline2->AttachShader(RHI::ShaderType::Vertex, ReadSpirV(FromGLSL("quad.vert")));
     pipeline2->AttachShader(RHI::ShaderType::Fragment, ReadSpirV(FromGLSL("triangle_quad.frag")));
     pipeline2->SetMeshTopology(RHI::MeshTopology::TriangleStrip);
-    auto process = ctx->CreateProcess();
+    auto process = ctx->CreateRenderPass(framebuffer2, pipeline2);
+    process->ClearFramebuffer();
+    process->StoreFramebuffer();
     {
       auto [width, height] = window2.GetSize();
       process->SetViewport(static_cast<float>(width), static_cast<float>(height));
       process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
       process->DrawVertices(4, 1);
     }
-    framebuffer2->SetSubpass(0, pipeline2, process);
+    renderPass2 = std::move(process);
   }
 
   float t = 0.0;
@@ -67,8 +73,8 @@ int main()
       surface1->SetClearValue(0.1f, std::abs(std::sin(t)), 0.4f, 1.0f);
       surface2->SetClearValue(0.1f, std::abs(std::cos(t)), 0.4f, 1.0f);
       ctx->ClearResources();
-      ctx->RenderPass(framebuffer1);
-      ctx->RenderPass(framebuffer2);
+      ctx->RenderPass(renderPass1);
+      ctx->RenderPass(renderPass2);
       t += 0.0001;
     });
 

@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -31,7 +31,7 @@ int main()
                           "Wood_285M.jpg"},
                          false /*with_alpha*/, true /*useMips*/);
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  RHI::FramebufferPtr framebuffer = ctx->CreateFramebuffer();
   auto * colorAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   framebuffer->AddAttachment(0, colorAttachment);
@@ -50,15 +50,17 @@ int main()
                                      RHI::ShaderType::Fragment);
   sampler->AssignImage(textureArray);
 
-  auto process = ctx->CreateProcess();
+  auto renderPass = ctx->CreateRenderPass(framebuffer, trianglePipeline);
   {
     auto [width, height] = window.GetSize();
-    process->SetViewport(static_cast<float>(width), static_cast<float>(height));
-    process->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+    renderPass->SetViewport(static_cast<float>(width), static_cast<float>(height));
+    renderPass->SetScissor(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
     constexpr int cells_count_in_row = 8;
     constexpr float cell_width = 2.0f / cells_count_in_row;
     constexpr float offset = -1.0f + cell_width / 2.0f;
     constexpr float margin = 0.05f;
+    renderPass->ClearFramebuffer();
+    renderPass->StoreFramebuffer();
     PushConstant ct;
     ct.scale_x = cell_width / 2.0f;
     ct.scale_y = cell_width / 2.0f;
@@ -70,12 +72,11 @@ int main()
         ct.pos_x = offset + j * (cell_width + margin);
         ct.pos_y = offset + i * (cell_width + margin);
         ct.texture_index = (ct.texture_index + 1) % 5;
-        process->PushConstant(&ct, sizeof(PushConstant));
-        process->DrawVertices(6, 1);
+        renderPass->PushConstant(&ct, sizeof(PushConstant));
+        renderPass->DrawVertices(6, 1);
       }
     }
   }
-  framebuffer->SetSubpass(0, trianglePipeline, process);
 
   colorAttachment->SetClearValue(0.3f, 0.3f, 0.5f, 1.0f);
   window.MainLoop(
@@ -83,7 +84,7 @@ int main()
     {
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer);
+      ctx->RenderPass(renderPass);
 
       if (window.IsKeyPressed(RHI::test_examples::Keycode::KEY_ENTER))
       {

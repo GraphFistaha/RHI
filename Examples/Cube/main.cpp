@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -111,7 +111,7 @@ int main()
   gpuTraits.require_geometry_shaders = true;
   std::unique_ptr<RHI::IContext> ctx = RHI::CreateContext(gpuTraits, ConsoleLog);
 
-  RHI::IFramebuffer * framebuffer = ctx->CreateFramebuffer();
+  auto framebuffer = ctx->CreateFramebuffer();
   auto * surfaceAttachment =
     ctx->CreateSurfacedAttachment(window.GetDrawSurface(), RHI::RenderBuffering::Triple);
   auto * depthAttachment = ctx->CreateAttachment(RHI::ImageFormat::DEPTH_STENCIL,
@@ -157,7 +157,8 @@ int main()
       const auto start{std::chrono::steady_clock::now()};
       ctx->ClearResources();
       ctx->TransferPass();
-      ctx->RenderPass(framebuffer);
+      if (auto renderPass = renderer.GetRenderPass())
+        ctx->RenderPass(std::move(renderPass));
       const auto finish{std::chrono::steady_clock::now()};
       const std::chrono::duration<double, std::milli> elapsed_ms{finish - start};
       std::printf("FPS: %.1f(%.3f)\n", 1000.0 / elapsed_ms.count(), elapsed_ms.count());

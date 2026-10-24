@@ -186,8 +186,9 @@ void RenderPass::Invalidate()
   }
 
   bool renderPassChanged = false;
-  // rebuild attachments
-  if (m_framebuffer->Invalidate(attachmentsUsage))
+  // New passes need their own graph and targets even when attachments are already valid.
+  const bool attachmentsChanged = m_framebuffer->Invalidate(attachmentsUsage);
+  if (attachmentsChanged || m_targets.empty())
   {
     for (auto && subpass : m_subpasses)
     {
