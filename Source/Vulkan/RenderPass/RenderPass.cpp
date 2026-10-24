@@ -21,7 +21,7 @@ RenderPass::RenderPass(Context & ctx, FramebufferPtr framebuffer, PipelinePtr in
   , m_renderGraph(new SubpassGraph(ctx))
 {
   m_subpasses.emplace_back(
-    std::make_unique<SubpassInfo>(ctx, FastDynamicCast<Pipeline>(initialPipeline)));
+    std::make_unique<SubpassInfo>(*this, FastDynamicCast<Pipeline>(initialPipeline)));
 }
 
 RenderPass::~RenderPass()
@@ -49,7 +49,7 @@ void RenderPass::Barrier(IAttachment & attachment)
 void RenderPass::NextPipeline(PipelinePtr pipeline)
 {
   m_subpasses.emplace_back(
-    std::make_unique<SubpassInfo>(GetContext(), FastDynamicCast<Pipeline>(pipeline)));
+    std::make_unique<SubpassInfo>(*this, FastDynamicCast<Pipeline>(pipeline)));
 }
 
 void RenderPass::ClearFramebuffer()
@@ -207,6 +207,11 @@ void RenderPass::Invalidate()
   // rebuild attachments
   if (m_framebuffer->Invalidate(attachmentsUsage))
   {
+    for (auto && subpass : m_subpasses)
+    {
+      subpass->CollectBarriers();
+    }
+
     std::unique_ptr<SubpassGraph> newRenderGraph = std::make_unique<SubpassGraph>(GetContext());
     for (auto && attachment : m_framebuffer->GetAttachments())
     {
@@ -216,7 +221,9 @@ void RenderPass::Invalidate()
                                    VK_IMAGE_LAYOUT_UNDEFINED};
         ResourceState finalState{VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                                  VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+                                 attachment->IsPresent()
+                                   ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                                   : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
         newRenderGraph->AddAttachment(*attachment, initialState, finalState, m_loadOp, m_storeOp);
       }
     }
@@ -255,7 +262,6 @@ void RenderPass::Invalidate()
     for (uint32_t i = 0; auto && subpass : m_subpasses)
     {
       subpass->GetPipeline().Invalidate(*this, i);
-      subpass->CollectBarriers();
       ++i;
     }
   }

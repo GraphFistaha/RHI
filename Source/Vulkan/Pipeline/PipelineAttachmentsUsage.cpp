@@ -1,6 +1,10 @@
-#include "PipelineAttachmentsUsage.hpp"
+﻿#include "PipelineAttachmentsUsage.hpp"
 
-static bool operator==(const VkAttachmentReference & ref1, const VkAttachmentReference & ref2) noexcept
+#include <Memory/ResourceUser.hpp>
+
+
+static bool operator==(const VkAttachmentReference & ref1,
+                       const VkAttachmentReference & ref2) noexcept
 {
   return std::memcmp(&ref1, &ref2, sizeof(VkAttachmentReference)) == 0;
 }
@@ -85,6 +89,38 @@ void PipelineAttachmentsUsage::CollectAttachmentsUsageInfo(
   }
   if (UseDepthStencil())
     result[m_depthStencilAttachment.attachment] |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+}
+
+void PipelineAttachmentsUsage::CollectBarriers(std::vector<Barrier> & barriers) const
+{
+  /// @brief Appends synchronization requirements for active attachment references.
+  const auto collect =
+    [&barriers](const auto & attachments, VkPipelineStageFlags2 stages, VkAccessFlagBits2 access)
+  {
+    for (const auto & ref : attachments)
+    {
+      if (ref.attachment != VK_ATTACHMENT_UNUSED)
+        barriers.push_back({ref.attachment, ResourceState{stages, access, ref.layout}});
+    }
+  };
+
+  const auto colorAccess = static_cast<VkAccessFlagBits2>(VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+  collect(m_colorAttachments, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, colorAccess);
+  collect(m_resolveAttachments, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+  collect(m_inputAttachments, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+          VK_ACCESS_2_INPUT_ATTACHMENT_READ_BIT);
+  if (UseDepthStencil())
+  {
+    barriers.push_back(
+      {m_depthStencilAttachment.attachment,
+       ResourceState{VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                       VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                     static_cast<VkAccessFlagBits2>(VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                    VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT),
+                     m_depthStencilAttachment.layout}});
+  }
 }
 
 } // namespace RHI::vulkan

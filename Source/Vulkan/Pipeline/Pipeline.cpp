@@ -166,6 +166,7 @@ void Pipeline::BindToCommandBuffer(details::CommandBuffer & commands,
 
 void Pipeline::CollectBarriers(std::vector<Barrier> & barriers) const
 {
+  m_attachmentsStat.CollectBarriers(barriers);
   // collect descriptors and uniforms
   for (auto && uniformPtr : m_descriptors)
     uniformPtr->CollectBarriers(barriers);

@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
+#include <Memory/ResourceUser.hpp>
 #include <RHI.hpp>
 #include <vulkan/vulkan.h>
+
 
 namespace RHI::vulkan
 {
@@ -14,6 +16,7 @@ struct PipelineAttachmentsUsage final
   void BindResolver(uint32_t idx, uint32_t resolve_idx);
   VkSubpassDescription BuildDescription(VkPipelineBindPoint bindPoint) const noexcept;
   void CollectAttachmentsUsageInfo(std::span<VkImageUsageFlags> result) const;
+  void CollectBarriers(std::vector<Barrier> & barriers) const;
 
 private:
   std::vector<VkAttachmentReference> m_colorAttachments;

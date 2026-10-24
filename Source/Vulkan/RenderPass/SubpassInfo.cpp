@@ -1,7 +1,8 @@
-#include "SubpassInfo.hpp"
+﻿#include "SubpassInfo.hpp"
 
 #include <Memory/Synchronizer.hpp>
 #include <Private/Overload.hpp>
+#include <RenderPass/RenderPass.hpp>
 #include <RenderPass/SubpassGraph.hpp>
 #include <Utils/CastHelper.hpp>
 #include <VulkanContext.hpp>
@@ -10,8 +11,8 @@
 namespace RHI::vulkan
 {
 
-SubpassInfo::SubpassInfo(Context & ctx, std::shared_ptr<Pipeline> pipeline)
-  : OwnedBy<Context>(ctx)
+SubpassInfo::SubpassInfo(RenderPass & renderPass, std::shared_ptr<Pipeline> pipeline)
+  : OwnedBy<RenderPass>(renderPass)
   , m_pipeline(std::move(pipeline))
 {
 }
@@ -208,9 +209,11 @@ void SubpassInfo::ResetSynchronization() const
                        texture->GetSynchronizer().ResetSynchronization();
                    },
                    [this](uint32_t attachmentIndex)
-              {
-                
-              }),
+                   {
+                     if (auto * attachment =
+                           GetRenderPass().GetFramebuffer()->GetAttachment(attachmentIndex))
+                       attachment->GetSynchronizer().ResetSynchronization();
+                   }),
                  barrier.first);
       prevPtr = barrier.first;
     }
@@ -239,7 +242,14 @@ void SubpassInfo::SynchroniseResources(SynchronizationFilter filter,
                  },
                  [this, &commands, filter, state = barrier.second](uint32_t attachmentIndex)
                  {
-                   //TODO: GetRenderPass().GetAttachmentByIndex(attachmentIndex)
+                   if (!FilterSatisfied(filter, SynchronizationFilter::AttachmentOnly))
+                     return;
+                   if (auto * attachment =
+                         GetRenderPass().GetFramebuffer()->GetAttachment(attachmentIndex))
+                     attachment->GetSynchronizer().RequireSynchronize(state.currentStage,
+                                                                      state.requiredAccess,
+                                                                      commands,
+                                                                      state.requiredLayout);
                  }),
                barrier.first);
   }

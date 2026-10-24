@@ -1,15 +1,16 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include <vector>
 
 #include <CommandsExecution/CommandBuffer.hpp>
 #include <Memory/ResourceUser.hpp>
 #include <Pipeline/Pipeline.hpp>
+#include <RenderPass/Framebuffer.hpp>
 
 
 namespace RHI::vulkan
 {
-struct Context;
+struct RenderPass;
 struct SubpassGraph;
 enum class SubpassIndex;
 } // namespace RHI::vulkan
@@ -23,7 +24,11 @@ enum class SynchronizationFilter : uint8_t
   None = 0,
   BufferOnly = 1,
   ImageOnly = 2,
-  All = 3,
+  BufferAndImage = 3,
+  AttachmentOnly = 4,
+  BufferAndAttachment = 5,
+  ImageAndAttachment = 6,
+  All = 7,
 };
 
 inline bool FilterSatisfied(SynchronizationFilter f1, SynchronizationFilter f2) noexcept
@@ -31,11 +36,12 @@ inline bool FilterSatisfied(SynchronizationFilter f1, SynchronizationFilter f2) 
   return (static_cast<uint8_t>(f1) & static_cast<uint8_t>(f2)) != 0;
 }
 
-struct SubpassInfo final : public OwnedBy<Context>
+struct SubpassInfo final : public OwnedBy<RenderPass>
 {
-  explicit SubpassInfo(Context & ctx, std::shared_ptr<Pipeline> pipeline);
+  /// @brief Creates a subpass owned by its render pass.
+  explicit SubpassInfo(RenderPass & renderPass, std::shared_ptr<Pipeline> pipeline);
   virtual ~SubpassInfo() override = default;
-  MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
+  MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // API to fill a SubpassGraph
   void AddBarrier(IInternalBuffer & buffer);
@@ -59,6 +65,7 @@ public: // draw Commands
 public:
   bool IsInlineCommands() const;
   void RecordCommands(details::CommandBuffer & commands);
+  /// @brief Resets synchronization for resources and indexed framebuffer attachments.
   void ResetSynchronization() const;
   void SynchroniseResources(SynchronizationFilter filter, details::CommandBuffer & commands) const;
 
