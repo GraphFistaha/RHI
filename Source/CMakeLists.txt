@@ -29,9 +29,6 @@ PRIVATE
 	"Private/FastDynamicCast.hpp"
 	"Private/Overload.hpp"
 	"Private/Hash.hpp"
-	"Private/Table2D.hpp"
-	"Private/SmallVector.hpp"
-	"Private/Constants.hpp"
 )
 
 target_compile_definitions(${interface_target} PRIVATE RHI_BUILD)

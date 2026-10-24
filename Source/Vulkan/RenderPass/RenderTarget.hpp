@@ -1,7 +1,6 @@
 #pragma once
 #include <list>
 
-#include <Private/Constants.hpp>
 #include <Private/OwnedBy.hpp>
 #include <RHI.hpp>
 #include <Utils/FramebufferBuilder.hpp>

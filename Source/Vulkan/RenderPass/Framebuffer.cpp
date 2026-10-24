@@ -3,7 +3,6 @@
 #include <format>
 
 #include <Attachments/SurfacedAttachment.hpp>
-#include <Private/Constants.hpp>
 #include <RenderPass/AttachmentDescriptionBuilder.hpp>
 #include <RenderPass/RenderTarget.hpp>
 #include <Utils/CastHelper.hpp>
