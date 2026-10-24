@@ -40,11 +40,12 @@ struct SubpassInfo final : public OwnedBy<RenderPass>
 {
   /// @brief Creates a subpass owned by its render pass.
   explicit SubpassInfo(RenderPass & renderPass, std::shared_ptr<Pipeline> pipeline);
-  virtual ~SubpassInfo() override = default;
+  virtual ~SubpassInfo() override;
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // API to fill a SubpassGraph
   void AddDependenciesTo(SubpassGraph & graph, SubpassIndex index) const;
+  /// @brief Rebuilds resource requirements from draw commands and the current pipeline.
   void CollectBarriers();
 
 public: // draw Commands
@@ -73,7 +74,8 @@ public: // Pipeline getters
 
 private:
   std::shared_ptr<Pipeline> m_pipeline;
-  std::vector<Barrier> m_barriers; ///< info how each resource is used
+  std::vector<Barrier> m_drawBarriers; ///< Buffer requirements captured by draw commands.
+  std::vector<Barrier> m_barriers;     ///< info how each resource is used
   using DrawCommand = std::function<void(details::CommandBuffer &)>;
   using CpuCommandBuffer = std::vector<DrawCommand>;
   CpuCommandBuffer m_commands;

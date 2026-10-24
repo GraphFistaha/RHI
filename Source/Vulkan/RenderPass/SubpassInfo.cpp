@@ -17,6 +17,10 @@ SubpassInfo::SubpassInfo(RenderPass & renderPass, std::shared_ptr<Pipeline> pipe
 {
 }
 
+SubpassInfo::~SubpassInfo()
+{
+}
+
 const Pipeline & SubpassInfo::GetPipeline() const & noexcept
 {
   return *m_pipeline;
@@ -119,7 +123,7 @@ void SubpassInfo::BindVertexBuffer(std::uint32_t binding, IBufferGPU * buffer, s
     commands.PushCommand(vkCmdBindVertexBuffers, binding, 1, &buf, &vkOffset);
   };
   m_commands.push_back(task);
-  m_barriers.push_back(
+  m_drawBarriers.push_back(
     {internalBuffer,
      ResourceState{VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
                    VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED}});
@@ -137,7 +141,7 @@ void SubpassInfo::BindIndexBuffer(IBufferGPU * buffer, IndexType type, std::uint
   };
   m_commands.push_back(task);
 
-  m_barriers.push_back(
+  m_drawBarriers.push_back(
     {internalBuffer, ResourceState{VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT, VK_ACCESS_2_INDEX_READ_BIT,
                                    VK_IMAGE_LAYOUT_UNDEFINED}});
 }
@@ -242,7 +246,7 @@ void SubpassInfo::SynchroniseResources(SynchronizationFilter filter,
 
 void SubpassInfo::CollectBarriers()
 {
-  std::vector<Barrier> newBarriers;
+  auto newBarriers = m_drawBarriers;
   m_pipeline->CollectBarriers(newBarriers);
   std::ranges::sort(newBarriers, [](auto && a, auto && b)
                     { return a.first > b.first; }); // sort to equal pointers stay close
