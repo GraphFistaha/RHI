@@ -17,21 +17,6 @@ SubpassInfo::SubpassInfo(RenderPass & renderPass, std::shared_ptr<Pipeline> pipe
 {
 }
 
-void SubpassInfo::AddBarrier(IInternalBuffer & buffer)
-{
-  m_barriers.push_back({&buffer, ResourceState()});
-}
-
-void SubpassInfo::AddBarrier(IInternalTexture & texture)
-{
-  m_barriers.push_back({&texture, ResourceState()});
-}
-
-void SubpassInfo::AddBarrier(IInternalAttachment & attachment)
-{
-  m_barriers.push_back({&attachment, ResourceState()});
-}
-
 const Pipeline & SubpassInfo::GetPipeline() const & noexcept
 {
   return *m_pipeline;

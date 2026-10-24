@@ -283,9 +283,6 @@ struct IRenderPass
   /// @brief switches render pass to a new pipeline
   /// @param pipeline - pipeline to switch on
   virtual void NextPipeline(PipelinePtr pipeline) = 0;
-  virtual void Barrier(IBufferGPU & buffer) = 0;
-  virtual void Barrier(ITexture & texture) = 0;
-  virtual void Barrier(IAttachment & texture) = 0;
 
   /// @brief marks that framebuffer attachments must be filled with clear color value in the begining of the pass
   /// put that in the beginning of the pass

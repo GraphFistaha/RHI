@@ -28,24 +28,6 @@ RenderPass::~RenderPass()
 {
 }
 
-void RenderPass::Barrier(IBufferGPU & buffer)
-{
-  if (auto res = FastDynamicCast<IInternalBuffer>(&buffer))
-    m_subpasses.back()->AddBarrier(*res);
-}
-
-void RenderPass::Barrier(ITexture & texture)
-{
-  if (auto res = FastDynamicCast<IInternalTexture>(&texture))
-    m_subpasses.back()->AddBarrier(*res);
-}
-
-void RenderPass::Barrier(IAttachment & attachment)
-{
-  if (auto res = FastDynamicCast<IInternalAttachment>(&attachment))
-    m_subpasses.back()->AddBarrier(*res);
-}
-
 void RenderPass::NextPipeline(PipelinePtr pipeline)
 {
   m_subpasses.emplace_back(

@@ -44,9 +44,6 @@ struct SubpassInfo final : public OwnedBy<RenderPass>
   MAKE_ALIAS_FOR_GET_OWNER(RenderPass, GetRenderPass);
 
 public: // API to fill a SubpassGraph
-  void AddBarrier(IInternalBuffer & buffer);
-  void AddBarrier(IInternalTexture & texture);
-  void AddBarrier(IInternalAttachment & attachment);
   void AddDependenciesTo(SubpassGraph & graph, SubpassIndex index) const;
   void CollectBarriers();
 

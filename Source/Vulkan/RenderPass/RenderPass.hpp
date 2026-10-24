@@ -35,9 +35,6 @@ struct RenderPass final : public RHI::IRenderPass,
   MAKE_ALIAS_FOR_GET_OWNER(Context, GetContext);
 
 public: // IRenderPass interface
-  virtual void Barrier(IBufferGPU & buffer) override;
-  virtual void Barrier(ITexture & texture) override;
-  virtual void Barrier(IAttachment & attachment) override;
   virtual void NextPipeline(PipelinePtr pipeline) override;
   /// @brief marks that framebuffer attachments must be filled with clear color value in the begining of the pass
   /// put that in the beginning of the pass
