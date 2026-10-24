@@ -1,4 +1,4 @@
-#include "DescriptorsBuffer.hpp"
+﻿#include "DescriptorsBuffer.hpp"
 
 #include <algorithm>
 #include <array>
@@ -40,7 +40,7 @@ DescriptorBuffer::DescriptorBuffer(Context & ctx)
 
 DescriptorBuffer::~DescriptorBuffer()
 {
-  vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
+  GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
 }
 
 DescriptorBuffer::DescriptorBuffer(DescriptorBuffer && rhs) noexcept
@@ -66,7 +66,7 @@ void DescriptorBuffer::Invalidate(const DescriptorBufferLayout & layout)
   if (m_cachedLayoutsHash != layout.GetLayoutsHash())
   {
     auto [newPool, newSets] = layout.AllocDescriptorSets();
-    vkDestroyDescriptorPool(GetContext().GetGpuConnection().GetDevice(), m_pool, nullptr);
+    GetContext().GetGarbageCollector().PushVkObjectToDestroy(m_pool, nullptr);
     GetContext().Log(RHI::LogMessageStatus::LOG_DEBUG,
                      "VkDescriptorPool({}) & Sets have been rebuilt - {}",
                      static_cast<void *>(m_pool), static_cast<void *>(newPool));

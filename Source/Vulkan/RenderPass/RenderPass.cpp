@@ -76,10 +76,10 @@ void RenderPass::RecordCommands(details::CommandBuffer & commands,
     const VkExtent3D extent = renderTarget.GetVkExtent();
     auto && clearValues = renderTarget.GetClearValues();
 
-    // here must be buffer synchronization
+    // Texture layout transitions and external resource barriers must precede the render pass.
     for (auto && subpass : m_subpasses)
     {
-      subpass->SynchroniseResources(SynchronizationFilter::BufferOnly, commands);
+      subpass->SynchroniseResources(SynchronizationFilter::BufferAndImage, commands);
     }
 
     VkRenderPassBeginInfo renderPassInfo{};

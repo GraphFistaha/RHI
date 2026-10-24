@@ -167,9 +167,6 @@ bool SubpassInfo::IsInlineCommands() const
 
 void SubpassInfo::RecordCommands(details::CommandBuffer & commands)
 {
-  // in RenderPass you must not include any memoryBarrier,
-  // so it's allowed ImageOnly synchronization
-  SynchroniseResources(SynchronizationFilter::ImageOnly, commands);
   m_pipeline->BindToCommandBuffer(commands, VK_PIPELINE_BIND_POINT_GRAPHICS);
   for (auto && cmd : m_commands)
   {
