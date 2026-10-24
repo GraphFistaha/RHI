@@ -1,13 +1,11 @@
 #pragma once
+#include <CommandsExecution/DoubleBufferedSubmitter.hpp>
 #include <Device.hpp>
 #include <GarbageCollector.hpp>
-#include <ImageUtils/TextureInterface.hpp>
 #include <Memory/MemoryAllocator.hpp>
 #include <Private/ObjectsTable.hpp>
-#include <RenderPass/Framebuffer.hpp>
-#include <Resources/BufferGPU.hpp>
-#include <Resources/Transferer.hpp>
 #include <RHI.hpp>
+#include <TransferPass/Transferer.hpp>
 
 namespace RHI::vulkan
 {
@@ -23,8 +21,10 @@ struct Context final : public IContext
 public: // IContext interface
   virtual IAttachment * CreateSurfacedAttachment(const SurfaceConfig & surfaceTraits,
                                                  RenderBuffering buffering) override;
-  virtual IFramebuffer * CreateFramebuffer() override;
-  virtual void DeleteFramebuffer(IFramebuffer * fbo) override;
+  virtual PipelinePtr CreatePipeline() override;
+  virtual RenderPassPtr CreateRenderPass(FramebufferPtr framebuffer,
+                                         PipelinePtr initialPipeline) override;
+  virtual FramebufferPtr CreateFramebuffer() override;
   virtual IBufferGPU * CreateBuffer(size_t size, BufferGPUUsage usage,
                                     bool allowHostAccess) override;
   virtual void DeleteBuffer(IBufferGPU * buffer) override;
@@ -34,15 +34,19 @@ public: // IContext interface
                                          RenderBuffering buffering,
                                          RHI::SamplesCount samplesCount) override;
   virtual void DeleteAttachment(IAttachment * attachment) override;
+
+  // --------------- Passes -------------------
   virtual void ClearResources() override; ///< GarbageCollector call
-  virtual void TransferPass(bool flush = false) override;
+  virtual IAwaitable * TransferPass(std::span<const IAwaitable *> commandsToWait = {}) override;
+  virtual IAwaitable * RenderPass(RenderPassPtr renderPass,
+                                  std::span<const IAwaitable *> commandsToWait = {}) override;
 
 public: // RHI-only API
   void WaitForIdle() const noexcept;
   bool IsValid() const noexcept { return m_validatationMark == kValidationMark; }
 
   const Device & GetGpuConnection() const & noexcept;
-  Transferer & GetTransferer() & noexcept;
+  Transferer & GetTransferer(QueueType queue) &;
   memory::MemoryAllocator & GetBuffersAllocator() & noexcept;
   const details::VkObjectsGarbageCollector & GetGarbageCollector() const & noexcept;
 
@@ -66,9 +70,13 @@ private:
   Device m_device;
   memory::MemoryAllocator m_allocator;
   details::VkObjectsGarbageCollector m_gc;
-  std::unordered_map<std::thread::id, Transferer> m_transferers;
+  BufferedSubmitter m_graphicSubmitter;
+  BufferedSubmitter m_transferSubmitter;
+  BufferedSubmitter m_computeSubmitter;
+  Transferer m_graphicTransferer;
+  Transferer m_transferTransferer;
+  Transferer m_computeTransferer;
 
-  // TODO: replace deque with pool
   RHI::utils::ObjectsTable<IFramebuffer> m_framebuffers;
   RHI::utils::ObjectsTable<IBufferGPU> m_buffers;
   RHI::utils::ObjectsTable<IAttachment> m_attachments;

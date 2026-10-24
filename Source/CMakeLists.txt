@@ -1,4 +1,4 @@
-include(CMakeUtils.cmake)
+﻿include(CMakeUtils.cmake)
 
 set(this_target ${PROJECT_NAME})
 
@@ -10,7 +10,10 @@ endif()
 
 # ----------------------- build library -------------------------
 
-target_sources (${this_target}
+set(interface_target "RHI_Interface")
+
+add_library(${interface_target} OBJECT)
+target_sources (${interface_target}
 PUBLIC
 	"Public/RHI.hpp"
 	"Public/RHI_def.h"
@@ -23,20 +26,32 @@ PRIVATE
 	"Private/Types.hpp"
 	"Private/OwnedBy.hpp"
 	"Private/ObjectsTable.hpp"
+	"Private/FastDynamicCast.hpp"
+	"Private/Overload.hpp"
+	"Private/Hash.hpp"
 )
 
+target_compile_definitions(${interface_target} PRIVATE RHI_BUILD)
+set_target_properties(${interface_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 if (${RHI_VULKAN_BACKEND})
-add_subdirectory(Vulkan)
+	add_subdirectory(Vulkan) # sets backend_target
+	target_link_libraries(${backend_target} PRIVATE ${interface_target})
+	target_include_directories(${backend_target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+	target_link_libraries(${this_target} PRIVATE ${backend_target})
+	target_compile_definitions(${backend_target} PRIVATE RHI_BUILD)
 endif()
+target_link_libraries(${this_target} PUBLIC ${interface_target})
+
 #add_subdirectory(DirectXImpl)
 if (${RHI_BUILD_TESTS})
 	add_subdirectory(Tests)
 endif()
 
-target_include_directories(${this_target} 
+target_include_directories(${interface_target}
 PUBLIC
 	"Public"
-PRVATE
+PRIVATE
 	"./"
 )
 
@@ -45,11 +60,11 @@ if (MSVC)
 endif()
 
 
-target_compile_definitions(${this_target}
-PRIVATE
-	RHI_BUILD
+target_compile_definitions(${interface_target}
+PUBLIC
 	$<$<BOOL:${RHI_BUILD_SHARED}>:RHI_BUILD_SHARED>
 	$<$<BOOL:${RHI_USE_LOG_OUTPUT}>:RHI_USE_LOG_OUTPUT>
+	$<$<CONFIG:Release>:RHI_FAST_DYNAMIC_CAST>
 )
 
 install(TARGETS ${this_target}
